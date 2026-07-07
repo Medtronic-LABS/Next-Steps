@@ -1,0 +1,495 @@
+/* ============================================================================
+   Next Steps — Medtronic LABS design system
+   Tokens sourced from the Medtronic LABS Brand Guide (via the approved
+   prototype). Inter is the brand typeface; the core brand colour is
+   Medium Blue #1E14BE. Both apps import this file.
+   ============================================================================ */
+
+:root {
+  /* ---- Primary brand ---------------------------------------------------- */
+  --ml-blue: #1e14be;          /* MEDIUM BLUE — core brand */
+  --ml-periwinkle: #6165de;    /* lighter brand blue */
+  --ml-seafoam: #54cc90;
+  --ml-terracotta: #eb956a;
+  --ml-burnt-orange: #c35721;
+
+  /* ---- Secondary -------------------------------------------------------- */
+  --ml-blue-30: #bcb5f7;
+  --ml-peppermint: #98efc4;
+  --ml-peach: #ffbd9b;
+  --ml-pink: #e98b8b;
+  --ml-merlot: #994242;
+  --ml-maroon: #751a1a;
+
+  /* ---- Neutrals --------------------------------------------------------- */
+  --ml-white: #ffffff;
+  --ml-offwhite: #fcfbf9;
+  --ml-grey: #deddd8;
+
+  /* ---- Ink -------------------------------------------------------------- */
+  --ml-ink-900: #010101;
+  --ml-ink-800: #2a2826;
+  --ml-ink-600: #595959;
+  --ml-ink-500: #70706e;
+  --ml-ink-400: #909090;
+
+  /* ---- Semantic surfaces ------------------------------------------------ */
+  --surface-page: var(--ml-offwhite);
+  --surface-card: var(--ml-white);
+  --surface-brand: var(--ml-blue);
+  --surface-brand-soft: #efedff;
+
+  /* ---- Borders ---------------------------------------------------------- */
+  --border-default: #cfcec8;
+  --border-subtle: var(--ml-grey);
+  --border-brand: var(--ml-blue);
+
+  /* ---- Text ------------------------------------------------------------- */
+  --text-strong: var(--ml-ink-900);
+  --text-body: var(--ml-ink-800);
+  --text-muted: var(--ml-ink-500);
+  --text-subtle: var(--ml-ink-400);
+  --text-brand: var(--ml-blue);
+
+  /* ---- Status ----------------------------------------------------------- */
+  --status-danger: var(--ml-merlot);
+  --status-danger-soft: #fdecec;
+  --status-warning: var(--ml-burnt-orange);
+  --status-warning-soft: #fbede4;
+  --status-success: #2e9e6b;
+  --status-success-soft: #e4f7ee;
+  --status-info: var(--ml-periwinkle);
+
+  /* ---- Type ------------------------------------------------------------- */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* ---- Radius ----------------------------------------------------------- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* ---- Elevation (tinted toward brand indigo) --------------------------- */
+  --shadow-xs: 0 1px 2px rgba(30, 20, 190, 0.06);
+  --shadow-sm: 0 2px 8px rgba(30, 20, 190, 0.08);
+  --shadow-md: 0 8px 24px rgba(30, 20, 190, 0.1);
+  --shadow-lg: 0 16px 48px rgba(30, 20, 190, 0.14);
+}
+
+/* ---- Reset / base -------------------------------------------------------- */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--surface-page);
+  color: var(--text-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font-family: inherit;
+}
+
+input {
+  font-family: inherit;
+}
+
+/* Hide scrollbars but keep scrolling (the app frames feel native). */
+.nsScroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.nsScroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* ---- Animations ---------------------------------------------------------- */
+
+@keyframes nsRise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+@keyframes nsSheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes nsFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes nsPop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================================================
+   Component layer — shared by both apps. Metrics mirror the approved
+   prototype. Category colours are data-driven and stay inline.
+   ============================================================================ */
+
+/* ---- App shell ---------------------------------------------------------- */
+.screen {
+  max-width: 420px;
+  margin: 0 auto;
+  height: 100dvh;
+  background: var(--surface-page);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.appbar {
+  flex: none;
+  padding: 14px 18px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.appbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--ml-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex: none;
+}
+.appbar__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-strong);
+  line-height: 1.05;
+}
+.appbar__sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.body {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* ---- Bottom tabs -------------------------------------------------------- */
+.tabbar {
+  flex: none;
+  height: 64px;
+  border-top: 1px solid var(--border-subtle);
+  background: #fff;
+  display: flex;
+  padding: 0 6px;
+}
+.tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text-subtle);
+  font-size: 11px;
+  font-weight: 700;
+  position: relative;
+}
+.tab__badge {
+  position: absolute;
+  top: 8px;
+  right: calc(50% - 26px);
+  background: var(--status-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+/* ---- Headings ----------------------------------------------------------- */
+.h-screen {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-strong);
+  letter-spacing: -0.01em;
+}
+.p-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.section-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+/* ---- Rows / cards ------------------------------------------------------- */
+.ns-row {
+  text-align: left;
+  width: 100%;
+  border: 1px solid var(--border-subtle);
+  background: #fff;
+  border-radius: 16px;
+  padding: 13px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+}
+.ns-row:active {
+  background: #faf9f7;
+}
+.card {
+  border: 1px solid var(--border-subtle);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+}
+.icon-tile {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---- Chips -------------------------------------------------------------- */
+.chip {
+  flex: none;
+  border: 1.5px solid var(--border-default);
+  background: #fff;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.chip--brand.chip--on {
+  border-color: var(--ml-blue);
+  background: var(--ml-blue);
+  color: #fff;
+}
+.chip--soft.chip--on {
+  border-color: var(--ml-blue);
+  background: var(--surface-brand-soft);
+  color: var(--ml-blue);
+}
+
+/* ---- Buttons ------------------------------------------------------------ */
+.btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn--primary {
+  background: var(--ml-blue);
+  color: #fff;
+  box-shadow: 0 10px 22px -8px rgba(30, 20, 190, 0.6);
+}
+.btn--ghost {
+  background: #fff;
+  border: 1.5px solid var(--border-default);
+  color: var(--text-strong);
+}
+.btn--full {
+  width: 100%;
+}
+.btn--h52 {
+  height: 52px;
+}
+.btn--h50 {
+  height: 50px;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- Fields ------------------------------------------------------------- */
+.field-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-body);
+  margin-bottom: 5px;
+}
+.input {
+  width: 100%;
+  height: 48px;
+  border-radius: 13px;
+  border: 1.5px solid var(--border-default);
+  background: #fff;
+  padding: 0 14px;
+  font-size: 15px;
+  color: var(--text-strong);
+  outline: none;
+}
+.input:focus {
+  border-color: var(--ml-blue);
+}
+
+/* ---- Badge -------------------------------------------------------------- */
+.badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ---- Back link ---------------------------------------------------------- */
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+/* ---- Bottom sheet ------------------------------------------------------- */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 8, 40, 0.42);
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  animation: nsFade 0.18s ease;
+}
+.sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 24px 24px 38px 38px;
+  padding: 16px 18px 26px;
+  animation: nsSheet 0.26s cubic-bezier(0.2, 0, 0.2, 1);
+  max-height: 90%;
+  overflow-y: auto;
+}
+.sheet-handle {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border-default);
+  margin: 0 auto 14px;
+}
+
+/* ---- Dialog ------------------------------------------------------------- */
+.dialog-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 8, 40, 0.42);
+  z-index: 22;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: nsFade 0.18s ease;
+}
+.dialog {
+  width: 100%;
+  background: #fff;
+  border-radius: 22px;
+  padding: 20px;
+  animation: nsPop 0.22s ease;
+}
+
+/* ---- Toast -------------------------------------------------------------- */
+.toast {
+  position: absolute;
+  bottom: 78px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ml-ink-900);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 11px 18px;
+  border-radius: 12px;
+  z-index: 30;
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.5);
+  max-width: 320px;
+  animation: nsRise 0.26s ease;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}

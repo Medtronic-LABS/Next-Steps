@@ -1,0 +1,26 @@
+{
+  "name": "next-steps",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Next Steps — post-consultation care coordination for RSSDI clinics, on the OpenPHC Care Coordination Engine.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:admin": "npm run dev -w @next-steps/admin",
+    "dev:doctor": "npm run dev -w @next-steps/doctor",
+    "build": "npm run build -w @next-steps/admin && npm run build -w @next-steps/doctor",
+    "build:admin": "npm run build -w @next-steps/admin",
+    "build:doctor": "npm run build -w @next-steps/doctor",
+    "build:hosting": "npm run build -w @next-steps/admin && npm run build -w @next-steps/doctor -- --base=/doctor/ && node scripts/assemble-hosting.mjs",
+    "deploy": "bash scripts/deploy.sh",
+    "typecheck": "npm run typecheck -w @next-steps/core && npm run typecheck -w @next-steps/admin && npm run typecheck -w @next-steps/doctor"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "firebase-tools": "^15.22.4"
+  }
+}

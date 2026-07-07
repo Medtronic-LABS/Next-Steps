@@ -1,0 +1,5 @@
+/* Admin app — uses the shared Medtronic LABS tokens from @next-steps/core.
+   The full-screen phone-style frame keeps a neutral page behind it. */
+body {
+  background: #ecebff;
+}
