@@ -39,3 +39,7 @@ yarn-error.log*
 
 # Combined Firebase hosting output
 /hosting/
+
+firebase-debug.log
+firebase-debug.*.log
+.firebase/
