@@ -86,7 +86,7 @@ export interface CoordinationEngine {
   summaryCards(): SummaryCard[];
   heroAttn(): number;
   drill(key: DrillKey): DrillView;
-  insights(): Insights;
+  insights(periodDays: number): Insights;
 
   // --- device sync state ---
   isOffline(): boolean;

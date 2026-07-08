@@ -175,8 +175,9 @@ function Timeline({ onBack }: { onBack: () => void }) {
 // Insights
 // ============================================================================
 function Insights({ period, setPeriod }: { period: number; setPeriod: (i: number) => void }) {
-  const ins = engine.insights();
+  const ins = engine.insights([7, 30, 90][period]);
   const t = trendPath(ins.trend);
+  const backlogTotal = ins.backlogBars.reduce((a, b) => a + b.value, 0);
   const periods = ['7 days', '30 days', '90 days'];
   return (
     <div style={{ padding: '2px 18px 24px', animation: 'nsFade .2s ease' }}>
@@ -218,7 +219,7 @@ function Insights({ period, setPeriod }: { period: number; setPeriod: (i: number
 
       <div className="card" style={{ padding: 16, marginBottom: 13 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: S.strong, marginBottom: 3 }}>Overdue backlog</div>
-        <div style={{ fontSize: 11.5, color: S.muted, marginBottom: 13 }}>4 open steps, aged</div>
+        <div style={{ fontSize: 11.5, color: S.muted, marginBottom: 13 }}>{backlogTotal} open step{backlogTotal === 1 ? '' : 's'}, aged</div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 96 }}>
           {ins.backlogBars.map((b) => (
             <div key={b.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
@@ -238,7 +239,7 @@ function Insights({ period, setPeriod }: { period: number; setPeriod: (i: number
       </div>
 
       <div className="card" style={{ padding: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: S.strong, marginBottom: 13 }}>Clinic follow-through · 30 days</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: S.strong, marginBottom: 13 }}>Clinic follow-through</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
           {ins.followThrough.map((t) => (
             <FollowTile key={t.label} value={t.value} label={t.label} color={t.color} bg={t.bg} />

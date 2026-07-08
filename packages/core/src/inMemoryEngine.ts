@@ -11,7 +11,7 @@ import {
   CARD_DEFS,
   DONE_BASE,
   DRILL,
-  INSIGHTS,
+  INSIGHTS_BY_PERIOD,
   PATIENTS,
   WORK,
 } from './seed';
@@ -331,8 +331,8 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     return { title: d.title, sub: d.sub, rows };
   }
 
-  insights(): Insights {
-    return INSIGHTS;
+  insights(periodDays: number): Insights {
+    return INSIGHTS_BY_PERIOD[periodDays] ?? INSIGHTS_BY_PERIOD[30];
   }
 
   // --- device sync --------------------------------------------------------
