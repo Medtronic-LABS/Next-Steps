@@ -238,23 +238,22 @@ function Insights({ period, setPeriod }: { period: number; setPeriod: (i: number
       </div>
 
       <div className="card" style={{ padding: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: S.strong, marginBottom: 13 }}>Reminder reach · 30 days</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: S.strong, marginBottom: 13 }}>Clinic follow-through · 30 days</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
-          <ReachTile n={ins.reach.sent} label="Sent" color="var(--ml-blue)" bg="var(--surface-brand-soft)" />
-          <ReachTile n={ins.reach.delivered} label="Delivered" color="#128C4A" bg="#E4F7EE" />
-          <ReachTile n={ins.reach.read} label="Read" color="#6165DE" bg="#EEEDFB" />
-          <ReachTile n={ins.reach.failed} label="Failed" color="var(--ml-burnt-orange)" bg="var(--status-warning-soft)" />
+          {ins.followThrough.map((t) => (
+            <FollowTile key={t.label} value={t.value} label={t.label} color={t.color} bg={t.bg} />
+          ))}
         </div>
-        <div style={{ fontSize: 11.5, color: S.muted, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>Consent coverage <strong style={{ color: S.body }}>{ins.reach.consentPct}%</strong> · 12 patients without WhatsApp reached by call.</div>
+        <div style={{ fontSize: 11.5, color: S.muted, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>{ins.followThroughNote}</div>
       </div>
     </div>
   );
 }
-function ReachTile({ n, label, color, bg }: { n: number; label: string; color: string; bg: string }) {
+function FollowTile({ value, label, color, bg }: { value: string; label: string; color: string; bg: string }) {
   return (
     <div style={{ background: bg, borderRadius: 12, padding: 12 }}>
-      <div style={{ fontSize: 24, fontWeight: 800, color, lineHeight: 1 }}>{n}</div>
-      <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 24, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.25 }}>{label}</div>
     </div>
   );
 }

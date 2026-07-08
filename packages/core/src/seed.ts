@@ -80,5 +80,13 @@ export const INSIGHTS: Insights = {
     { label: '90+ d', value: 0, height: '6%', color: '#751A1A' },
   ],
   referral: { rate: 61, ofLabel: '11 of 18 completed', medianDays: 11 },
-  reach: { sent: 214, delivered: 205, read: 176, failed: 9, consentPct: 94 },
+  followThrough: [
+    { value: '182', label: 'Patients contacted', color: '#1E14BE', bg: '#EFEDFF' },
+    { value: '41', label: 'Follow-up calls completed', color: '#C35721', bg: '#FBEDE4' },
+    { value: '61%', label: 'Referral completion', color: '#6165DE', bg: '#EEEDFB' },
+    { value: '11 days', label: 'Average days to complete', color: '#2E9E6B', bg: '#E4F7EE' },
+    { value: '6', label: 'Patients unreachable', color: '#994242', bg: '#FDECEC' },
+    { value: '4', label: 'Lost to follow-up recovered', color: '#128C4A', bg: '#E4F7EE' },
+  ],
+  followThroughNote: 'Every figure comes only from next-step follow-through — never clinical outcomes.',
 };

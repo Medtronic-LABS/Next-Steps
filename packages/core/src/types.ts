@@ -119,5 +119,6 @@ export interface Insights {
   catBars: { label: string; pctLabel: string; width: string; color: string }[];
   backlogBars: { label: string; value: number; height: string; color: string }[];
   referral: { rate: number; ofLabel: string; medianDays: number };
-  reach: { sent: number; delivered: number; read: number; failed: number; consentPct: number };
+  followThrough: { value: string; label: string; color: string; bg: string }[];
+  followThroughNote: string;
 }
