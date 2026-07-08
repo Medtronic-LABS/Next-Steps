@@ -61,7 +61,6 @@ export function decorate(w: WorkStep): DecoratedStep {
   const m = META[w.cat];
   return {
     ...w,
-    detail: m.label,
     categoryLabel: m.label,
     color: m.color,
     soft: m.soft,

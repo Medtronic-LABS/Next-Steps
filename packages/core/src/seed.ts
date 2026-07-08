@@ -25,15 +25,15 @@ export const PATIENTS: Patient[] = [
 export const AVATARS = ['#EFEDFF|#1E14BE', '#E4F7EE|#128C4A', '#ECEDFB|#6165DE', '#FBEDE4|#C35721', '#FDECEC|#994242'];
 
 export const WORK: WorkStep[] = [
-  { id: 'w1', pid: 'p1', name: 'Ramesh Kulkarni', cat: 'LAB_INVESTIGATION', detail: 'HbA1c blood test', due: '28 Jun', over: 8, priority: 'HIGH', delivery: 'Read', attempts: 0, section: 'overdue', status: 'SCHEDULED' },
+  { id: 'w1', pid: 'p1', name: 'Ramesh Kulkarni', cat: 'LAB_INVESTIGATION', detail: '', due: '28 Jun', over: 8, priority: 'HIGH', delivery: 'Read', attempts: 0, section: 'overdue', status: 'SCHEDULED' },
   { id: 'w2', pid: 'p6', name: 'Sunita Rao', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', due: '1 Jul', over: 5, priority: 'NORMAL', delivery: 'Delivered', attempts: 0, section: 'overdue', status: 'SCHEDULED' },
-  { id: 'w3', pid: 'p3', name: 'Iqbal Khan', cat: 'SPECIALIST_REFERRAL', detail: 'Nephrology referral', due: '30 Jun', over: 6, priority: 'NORMAL', delivery: 'Failed', attempts: 1, section: 'overdue', status: 'SCHEDULED' },
+  { id: 'w3', pid: 'p3', name: 'Iqbal Khan', cat: 'SPECIALIST_REFERRAL', detail: '', due: '30 Jun', over: 6, priority: 'NORMAL', delivery: 'Failed', attempts: 1, section: 'overdue', status: 'SCHEDULED' },
   { id: 'w4', pid: 'p2', name: 'Lakshmi Iyer', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', due: 'Today', over: 0, priority: 'HIGH', delivery: 'Delivered', attempts: 0, section: 'today', status: 'SCHEDULED' },
-  { id: 'w5', pid: 'p5', name: 'Vijay Menon', cat: 'LAB_INVESTIGATION', detail: 'Lipid profile', due: 'Today', over: 0, priority: 'NORMAL', delivery: 'Read', attempts: 0, section: 'today', status: 'SCHEDULED' },
+  { id: 'w5', pid: 'p5', name: 'Vijay Menon', cat: 'LAB_INVESTIGATION', detail: '', due: 'Today', over: 0, priority: 'NORMAL', delivery: 'Read', attempts: 0, section: 'today', status: 'SCHEDULED' },
   { id: 'w6', pid: 'p4', name: 'Anjali Deshpande', cat: 'FOLLOW_UP_CALL', detail: 'Check-in call', due: '9 Jul', over: 0, priority: 'NORMAL', delivery: '—', attempts: 0, section: 'soon', status: 'SCHEDULED' },
-  { id: 'w7', pid: 'p7', name: 'Fatima Sheikh', cat: 'SPECIALIST_REFERRAL', detail: 'Ophthalmology referral', due: '13 Jul', over: 0, priority: 'NORMAL', delivery: 'Sent', attempts: 0, section: 'soon', status: 'SCHEDULED' },
+  { id: 'w7', pid: 'p7', name: 'Fatima Sheikh', cat: 'SPECIALIST_REFERRAL', detail: '', due: '13 Jul', over: 0, priority: 'NORMAL', delivery: 'Sent', attempts: 0, section: 'soon', status: 'SCHEDULED' },
   { id: 'w8', pid: 'p8', name: 'Ganesh Pawar', cat: 'FOLLOW_UP_CALL', detail: 'Check-in call', due: '2 Jul', over: 4, priority: 'NORMAL', delivery: '—', attempts: 3, section: 'unreach', status: 'SCHEDULED' },
-  { id: 'w9', pid: 'p9', name: 'Meena Joshi', cat: 'LAB_INVESTIGATION', detail: 'HbA1c blood test', due: '27 Jun', over: 9, priority: 'HIGH', delivery: 'Failed', attempts: 4, section: 'unreach', status: 'SCHEDULED' },
+  { id: 'w9', pid: 'p9', name: 'Meena Joshi', cat: 'LAB_INVESTIGATION', detail: '', due: '27 Jun', over: 9, priority: 'HIGH', delivery: 'Failed', attempts: 4, section: 'unreach', status: 'SCHEDULED' },
   { id: 'w10', pid: 'p1', name: 'Ramesh Kulkarni', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', due: '28 Jul', over: 0, priority: 'NORMAL', delivery: 'Sent', attempts: 0, section: 'future', status: 'SCHEDULED' },
 ];
 

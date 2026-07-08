@@ -15,7 +15,7 @@ export const META: Record<Category, CategoryMeta> = {
   },
   LAB_INVESTIGATION: {
     label: 'Lab investigation',
-    detail: 'HbA1c blood test',
+    detail: 'Lab investigation',
     color: '#2E9E6B',
     soft: '#E4F7EE',
     due: '1w',
@@ -23,7 +23,7 @@ export const META: Record<Category, CategoryMeta> = {
   },
   SPECIALIST_REFERRAL: {
     label: 'Specialist referral',
-    detail: 'Nephrology referral',
+    detail: 'Specialist referral',
     color: '#6165DE',
     soft: '#ECEDFB',
     due: '2w',

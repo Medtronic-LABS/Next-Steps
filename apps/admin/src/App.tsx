@@ -104,7 +104,7 @@ export default function App() {
 
   // ---- capture ----
   const addStep = (cat: Category) =>
-    setSteps((prev) => [...prev, { id: `s${stepSeq++}`, cat, due: META[cat].due, priority: 'NORMAL', detail: META[cat].detail }]);
+    setSteps((prev) => [{ id: `s${stepSeq++}`, cat, due: META[cat].due, priority: 'NORMAL', detail: META[cat].detail }, ...prev]);
   const removeStep = (id: string) => setSteps((prev) => prev.filter((s) => s.id !== id));
   const setDue = (id: string, due: DueKey) => setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, due } : s)));
   const toggleHigh = (id: string) =>
@@ -401,7 +401,7 @@ function Summary({ patient, avatar, onBack, onStartVisit, onOpenStep }: {
       </div>
 
       <div style={{ padding: '16px 18px 20px' }}>
-        <button className="btn btn--primary btn--full" style={{ height: 54 }} onClick={onStartVisit}>Start new visit</button>
+        <button className="btn btn--primary btn--full" style={{ height: 54 }} onClick={onStartVisit}>Enter Next Steps</button>
         <div style={{ fontSize: 12.5, fontWeight: 700, color: S.muted, margin: '22px 0 3px' }}>OPEN NEXT STEPS · {open.length}</div>
         {open.length > 0 ? (
           <>
@@ -519,7 +519,7 @@ function WorklistRow({ r, onOpen }: { r: DecoratedStep; onOpen: () => void }) {
       <div className="icon-tile" style={{ background: r.soft, width: 40, height: 40 }}><Icon path={r.iconPath} size={20} stroke={r.color} width={1.9} /></div>
       <div className="grow">
         <div style={{ fontSize: 14.5, fontWeight: 700, color: S.strong }}>{r.name}</div>
-        <div style={{ fontSize: 12, color: S.muted, marginTop: 1 }}>{r.categoryLabel} · {r.detail}</div>
+        <div style={{ fontSize: 12, color: S.muted, marginTop: 1 }}>{r.detail && r.detail !== r.categoryLabel ? `${r.categoryLabel} · ${r.detail}` : r.categoryLabel}</div>
         <div style={{ display: 'flex', gap: 7, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           {r.showOver && <span className="badge" style={{ color: '#fff', background: 'var(--status-danger)' }}>{r.overBadge}</span>}
           {r.isHigh && <span className="badge" style={{ color: '#C35721', background: 'var(--status-warning-soft)' }}>High</span>}
