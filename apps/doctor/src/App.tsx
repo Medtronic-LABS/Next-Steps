@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { CLINIC, trendPath, type DrillKey } from '@next-steps/core';
-import { engine, useEngineSync } from './lib/engine';
+import { CLINIC, trendPath, type DrillKey, type DrillView, type Insights as InsightsData } from '@next-steps/core';
+import { engine, useEngineData, useEngineSync } from './lib/engine';
 import { Icon, PATHS } from './components/icons';
 
 type Screen = 'dash' | 'drill' | 'timeline' | 'insights';
@@ -59,8 +59,10 @@ export default function App() {
 // Dashboard
 // ============================================================================
 function Dashboard({ onOpenDrill }: { onOpenDrill: (k: DrillKey) => void }) {
-  const cards = engine.summaryCards();
-  const attn = engine.heroAttn();
+  const { data: cardsData } = useEngineData(() => engine.summaryCards(), []);
+  const { data: attnData } = useEngineData(() => engine.heroAttn(), []);
+  const cards = cardsData ?? [];
+  const attn = attnData ?? 0;
   return (
     <div style={{ padding: '2px 18px 22px', animation: 'nsFade .2s ease' }}>
       <div style={{ background: 'linear-gradient(135deg,#6165DE,#1E14BE)', borderRadius: 18, padding: '16px 18px', color: '#fff', marginBottom: 16 }}>
@@ -93,8 +95,11 @@ function Dashboard({ onOpenDrill }: { onOpenDrill: (k: DrillKey) => void }) {
 // ============================================================================
 // Drill-down
 // ============================================================================
+const EMPTY_DRILL: DrillView = { title: '', sub: '', rows: [] };
+
 function DrillDown({ drillKey, onBack, onOpenPatient }: { drillKey: DrillKey; onBack: () => void; onOpenPatient: () => void }) {
-  const d = engine.drill(drillKey);
+  const { data } = useEngineData(() => engine.drill(drillKey), [drillKey]);
+  const d = data ?? EMPTY_DRILL;
   return (
     <div style={{ padding: '2px 18px 22px', animation: 'nsFade .2s ease' }}>
       <button className="back-link" onClick={onBack}><Icon path={PATHS.chevLeft} size={17} width={2.2} />Dashboard</button>
@@ -174,8 +179,23 @@ function Timeline({ onBack }: { onBack: () => void }) {
 // ============================================================================
 // Insights
 // ============================================================================
+const EMPTY_INSIGHTS: InsightsData = {
+  completionRate: 0,
+  completionOf: '',
+  prevRate: 0,
+  deltaPts: 0,
+  trend: [],
+  catBars: [],
+  backlogBars: [],
+  referral: { rate: 0, ofLabel: '', medianDays: 0 },
+  followThrough: [],
+  followThroughNote: '',
+};
+
 function Insights({ period, setPeriod }: { period: number; setPeriod: (i: number) => void }) {
-  const ins = engine.insights([7, 30, 90][period]);
+  const periodDays = [7, 30, 90][period];
+  const { data } = useEngineData(() => engine.insights(periodDays), [periodDays]);
+  const ins = data ?? EMPTY_INSIGHTS;
   const t = trendPath(ins.trend);
   const backlogTotal = ins.backlogBars.reduce((a, b) => a + b.value, 0);
   const periods = ['7 days', '30 days', '90 days'];

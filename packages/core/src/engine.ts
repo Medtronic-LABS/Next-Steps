@@ -64,35 +64,35 @@ export interface DrillView {
 
 export interface CoordinationEngine {
   // --- patients ---
-  allPatients(): Patient[];
-  searchPatients(query: string): Patient[];
-  getPatient(id: Id): Patient | undefined;
-  createPatient(input: NewPatient): Patient;
+  allPatients(): Promise<Patient[]>;
+  searchPatients(query: string): Promise<Patient[]>;
+  getPatient(id: Id): Promise<Patient | undefined>;
+  createPatient(input: NewPatient): Promise<Patient>;
 
   // --- capture ---
-  recordVisit(patientId: Id, steps: CaptureInput[]): void;
+  recordVisit(patientId: Id, steps: CaptureInput[]): Promise<void>;
 
   // --- worklist (admin) ---
-  sections(filter: Category | 'all'): WorklistSections;
-  doneRows(): DoneRow[];
-  openTotal(filter: Category | 'all'): number;
-  openStepsForPatient(patientId: Id): DecoratedStep[];
-  getStep(id: Id): WorkStep | undefined;
-  completeStep(id: Id): void;
-  cancelStep(id: Id): void;
-  declineStep(id: Id): void;
+  sections(filter: Category | 'all'): Promise<WorklistSections>;
+  doneRows(): Promise<DoneRow[]>;
+  openTotal(filter: Category | 'all'): Promise<number>;
+  openStepsForPatient(patientId: Id): Promise<DecoratedStep[]>;
+  getStep(id: Id): Promise<WorkStep | undefined>;
+  completeStep(id: Id): Promise<void>;
+  cancelStep(id: Id): Promise<void>;
+  declineStep(id: Id): Promise<void>;
 
   // --- doctor (read-only) ---
-  summaryCards(): SummaryCard[];
-  heroAttn(): number;
-  drill(key: DrillKey): DrillView;
-  insights(periodDays: number): Insights;
+  summaryCards(): Promise<SummaryCard[]>;
+  heroAttn(): Promise<number>;
+  drill(key: DrillKey): Promise<DrillView>;
+  insights(periodDays: number): Promise<Insights>;
 
   // --- device sync state ---
   isOffline(): boolean;
   pending(): number;
   toggleOffline(): void;
 
-  reset(): void;
+  reset(): Promise<void>;
   subscribe(listener: () => void): () => void;
 }

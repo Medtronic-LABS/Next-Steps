@@ -39,6 +39,13 @@ import type {
 
 const STORAGE_KEY = 'next-steps-cce-v3';
 
+/** Simulated CCE network latency (PRD §17 stub mode). */
+const SIMULATED_LATENCY_MS = 200;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** Which worklist bucket a freshly captured, future-dated step lands in. */
 const SECTION_BY_DUE: Record<DueKey, WorklistSection> = {
   '3d': 'soon',
@@ -148,8 +155,10 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     return this.allSteps().filter((w) => !this.isClosed(w.id));
   }
 
-  getStep(id: Id): WorkStep | undefined {
-    return this.allSteps().find((w) => w.id === id);
+  async getStep(id: Id): Promise<WorkStep | undefined> {
+    const result = this.allSteps().find((w) => w.id === id);
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
   }
 
   private countsFor(pid: Id): { open: number; overdue: number } {
@@ -163,27 +172,42 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   // --- patients -----------------------------------------------------------
 
-  allPatients(): Patient[] {
+  private allPatientsSync(): Patient[] {
     return [...this.state.createdPatients, ...PATIENTS].map((p) => this.withCounts(p));
   }
 
-  searchPatients(query: string): Patient[] {
-    const q = query.trim().toLowerCase();
-    const all = this.allPatients();
-    if (!q) return all.slice(0, 6);
-    const digits = q.replace(/\D/g, '');
-    return all.filter((p) => {
-      if (/\d/.test(q)) return digits.length > 0 && p.mobile.replace(/\D/g, '').includes(digits);
-      return p.name.toLowerCase().split(' ').some((t) => t.startsWith(q)) || p.name.toLowerCase().startsWith(q);
-    });
-  }
-
-  getPatient(id: Id): Patient | undefined {
+  private getPatientSync(id: Id): Patient | undefined {
     const p = [...this.state.createdPatients, ...PATIENTS].find((x) => x.id === id);
     return p ? this.withCounts(p) : undefined;
   }
 
-  createPatient(input: NewPatient): Patient {
+  async allPatients(): Promise<Patient[]> {
+    const result = this.allPatientsSync();
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
+  }
+
+  async searchPatients(query: string): Promise<Patient[]> {
+    const q = query.trim().toLowerCase();
+    const all = this.allPatientsSync();
+    const result = !q
+      ? all.slice(0, 6)
+      : all.filter((p) => {
+          const digits = q.replace(/\D/g, '');
+          if (/\d/.test(q)) return digits.length > 0 && p.mobile.replace(/\D/g, '').includes(digits);
+          return p.name.toLowerCase().split(' ').some((t) => t.startsWith(q)) || p.name.toLowerCase().startsWith(q);
+        });
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
+  }
+
+  async getPatient(id: Id): Promise<Patient | undefined> {
+    const result = this.getPatientSync(id);
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
+  }
+
+  async createPatient(input: NewPatient): Promise<Patient> {
     const patient: Patient = {
       id: uid('pat'),
       name: input.name,
@@ -199,14 +223,15 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     this.state.createdPatients = [patient, ...this.state.createdPatients];
     this.bump();
     this.commit();
+    await delay(SIMULATED_LATENCY_MS);
     return patient;
   }
 
   // --- capture ------------------------------------------------------------
 
-  recordVisit(patientId: Id, steps: CaptureInput[]): void {
+  async recordVisit(patientId: Id, steps: CaptureInput[]): Promise<void> {
     if (steps.length === 0) return;
-    const patient = this.getPatient(patientId);
+    const patient = this.getPatientSync(patientId);
     if (!patient) return;
     for (const s of steps) {
       const m = META[s.cat];
@@ -227,11 +252,12 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     }
     this.bump();
     this.commit();
+    await delay(SIMULATED_LATENCY_MS);
   }
 
   // --- worklist -----------------------------------------------------------
 
-  sections(filter: Category | 'all'): WorklistSections {
+  private sectionsSync(filter: Category | 'all'): WorklistSections {
     const pick = (section: WorklistSection): DecoratedStep[] =>
       orderSection(
         this.openSteps()
@@ -247,46 +273,61 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     };
   }
 
-  doneRows(): DoneRow[] {
+  async sections(filter: Category | 'all'): Promise<WorklistSections> {
+    const result = this.sectionsSync(filter);
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
+  }
+
+  async doneRows(): Promise<DoneRow[]> {
     const fromSteps = this.allSteps()
       .filter((w) => this.state.completed[w.id])
       .map((w) => ({ name: w.name, detail: META[w.cat].label }));
-    return [...DONE_BASE, ...fromSteps];
+    const result = [...DONE_BASE, ...fromSteps];
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
   }
 
-  openTotal(filter: Category | 'all'): number {
-    const s = this.sections(filter);
-    return s.overdue.length + s.today.length + s.soon.length + s.unreach.length + s.upcoming.length;
+  async openTotal(filter: Category | 'all'): Promise<number> {
+    const s = this.sectionsSync(filter);
+    const result = s.overdue.length + s.today.length + s.soon.length + s.unreach.length + s.upcoming.length;
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
   }
 
-  openStepsForPatient(patientId: Id): DecoratedStep[] {
-    return this.openSteps()
+  async openStepsForPatient(patientId: Id): Promise<DecoratedStep[]> {
+    const result = this.openSteps()
       .filter((w) => w.pid === patientId)
       .map(decorate);
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
   }
 
-  completeStep(id: Id): void {
+  async completeStep(id: Id): Promise<void> {
     this.state.completed[id] = true;
     this.bump();
     this.commit();
+    await delay(SIMULATED_LATENCY_MS);
   }
 
-  cancelStep(id: Id): void {
+  async cancelStep(id: Id): Promise<void> {
     this.state.closed[id] = true;
     this.bump();
     this.commit();
+    await delay(SIMULATED_LATENCY_MS);
   }
 
-  declineStep(id: Id): void {
+  async declineStep(id: Id): Promise<void> {
     this.state.closed[id] = true;
     this.bump();
     this.commit();
+    await delay(SIMULATED_LATENCY_MS);
   }
 
   // --- doctor -------------------------------------------------------------
 
-  summaryCards(): SummaryCard[] {
-    return CARD_DEFS.map((c) => ({
+  async summaryCards(): Promise<SummaryCard[]> {
+    const result = CARD_DEFS.map((c) => ({
       key: c.key,
       value: DRILL[c.key].rows.filter((id) => !this.isClosed(id)).length,
       label: c.label,
@@ -294,9 +335,11 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       soft: c.soft,
       iconPath: c.iconPath,
     }));
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
   }
 
-  heroAttn(): number {
+  async heroAttn(): Promise<number> {
     const ids = new Set<Id>();
     [...DRILL.overdue.rows, ...DRILL.unreach.rows]
       .filter((id) => !this.isClosed(id))
@@ -304,10 +347,12 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
         const w = WORK.find((x) => x.id === id);
         if (w) ids.add(w.pid);
       });
-    return ids.size;
+    const result = ids.size;
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
   }
 
-  drill(key: DrillKey): DrillView {
+  async drill(key: DrillKey): Promise<DrillView> {
     const d = DRILL[key];
     const rows: DrillRow[] = d.rows
       .filter((id) => !this.isClosed(id))
@@ -328,11 +373,15 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
           delivery: w.delivery === '—' ? 'call step' : w.delivery,
         };
       });
-    return { title: d.title, sub: d.sub, rows };
+    const result = { title: d.title, sub: d.sub, rows };
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
   }
 
-  insights(periodDays: number): Insights {
-    return INSIGHTS_BY_PERIOD[periodDays] ?? INSIGHTS_BY_PERIOD[30];
+  async insights(periodDays: number): Promise<Insights> {
+    const result = INSIGHTS_BY_PERIOD[periodDays] ?? INSIGHTS_BY_PERIOD[30];
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
   }
 
   // --- device sync --------------------------------------------------------
@@ -351,8 +400,9 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     this.commit();
   }
 
-  reset(): void {
+  async reset(): Promise<void> {
     this.state = emptyState();
     this.commit();
+    await delay(SIMULATED_LATENCY_MS);
   }
 }

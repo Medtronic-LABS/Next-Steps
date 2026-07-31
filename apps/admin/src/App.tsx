@@ -16,9 +16,10 @@ import {
   type DueKey,
   type Gender,
   type Patient,
+  type WorklistSections,
   type WorkStep,
 } from '@next-steps/core';
-import { engine, useEngineSync } from './lib/engine';
+import { engine, useEngineData, useEngineSync } from './lib/engine';
 import { Icon, Logo, Whatsapp, PATHS } from './components/icons';
 
 type Screen = 'search' | 'create' | 'patient' | 'capture' | 'saved' | 'worklist';
@@ -57,13 +58,16 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(''), 2200);
   }
 
-  const allP = engine.allPatients();
+  const { data: allPData } = useEngineData(() => engine.allPatients(), []);
+  const allP = allPData ?? [];
+  const { data: openTotalAll } = useEngineData(() => engine.openTotal('all'), []);
   const avatarOf = (p: Patient): [string, string] =>
     avatarFor(Math.max(0, allP.findIndex((x) => x.id === p.id)));
-  const pidOf = (stepId: string) => engine.getStep(stepId)?.pid ?? null;
+  const pidOf = async (stepId: string) => (await engine.getStep(stepId))?.pid ?? null;
 
-  const sel = engine.getPatient(selId) ?? allP[0];
-  const selFirst = sel.name.split(' ')[0];
+  const { data: selPatient } = useEngineData(() => engine.getPatient(selId), [selId]);
+  const sel = selPatient ?? allP[0];
+  const selFirst = sel?.name.split(' ')[0] ?? '';
 
   // ---- navigation ----
   const go = (s: Screen) => { setScreen(s); setSheetPid(null); setSheetStep(null); setCompleting(null); };
@@ -93,13 +97,17 @@ export default function App() {
     });
   const pickGender = (g: Gender) => { setGenderTouched(true); setForm((f) => ({ ...f, gender: g })); };
   const canSaveNew = form.name.trim().length > 0 && form.mobile.replace(/\D/g, '').length === 10;
-  const saveNewPatient = () => {
+  const saveNewPatient = async () => {
     if (!canSaveNew) return;
     const digits = form.mobile.replace(/\D/g, '');
     const mobile = digits.slice(0, 5) + ' ' + digits.slice(5);
     const age = /^\d{4}$/.test(form.yob) ? 2026 - Number(form.yob) : 0;
-    const p = engine.createPatient({ name: form.name.trim(), mobile, gender: form.gender, age, cid: form.cid.trim(), consent });
-    openPatient(p.id);
+    try {
+      const p = await engine.createPatient({ name: form.name.trim(), mobile, gender: form.gender, age, cid: form.cid.trim(), consent });
+      openPatient(p.id);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // ---- capture ----
@@ -109,36 +117,60 @@ export default function App() {
   const setDue = (id: string, due: DueKey) => setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, due } : s)));
   const toggleHigh = (id: string) =>
     setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, priority: s.priority === 'HIGH' ? 'NORMAL' : 'HIGH' } : s)));
-  const saveVisit = () => {
+  const saveVisit = async () => {
     if (!steps.length) return;
-    engine.recordVisit(selId, steps.map((s) => ({ cat: s.cat, dueKey: s.due, priority: s.priority })));
-    setScreen('saved');
+    try {
+      await engine.recordVisit(selId, steps.map((s) => ({ cat: s.cat, dueKey: s.due, priority: s.priority })));
+      setScreen('saved');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // ---- worklist mutations ----
-  const closeAfter = (pid: string | null) => {
+  const closeAfter = async (pid: string | null) => {
     setCompleting(null);
     setSheetStep(null);
-    if (pid && engine.openStepsForPatient(pid).length === 0) setSheetPid(null);
+    if (pid) {
+      const remaining = await engine.openStepsForPatient(pid);
+      if (remaining.length === 0) setSheetPid(null);
+    }
   };
-  const confirmComplete = () => {
+  const confirmComplete = async () => {
     const id = completing!;
-    const pid = pidOf(id);
-    engine.completeStep(id);
-    closeAfter(pid);
-    showToast('Step completed · reminders stopped');
+    try {
+      const pid = await pidOf(id);
+      await engine.completeStep(id);
+      await closeAfter(pid);
+      showToast('Step completed · reminders stopped');
+    } catch (err) {
+      console.error(err);
+    }
   };
-  const terminate = (id: string, decline: boolean) => {
-    const pid = pidOf(id);
-    decline ? engine.declineStep(id) : engine.cancelStep(id);
-    closeAfter(pid);
-    showToast(decline ? 'Marked patient declined' : 'Step cancelled');
+  const terminate = async (id: string, decline: boolean) => {
+    try {
+      const pid = await pidOf(id);
+      decline ? await engine.declineStep(id) : await engine.cancelStep(id);
+      await closeAfter(pid);
+      showToast(decline ? 'Marked patient declined' : 'Step cancelled');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const sheetPatient = sheetPid ? engine.getPatient(sheetPid) ?? null : null;
+  const { data: sheetPatientData } = useEngineData(
+    () => (sheetPid ? engine.getPatient(sheetPid) : Promise.resolve(undefined)),
+    [sheetPid],
+  );
+  const sheetPatient = sheetPatientData ?? null;
   const sheetOpen = !!sheetPid && !sheetStep && !completing;
   const stepSheetOpen = !!sheetStep && !completing;
-  const activeStep = (completing || sheetStep) ? engine.getStep((completing || sheetStep)!) ?? null : null;
+  const activeStepId = completing || sheetStep;
+  const { data: activeStepData } = useEngineData(
+    () => (activeStepId ? engine.getStep(activeStepId) : Promise.resolve(undefined)),
+    [activeStepId],
+  );
+  const activeStep = activeStepData ?? null;
 
   return (
     <div className="screen">
@@ -164,8 +196,8 @@ export default function App() {
             onSave={saveNewPatient}
           />
         )}
-        {screen === 'patient' && <Summary patient={sel} avatar={avatarOf(sel)} onBack={() => go('search')} onStartVisit={startVisit} onOpenStep={(pid, sid) => { setSheetPid(pid); setSheetStep(sid); }} />}
-        {screen === 'capture' && <Capture sel={sel} steps={steps} onBack={() => go('patient')} addStep={addStep} removeStep={removeStep} setDue={setDue} toggleHigh={toggleHigh} />}
+        {screen === 'patient' && sel && <Summary patient={sel} avatar={avatarOf(sel)} onBack={() => go('search')} onStartVisit={startVisit} onOpenStep={(pid, sid) => { setSheetPid(pid); setSheetStep(sid); }} />}
+        {screen === 'capture' && sel && <Capture sel={sel} steps={steps} onBack={() => go('patient')} addStep={addStep} removeStep={removeStep} setDue={setDue} toggleHigh={toggleHigh} />}
         {screen === 'saved' && <Saved firstName={selFirst} count={steps.length} onWorklist={() => go('worklist')} onNext={() => { setQuery(''); go('search'); }} />}
         {screen === 'worklist' && <Worklist filter={filter} setFilter={setFilter} onOpenPatient={(pid) => { setSheetPid(pid); setSheetStep(null); }} />}
       </div>
@@ -186,7 +218,7 @@ export default function App() {
           </button>
           <button className="tab" style={{ color: screen === 'worklist' ? S.blue : S.subtle }} onClick={() => go('worklist')}>
             <Logo size={23} color="currentColor" /><span>Worklist</span>
-            <span className="tab__badge">{engine.openTotal('all')}</span>
+            <span className="tab__badge">{openTotalAll ?? 0}</span>
           </button>
         </nav>
       )}
@@ -197,7 +229,14 @@ export default function App() {
           onClose={() => setSheetPid(null)}
           onDone={(id) => setCompleting(id)}
           onMore={(id) => setSheetStep(id)}
-          onNudge={() => { engine.recordVisit(sheetPatient.id, []); showToast(sheetPatient.consent ? 'WhatsApp nudge sent · Delivered' : 'Opening dialler…'); }}
+          onNudge={async () => {
+            try {
+              await engine.recordVisit(sheetPatient.id, []);
+              showToast(sheetPatient.consent ? 'WhatsApp nudge sent · Delivered' : 'Opening dialler…');
+            } catch (err) {
+              console.error(err);
+            }
+          }}
           onCall={() => showToast('Opening dialler…')}
         />
       )}
@@ -252,7 +291,8 @@ function SyncChip() {
 function Search({ query, setQuery, onOpen, toCreate, avatarOf }: {
   query: string; setQuery: (v: string) => void; onOpen: (id: string) => void; toCreate: () => void; avatarOf: (p: Patient) => [string, string];
 }) {
-  const results = engine.searchPatients(query);
+  const { data } = useEngineData(() => engine.searchPatients(query), [query]);
+  const results = data ?? [];
   const q = query.trim();
   const showCreate = q.length > 0 && results.length === 0;
   return (
@@ -383,7 +423,8 @@ function Create({ form, onField, onPickGender, canSave, consent, setConsent, sho
 function Summary({ patient, avatar, onBack, onStartVisit, onOpenStep }: {
   patient: Patient; avatar: [string, string]; onBack: () => void; onStartVisit: () => void; onOpenStep: (pid: string, sid: string) => void;
 }) {
-  const open = engine.openStepsForPatient(patient.id);
+  const { data } = useEngineData(() => engine.openStepsForPatient(patient.id), [patient.id]);
+  const open = data ?? [];
   return (
     <div style={{ animation: 'nsFade .2s ease' }}>
       <div style={{ background: 'linear-gradient(135deg,#1E14BE,#3A2FD6)', padding: '16px 18px 20px', color: '#fff' }}>
@@ -540,9 +581,13 @@ function SectionHead({ dot, label, count }: { dot: string; label: string; count:
     </div>
   );
 }
+const EMPTY_SECTIONS: WorklistSections = { overdue: [], today: [], soon: [], unreach: [], upcoming: [] };
+
 function Worklist({ filter, setFilter, onOpenPatient }: { filter: Category | 'all'; setFilter: (f: Category | 'all') => void; onOpenPatient: (pid: string) => void }) {
-  const s = engine.sections(filter);
-  const done = engine.doneRows();
+  const { data: sData } = useEngineData(() => engine.sections(filter), [filter]);
+  const { data: doneData } = useEngineData(() => engine.doneRows(), []);
+  const s = sData ?? EMPTY_SECTIONS;
+  const done = doneData ?? [];
   return (
     <div style={{ animation: 'nsFade .2s ease' }}>
       <div style={{ padding: '6px 18px 10px', position: 'sticky', top: 0, background: 'var(--surface-page)', zIndex: 2 }}>
@@ -598,7 +643,8 @@ function PatientSheet({ patient, avatar, onClose, onDone, onMore, onNudge, onCal
   patient: Patient; avatar: [string, string]; onClose: () => void; onDone: (id: string) => void; onMore: (id: string) => void; onNudge: () => void; onCall: () => void;
 }) {
   const [bg, color] = avatar;
-  const steps = engine.openStepsForPatient(patient.id);
+  const { data } = useEngineData(() => engine.openStepsForPatient(patient.id), [patient.id]);
+  const steps = data ?? [];
   return (
     <div className="scrim" onClick={onClose}>
       <div className="sheet nsScroll" onClick={(e) => e.stopPropagation()}>
