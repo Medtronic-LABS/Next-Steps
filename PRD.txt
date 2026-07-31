@@ -1,0 +1,851 @@
+Next Steps
+Product Requirements Document — MVP v1.0
+A lightweight care coordination application that ensures the doctor's intended next steps actually happen
+Field
+Value
+Product
+Next Steps — an OpenPHC application for improving diabetes outcomes
+Version
+1.0 (Engineering Reference)
+Date
+July 2026
+Status
+Draft for architecture, estimation and implementation
+Audience
+Product, engineering, architecture; suitable as direct input to AI-assisted development
+Supersedes
+Product Specification Draft v0.9; MVP PRD v0.9
+Related documents
+Concept Note: Improving Diabetes Outcomes (Koita Foundation / KCDD / Medtronic Labs)
+
+1. Purpose of This Document
+This document is the engineering reference for the Next Steps MVP. It consolidates the agreed product philosophy and MVP decisions (Specification Draft v0.9) and expands them into a complete, implementation-ready specification: detailed workflows with edge cases, a field-level data dictionary, reminder scheduling rules, dashboard metric formulas, state transitions, search and duplicate handling, the OpenPHC/CCE interaction model, API concepts, non-functional requirements, and acceptance criteria for each functional area.
+It deliberately does not contain pixel-perfect UI designs. Screens are specified by content, behaviour and constraints; visual design is left to implementation, guided by the principles in Section 3.
+Requirement identifiers used throughout: FR-A-x (Admin app functional requirements), FR-D-x (Doctor app), FR-S-x (shared/backend), BR-x (business rules), NFR-x (non-functional requirements), AC-x (acceptance criteria). Every requirement is individually testable.
+2. Vision and Problem Statement
+2.1 The problem
+Long-term outcomes for diabetes depend far more on what happens between consultations than during them. Good care requires patients to return for follow-up visits, complete laboratory investigations, consult specialists when required, and receive ongoing support. Over one in six Indian adults lives with diabetes, yet only about 7% have their blood sugar under control. A major, addressable contributor is that the next steps prescribed in a consultation frequently do not happen.
+Existing EMRs and clinic management systems have not solved this for independent diabetology clinics: adoption remains low (roughly 10% of RSSDI members use an EMR/CMS) because these systems demand that clinics digitize registration, appointments, billing and documentation before delivering value. Cost is not the primary barrier; workflow disruption is.
+2.2 The product
+Next Steps digitizes exactly one thing: what should happen after the consultation. Immediately after the doctor sees the patient, the patient meets the clinic administrator, who records the doctor's intended next actions in under a minute. The system then takes responsibility for follow-through: it schedules WhatsApp reminders to the patient, drives a prioritized daily worklist for the administrator, and gives the doctor operational visibility into what has been completed, what remains outstanding, and which patients risk falling through the gaps.
+Next Steps is built on the OpenPHC Care Coordination Engine (CCE) — an open coordination layer based on FHIR and Beckn that tracks structured care commitments and their status. Next Steps stores coordination data only; it is not an EMR and holds no diagnoses, notes, prescriptions or billing data.
+2.3 The hypothesis this MVP tests
+Can a lightweight application, built on open coordination infrastructure and requiring only a minimal change to clinic workflow, meaningfully improve diabetes outcomes by ensuring that the doctor's intended next actions actually happen?
+The MVP will be evaluated through a focused pilot with independent diabetology clinics, in collaboration with the Koita Foundation, KCDD and RSSDI. Success metrics are defined in Section 13.
+3. Product Principles and Guardrails
+What is a Next Step? A Next Step is a single non-clinical care commitment arising from a consultation that requires follow-through after the patient leaves the clinic. It represents an operational commitment—not a clinical record. Every Next Step has one due date, one lifecycle and one outcome. The purpose of the product is to maximize completion of these commitments.
+Design Philosophy 
+• Capture should take under 60 seconds.
+• Search before create.
+• Every additional field must justify its existence.
+• Never collect clinical information.
+• Every screen should reduce care gaps.
+• Coordination, not documentation.
+• Defaults over configuration.
+• Administrator training should take less than 15 minutes.
+3.1 Core principles
+	•	Solve exactly one problem: post-consultation coordination. Every feature must improve completion of Next Steps.
+	•	Do not change the doctor's workflow. The doctor's only new behaviour is glancing at a dashboard.
+	•	The administrator is the primary user. The capture and worklist experience is optimized for them.
+	•	Collect only the minimum information needed. Name and mobile are the only mandatory patient fields.
+	•	Capture coordination, not clinical documentation. No diagnoses, notes, prescriptions, results or billing — anywhere in the system.
+	•	Give doctors operational visibility, not more documentation. The doctor app is read-only.
+	•	Privacy by design. Data minimization, encryption, role-based access, audit trail, consent.
+	•	Keep the product simple. Offline capture stays simple: create-and-sync, never collaborative editing.
+3.2 Scope-creep guardrails
+The biggest risk to this product is scope creep. Next Steps must not evolve into an EMR, clinic management system, appointment system, billing system, disease management platform, or AI clinical assistant. Every future feature request is evaluated against a single test: does it directly improve the completion of Next Steps? If not, it is out of scope.
+3.3 Language and framing guardrails
+All product copy, dashboard labels and documentation use care-journey language: "follow-through", "completion", "care gaps", "patients needing attention". The subject of every metric is the patient's care — never a person's performance. The product must not position itself as a clinic performance, practice management, or provider evaluation tool. In particular, referral tracking is framed strictly as supporting patients through referrals; the system never ranks, scores or compares individual specialists (BR-019).
+4. Scope
+4.1 In scope (MVP)
+	•	Two lightweight standalone Android applications: an Admin app (capture, worklist, WhatsApp reminders) and a Doctor app (read-only dashboards).
+	•	Patient search-before-create; lightweight patient creation with WhatsApp consent capture.
+	•	Automatic visit creation anchored to the consultation.
+	•	Capture of one or more Next Steps per visit across five categories.
+	•	Automatic reminder scheduling and delivery to patients via WhatsApp; manual nudges from the worklist.
+	•	Prioritized administrator worklist with completion tracking.
+	•	Doctor operational dashboards: patient follow-through and aggregated care completion insights.
+	•	Offline capture with automatic sync; server as source of truth; duplicate flagging.
+	•	Coordination event emission to the OpenPHC Care Coordination Engine (via an adapter that may be stubbed for the pilot).
+4.2 Explicitly out of scope
+EMR; clinical notes; diagnosis; prescriptions; lab results; billing; appointment scheduling; inventory; laboratory management; telemedicine; clinical decision support; population analytics; a patient-facing app; multi-clinic administration; deferred entry after the patient leaves (future — the data model allows it, see Section 21); duplicate-patient merge (future — duplicates are flagged only).
+5. Users and Personas
+Role
+App
+Description and goals
+Clinic Administrator (primary user)
+Admin app
+Front-desk staff member who meets every patient after consultation. Goals: record next steps in under a minute while the patient is present; work through the daily worklist; contact patients; mark items complete. Comfortable with WhatsApp and basic Android use; may work in low-connectivity conditions.
+Doctor
+Doctor app
+Independent diabetologist. Goals: see at a glance which patients need attention, what is overdue, and whether follow-through in the practice is improving. Read-only; must require zero data entry.
+Super Admin
+Admin app (settings area)
+Typically the doctor or practice owner. Goals: one-time clinic setup — doctors, users, reminder schedule, message templates, language. Not a daily workflow.
+Patient
+None (WhatsApp recipient)
+Receives reminders and nudges on WhatsApp. Never installs an app. Must be able to opt out at any time.
+MVP assumption: one clinic per deployment, one or more doctors per clinic, one or more administrators. A user belongs to exactly one clinic and holds exactly one role.
+6. System Overview
+Doctor → Administrator → Next Steps Admin app → Backend services → Reminder engine → WhatsApp → Patient; Backend → Doctor app dashboards; Backend → CCE adapter → OpenPHC CCE (coordination events only).
+6.1 Components
+Component
+Responsibility
+Admin Android app
+Offline-first capture (patient, visit, next steps), worklist, completion, manual WhatsApp nudges, sync status. Local encrypted store (Room/SQLite) plus background sync (WorkManager).
+Doctor Android app
+Read-only dashboards: patient follow-through and care completion insights. Online-first with cached last-known snapshot for offline viewing.
+Backend API
+Logical services: Patient, Visit, NextStep, Reminder, Dashboard, Notification, Sync, CCE Adapter (Section 17). REST/JSON over TLS. Server is source of truth.
+Reminder engine
+Evaluates due dates against the reminder matrix (Section 12), generates Reminder records, hands them to the Notification service, tracks delivery status, stops on terminal states.
+Notification service (WhatsApp)
+Sends approved WhatsApp Business API template messages via a BSP (business solution provider); records delivery callbacks (sent/delivered/read/failed); honours opt-out.
+CCE adapter
+Translates Next Step lifecycle changes into coordination events for OpenPHC CCE (FHIR Task-based). Isolates the app from CCE specifics; can run in stub mode for the pilot.
+6.2 Architectural principles
+	•	Offline-first for the admin capture path; everything else assumes connectivity with graceful degradation.
+	•	Client-generated UUIDs for all records created offline; idempotent sync (Section 15).
+	•	Server is the single source of truth after successful sync (BR-010).
+	•	Dashboard metrics are derived exclusively from Next Step state — never from clinical data (BR-018).
+	•	The two apps share no local data; they communicate only through the backend.
+7. Core Workflow
+The product is optimized for one workflow. Everything else supports it.
+#
+Step
+Actor / system behaviour
+1
+Consultation ends
+Doctor tells the patient the intended next actions (verbally, as today). No app interaction.
+2
+Patient meets administrator
+Administrator opens the Admin app; it opens directly on the search screen.
+3
+Search patient
+By mobile, name, or clinic patient ID. Search-first is mandatory (BR-001).
+4
+Found / not found
+If found, continue. If not found, create a lightweight patient (name + mobile mandatory; consent prompt).
+5
+Visit auto-created
+Visit is created with current date/time, the selected doctor, and the administrator's identity (BR-002). Backdating is an exception flow (BR-003).
+6
+Record Next Steps
+One or more steps: category, due date (quick picks), optional detail and priority. Target: under 60 seconds total.
+7
+Save
+Steps saved (locally if offline). Reminders are scheduled automatically. A coordination event is queued for CCE.
+8
+Patient leaves
+Optionally, a confirmation WhatsApp summarizing next steps is sent immediately (clinic-configurable).
+9
+System reminds
+Reminder engine sends WhatsApp messages per the schedule matrix until the step reaches a terminal state.
+10
+Administrator works the list
+Daily prioritized worklist: contact patients, send nudges, mark complete/cancelled/declined, record unreachable attempts, reschedule.
+11
+Doctor reviews
+Doctor app shows follow-through status and aggregated completion insights.
+7.1 Edge cases the workflow must handle
+	•	Duplicate patient: creating a patient whose mobile matches an existing record triggers a warning with the existing record shown; the administrator may open the existing patient or knowingly proceed (flagged for review). (Section 10 of the data model; BR-008.)
+	•	Shared mobile number: multiple family members may share one phone. Duplicate warning must allow legitimate proceed; reminders address the patient by name.
+	•	Wrong phone number: administrator can correct the mobile from the patient record; pending reminders re-target automatically; the change is audited.
+	•	Unreachable patient: repeated delivery failures or no-response mark the step 'unreachable attempts: n'; after the configured threshold the patient surfaces in the Unreachable worklist section (Section 12.4).
+	•	Patient refuses an action: status Patient Declined (terminal); reminders stop; the item is visible to the doctor.
+	•	Offline capture: steps 3–7 work fully offline against the cached patient index; records sync automatically when connectivity returns (Section 15).
+	•	Sync failure: exponential-backoff retries; persistent failure surfaces a visible sync-error state; nothing is silently lost.
+	•	Cancellation: a step created in error can be cancelled with a reason while not completed; completed steps are immutable (BR-007).
+	•	Reminder failure: failed WhatsApp delivery is retried once, then recorded; the worklist shows delivery failures so the administrator can call instead.
+	•	Multiple steps, independent lifecycles: each Next Step from a visit has its own due date, reminders and status (BR-004, BR-005).
+8. Functional Requirements — Admin App
+8.1 Authentication and clinic context (FR-A-1)
+	•	FR-A-1.1 Users sign in with clinic-issued credentials (username + password) over TLS; a successful login stores an auth token securely (Android Keystore).
+	•	FR-A-1.2 After first login the app requires a 4-digit PIN (or device biometric) for subsequent unlocks, so daily use never requires typing a password.
+	•	FR-A-1.3 Offline unlock with PIN is permitted for up to 7 days since last successful online authentication; beyond that, online re-authentication is required.
+	•	FR-A-1.4 The app is bound to exactly one clinic; all records carry the clinic ID implicitly.
+	•	FR-A-1.5 Session actions record the acting user for audit (Section 16.4).
+8.2 Patient search (FR-A-2)
+	•	FR-A-2.1 The app opens directly on a single search field. Search runs against the locally cached patient index and, when online, the server (merged results, local first).
+	•	FR-A-2.2 Input is auto-detected: all digits → mobile search (exact match, and prefix match from 4+ digits); otherwise name search (case-insensitive, starts-with on each name token); an explicit toggle allows clinic-ID search.
+	•	FR-A-2.3 Results render within 2 seconds and show: name, masked mobile (e.g. 98•••••210), gender/age if available, clinic ID if available, and last visit date.
+	•	FR-A-2.4 Selecting a result opens the patient summary: identity fields, open Next Steps, recent visits, and a primary button 'New Visit + Next Steps'.
+	•	FR-A-2.5 If no results, a prominent 'Create new patient' action appears, pre-filling whatever was typed (mobile or name). Search-before-create is enforced: the create screen is reachable only via a search (BR-001).
+8.3 Patient creation (FR-A-3)
+	•	FR-A-3.1 Mandatory fields: full name; mobile number. Optional: ABHA ID (if available); clinic patient ID; gender (Male / Female / Other / Prefer not to say); age or year of birth (single control storing yearOfBirth, with age converted at entry).
+	•	FR-A-3.2 Mobile validation: 10 digits, normalized and stored as E.164 (+91XXXXXXXXXX). Non-Indian numbers are out of scope for MVP and rejected with a clear message.
+	•	FR-A-3.3 WhatsApp consent: a consent prompt is part of patient creation — the administrator asks the patient and records Yes/No; the timestamp and acting user are stored. If No, no WhatsApp messages are ever sent; coordination continues via phone calls from the worklist. Consent can be changed later from the patient record (audited). See Section 16.3.
+	•	FR-A-3.4 Duplicate check: on save, if the mobile matches an existing patient (server-side when online; local cache when offline), a warning shows the existing record(s) with name and last visit. Options: 'Use existing' (opens it) or 'Create anyway' (e.g. family member sharing a phone) — the new record is flagged possibleDuplicate for later review (BR-008).
+	•	FR-A-3.5 No address, diagnosis, HbA1c, prescriptions, history or notes fields exist anywhere on the form (BR-017).
+	•	FR-A-3.6 Patient identity fields (name, mobile, gender, yearOfBirth, clinicPatientId, consent) are editable later by an administrator; every change is audited.
+8.4 Visit creation (FR-A-4)
+	•	FR-A-4.1 Starting 'New Visit + Next Steps' creates a visit with visitDateTime = now, doctor = the clinic's default doctor (auto-selected when the clinic has one doctor; otherwise the administrator picks from a short list, defaulting to the last-used), createdBy = current user.
+	•	FR-A-4.2 The date/time is displayed but not editable in the normal flow. A small link — 'Visit was on an earlier date' — opens a date picker limited to the past 30 days (BR-003). Backdated visits are marked isBackdated = true.
+	•	FR-A-4.3 A visit cannot be saved without at least one Next Step; an abandoned capture creates nothing.
+	•	FR-A-4.4 The visit stores no clinical information of any kind.
+8.5 Next Steps capture (FR-A-5)
+Design target: a typical capture (search → save) completes in under 60 seconds, with at most 5 taps per Next Step.
+	•	FR-A-5.1 Categories are presented as large tappable chips: Follow-up Visit, Lab Investigation, Specialist Referral, Follow-up Phone Call, Other Clinic Action. Tapping a chip adds a step of that category to the visit; multiple steps of the same category are allowed.
+	•	FR-A-5.2 Due date is mandatory for every step (BR-005) and is chosen via quick picks — 3 days, 1 week, 2 weeks, 1 month, 3 months, custom date — with a category-specific default (configurable; initial defaults: Follow-up Visit 1 month; Lab Investigation 1 week; Specialist Referral 2 weeks; Phone Call 3 days; Other 1 week).
+	•	No investigation catalogue is maintained in the MVP. The system records only whether a laboratory investigation was requested.
+	•	FR-A-5.4 Optional priority flag: Normal (default) or High. High affects worklist ordering and adds one extra overdue reminder (Section 12).
+	•	FR-A-5.5 A review strip shows all steps added to the visit with category, detail and due date; each can be edited or removed before save.
+	•	FR-A-5.6 Save persists visit + steps atomically (locally when offline), schedules reminders (or queues scheduling for sync), queues the CCE event, and returns to search with a success toast — ready for the next patient.
+	•	FR-A-5.7 If clinic setting sendVisitSummary is on and the patient has consent, saving triggers an immediate WhatsApp visit-summary message listing the recorded next steps and dates (template T-0, Section 12.5).
+8.6 Administrator worklist (FR-A-6)
+	•	FR-A-6.1 The worklist is the app's second tab and the administrator's daily home. It groups open Next Steps into sections, in this order: Overdue, Due today, Due soon (next 7 days), Unreachable, Completed today (collapsed).
+	•	FR-A-6.2 Filter chips narrow any section by category: Follow-ups, Investigations, Referrals, Calls, Other.
+	•	FR-A-6.3 Ordering within sections (BR-014): Overdue — High priority first, then most days overdue first. Due today / Due soon — High priority first, then earliest due date, then patient name. Unreachable — most failed attempts first.
+	•	FR-A-6.4 Each row shows patient name, masked mobile, category icon, detail summary, due date with overdue-days badge, priority badge, last reminder delivery status, and unreachable-attempt count.
+	•	FR-A-6.5 Row actions: Mark complete (Section 8.7); Send WhatsApp nudge (Section 8.8); Call (opens the phone dialler with the number — the app never records calls); Log contact attempt (increments attempts with outcome: no answer / switched off / wrong number / call back later); Reschedule due date (with reason; audited; permitted while not terminal); Cancel (reason mandatory); Patient declined (reason optional).
+	•	FR-A-6.6 Counts per section appear as badges; the worklist refreshes on open, on pull-to-refresh, and after any action. Overdue evaluation is computed on load and by a daily server job (Section 11.3).
+	•	FR-A-6.7 The worklist is available offline against last-synced data, clearly labelled with its last-refreshed time; actions taken offline queue for sync.
+8.7 Completion tracking (FR-A-7)
+	•	FR-A-7.1 'Mark complete' opens a dialog: completion date (default today; cannot precede the visit date or be in the future), optional completion note (≤200 chars, non-clinical), confirm.
+	•	FR-A-7.2 Completion sets status = Completed, records completedBy and completedDate, cancels all pending reminders, updates dashboards, emits a CCE completion event.
+	•	FR-A-7.3 Completed steps are immutable and can never be deleted (BR-007). A completion made in error is corrected by an audited 'Reopen' action available for 48 hours to the same clinic's users; reopening restores the prior state and reinstates applicable reminders.
+	•	FR-A-7.4 Every status change appends to the step's history: timestamp, actor, from-status, to-status, reason/note (Section 11).
+8.8 WhatsApp interface (FR-A-8)
+	•	FR-A-8.1 Automated reminders are sent by the backend via the WhatsApp Business API using pre-approved template messages (Section 12.5). The Admin app itself does not send automated messages.
+	•	FR-A-8.2 Manual nudge: from any worklist row or patient screen, 'Send WhatsApp nudge' shows the rendered template (patient name, clinic name, action, due date) in the clinic's configured language; the administrator taps Send; the backend dispatches it and the delivery status appears on the row. Manual nudges are rate-limited to one per step per day (BR-015).
+	•	FR-A-8.3 Fallback mode (clinic-configurable, and automatic if the WhatsApp Business API is unavailable): the nudge button opens WhatsApp on the administrator's device via a wa.me deep link with the message text pre-filled from the same template; the app records 'nudge initiated (manual)' without delivery tracking. This keeps the pilot functional before/without full API onboarding.
+	•	FR-A-8.4 Messages are sent only to consented patients; opt-out (patient replies STOP, or administrator records withdrawal) immediately blocks all sending to that patient and surfaces 'no-WhatsApp' on their rows (Section 16.3).
+	•	FR-A-8.5 Message templates are configurable per clinic in the settings area (Super Admin), within the constraint that WhatsApp requires template pre-approval; MVP ships with the default template set in English, Hindi and Kannada; the clinic selects one default language, overridable per patient.
+	•	FR-A-8.6 Delivery statuses tracked per reminder: Queued → Sent → Delivered → Read (where available) / Failed. Failures are retried once after 30 minutes, then recorded as Failed and reflected in the worklist.
+8.9 Offline capture (FR-A-9)
+	•	FR-A-9.1 Fully functional offline: search cached patients, create patient, create visit, record next steps, save locally, log worklist actions.
+	•	FR-A-9.2 Not available offline: sending WhatsApp messages via API (queued), server search, dashboard freshness. Deep-link fallback nudges (FR-A-8.3) work offline-of-backend if the device has any connectivity for WhatsApp itself.
+	•	FR-A-9.3 A persistent, unobtrusive sync indicator shows: synced / n records pending / sync error. Details list pending records; manual 'Sync now' is available.
+	•	FR-A-9.4 Sync is automatic on connectivity, app foreground, and every 15 minutes in the background (Section 15).
+9. Functional Requirements — Doctor App
+The Doctor app is read-only. It requires zero data entry beyond login and filter taps. All content derives exclusively from Next Step coordination state (BR-018). Framing follows Section 3.3: patient care follow-through, never provider performance.
+9.1 Authentication (FR-D-1)
+	•	FR-D-1.1 Doctor-role login, same mechanism as FR-A-1; PIN/biometric unlock. A doctor sees only their own clinic; where a clinic has multiple doctors, the doctor sees the whole clinic's data with a 'My patients' filter (patients whose most recent visit is theirs).
+9.2 Patient follow-through dashboard (FR-D-2)
+	•	FR-D-2.1 Summary cards with counts, each tapping through to a list: Patients needing attention (any overdue or unreachable step), Overdue next steps, Investigations pending, Referrals pending, Unreachable patients, Lost to follow-up (definition in Section 13).
+	•	FR-D-2.2 Drill-down lists show patient name, the step (category, detail, due date, days overdue), reminder delivery status and attempt count. Rows are informational; the only action is viewing the patient timeline.
+	•	FR-D-2.3 Patient timeline: reverse-chronological visits, each with its Next Steps and their current status and history — coordination data only.
+	•	FR-D-2.4 Data freshness: online-first with pull-to-refresh; the last-synced snapshot is viewable offline and clearly timestamped.
+9.3 Care completion insights (FR-D-3)
+A second tab giving the doctor a simple operational view of what happens after consultations — aggregated, trend-oriented, and derived purely from commitment data. Metric formulas are normative in Section 13.
+	•	FR-D-3.1 Follow-through trends: completion rate overall and per category (follow-ups, investigations, referrals, calls) for the selected period, with the previous period alongside for comparison; a simple weekly trend line; count of patients lost to follow-up.
+	•	FR-D-3.2 What's ahead / what's overdue: upcoming due load for the next 14 days (per day counts) and the overdue backlog aged in buckets (1–7, 8–30, 31–90, 90+ days).
+	•	FR-D-3.3 Referral completion: referral completion rate and median days-to-completion for the period, split by specialty only. This view supports patients through referrals; it must not display, rank or compare named individual specialists (BR-019).
+	•	FR-D-3.4 Reminder reach: reminders sent, delivered, read (where available) and failed for the period; count of no-consent patients — so the doctor understands coverage of the nudging channel.
+	•	FR-D-3.5 Filters: period (last 7 / 30 / 90 days; default 30) and category. Insights render from server-side aggregates; no clinical inputs exist anywhere.
+10. Data Model and Data Dictionary
+Four core entities carry the product: Patient identifies, Visit anchors, Next Step is the central object, Reminder prompts. Supporting entities cover configuration, messaging, sync and audit. All IDs are UUIDv4, client-generated for offline-created records (Section 15). All timestamps are stored UTC (ISO-8601) and rendered in the clinic's timezone (default Asia/Kolkata). Fields marked * are mandatory.
+10.1 Patient
+Field
+Type
+Req
+Purpose
+patientId
+UUID
+*
+Primary identifier; client-generated when created offline.
+clinicId
+UUID
+*
+Owning clinic; implicit from app context.
+fullName
+string ≤100
+*
+Display and name search.
+mobileE164
+string
+*
+Primary contact and duplicate-detection key (BR-008); normalized +91 format.
+clinicPatientId
+string ≤30
+
+The clinic's own paper-file/registration number, for search continuity.
+gender
+enum M/F/O/U
+
+Optional demographic; U = prefer not to say.
+yearOfBirth
+int 1900–now
+
+Stored instead of age; age derived for display.
+whatsappConsent
+bool
+*
+Whether WhatsApp messages may be sent; default false until captured.
+consentUpdatedAt / consentUpdatedBy
+timestamp / UUID
+
+Audit of the consent decision (Section 16.3).
+preferredLanguage
+enum en/hi/kn
+
+Overrides clinic default for message templates.
+possibleDuplicateOf
+UUID
+
+Set when created via 'Create anyway' against a mobile match; reviewed later.
+createdAt / createdBy / updatedAt
+timestamps / UUID
+*
+Provenance.
+lastVisitAt
+timestamp
+
+Denormalized for search results and lost-to-follow-up computation.
+10.2 Visit
+Field
+Type
+Req
+Purpose
+visitId
+UUID
+*
+Primary identifier.
+patientId
+UUID
+*
+The patient seen.
+doctorId
+UUID
+*
+The consulting doctor (User with role Doctor).
+visitDateTime
+timestamp
+*
+Defaults to now (BR-002).
+isBackdated
+bool
+*
+True when the exception flow was used (BR-003).
+createdBy / createdAt
+UUID / timestamp
+*
+The administrator who recorded it, and when.
+A visit contains no clinical fields by design; adding any is a guardrail violation (BR-017). The visit exists to anchor Next Steps and to timestamp the consultation for metrics.
+10.3 Next Step (central object)
+Field
+Type
+Req
+Purpose
+nextStepId
+UUID
+*
+Primary identifier.
+visitId
+UUID
+*
+Anchoring visit; exactly one (BR-006).
+patientId
+UUID
+*
+Denormalized for worklist and dashboard queries.
+category
+enum
+*
+FOLLOW_UP_VISIT | LAB_INVESTIGATION | SPECIALIST_REFERRAL | FOLLOW_UP_CALL | OTHER.
+detailItems
+string[]
+
+Selected catalogue items (investigations) — codes from the clinic catalogue.
+detailText
+string ≤200
+
+Free-text detail; explicitly non-clinical (helper text enforced in UI).
+referralSpecialty
+enum/code
+
+Required detail when category = SPECIALIST_REFERRAL; from configurable specialty list.
+referralDestination
+string ≤100
+
+Optional free-text destination to help the patient/administrator; never aggregated per specialist (BR-019).
+dueDate
+date
+*
+Exactly one per step (BR-005).
+priority
+enum NORMAL/HIGH
+*
+Default NORMAL; affects ordering and one extra overdue reminder.
+status
+enum
+*
+CREATED | SCHEDULED | COMPLETED | CANCELLED | DECLINED (Section 11). Overdue is derived, not stored as status.
+isOverdue / daysOverdue
+bool / int
+*
+Derived flags recomputed daily and on read (Section 11.3).
+unreachableAttempts
+int
+*
+Failed contact attempts logged from the worklist; drives the Unreachable section.
+completedDate / completedBy
+date / UUID
+
+Set on completion; immutable thereafter (BR-007).
+completionNote / cancelReason / declineReason
+string ≤200
+
+Context for terminal states; cancelReason mandatory on cancel (BR-013).
+rescheduleCount
+int
+*
+Number of due-date changes; each change audited with reason.
+createdBy / createdAt / updatedAt
+UUID / timestamps
+*
+Provenance.
+history
+StatusChange[]
+*
+Append-only: at, byUser, fromStatus, toStatus, reason (Section 11.4).
+10.4 Reminder
+Field
+Type
+Req
+Purpose
+reminderId
+UUID
+*
+Primary identifier.
+nextStepId
+UUID
+*
+The step this reminder serves.
+kind
+enum
+*
+VISIT_SUMMARY | ADVANCE | DUE_TOMORROW | DUE_TODAY | OVERDUE | MANUAL_NUDGE.
+channel
+enum
+*
+WHATSAPP (MVP); model allows SMS/IVR later.
+templateCode / language
+string / enum
+*
+Which approved template and language was used (Section 12.5).
+scheduledAt / sentAt
+timestamps
+*/-
+Planned vs actual dispatch.
+deliveryStatus
+enum
+*
+QUEUED | SENT | DELIVERED | READ | FAILED | SUPPRESSED (no consent/opt-out).
+failureReason
+string
+
+BSP error code for diagnostics.
+10.5 Supporting entities (summary)
+Entity
+Key fields and purpose
+Clinic
+clinicId, name, timezone (default Asia/Kolkata), defaultLanguage, sendVisitSummary flag, reminderScheduleConfig (JSON per category), quietHours, unreachableThreshold (default 3), lostToFollowUpDays (default 30), whatsappMode (API | DEEPLINK).
+User
+userId, clinicId, role (ADMIN | DOCTOR | SUPER_ADMIN), fullName, username, credential hash, active flag. One role per user.
+InvestigationCatalogueItem / SpecialtyItem
+code, label (per language), active — clinic-editable lists seeding FR-A-5.3.
+MessageTemplate
+templateCode, kind, language, approved body with placeholders {patientName}, {clinicName}, {action}, {dueDate}; WhatsApp approval status.
+CoordinationEvent (outbox)
+eventId, nextStepId, eventType (CREATED | STATUS_CHANGED | COMPLETED | CANCELLED), payload, dispatchStatus — the CCE outbox (Section 17).
+AuditLog
+at, actorUserId, entityType, entityId, action, before/after summary (Section 16.4).
+SyncQueueItem (client-side)
+localId, entityType, payloadHash, attemptCount, lastError — the device's pending-upload queue (Section 15).
+11. Next Step Status Lifecycle
+11.1 Stored statuses and derived flags
+Five stored statuses: CREATED (saved, reminders not yet scheduled — a transient state, e.g. offline pending sync), SCHEDULED (reminders scheduled; the normal open state), COMPLETED, CANCELLED, DECLINED (patient declined). Terminal states: COMPLETED, CANCELLED, DECLINED.
+Overdue is a derived flag, not a stored status (isOverdue = dueDate < today AND status is not terminal). 'Reminder sent' is likewise observable from Reminder records rather than being a status. This keeps the state machine small and the metrics unambiguous.
+11.2 Transition table
+From
+To
+Trigger
+Rules
+— (new)
+CREATED
+Administrator saves the visit
+Due date mandatory; history entry appended.
+CREATED
+SCHEDULED
+Reminder engine schedules reminders (on sync/save)
+Automatic; suppressed reminders (no consent) still yield SCHEDULED.
+CREATED / SCHEDULED
+COMPLETED
+Administrator marks complete
+Completion date ≥ visit date, ≤ today; pending reminders cancelled; CCE event.
+CREATED / SCHEDULED
+CANCELLED
+Administrator cancels
+Reason mandatory (BR-013); pending reminders cancelled; CCE event.
+CREATED / SCHEDULED
+DECLINED
+Administrator records patient refusal
+Reason optional; reminders cancelled; visible on doctor dashboard.
+COMPLETED
+SCHEDULED
+'Reopen' within 48h (error correction)
+Audited; reminders reinstated where still future-dated (FR-A-7.3).
+Any terminal
+any other
+—
+Rejected. Illegal transitions return a validation error and are logged.
+11.3 Overdue evaluation
+A daily server job at 00:30 clinic time recomputes isOverdue/daysOverdue for all open steps; clients also compute the flags on read so offline worklists stay correct. Crossing into overdue triggers the overdue reminder sequence (Section 12) and dashboard updates.
+11.4 History
+Every transition, reschedule, consent change and reopen appends an immutable history record {at, byUser, fromStatus, toStatus, reason}. History is visible in the patient timeline (both apps) and is never editable.
+12. Reminder Engine and WhatsApp Integration
+12.1 Scheduling matrix
+Schedules are configurable per clinic and per category; the matrix below is the shipped default. Reminders whose computed time is already in the past at scheduling time are skipped, except DUE_TODAY which sends immediately if scheduled on the due date.
+Category
+T−7 days
+T−1 day
+Due day (10:00)
+Overdue +2 days
+Overdue +7 days
+Follow-up Visit
+Yes
+Yes
+Yes
+Yes
+Yes
+Lab Investigation
+If lead ≥ 10d
+Yes
+Yes
+Yes
+Yes
+Specialist Referral
+If lead ≥ 10d
+Yes
+Yes
+Yes
+Yes
+Follow-up Phone Call*
+—
+—
+Worklist only
+Worklist only
+—
+Other Clinic Action
+—
+Yes
+Yes
+Yes
+—
+* Phone-call steps remind the administrator via the worklist, not the patient via WhatsApp. High-priority steps add one extra overdue reminder at +14 days. Maximum three overdue reminders per step; after that, follow-through is worklist-driven only.
+12.2 Sending rules
+	•	Quiet hours: messages dispatch only between 09:00 and 19:00 clinic time; out-of-window sends roll to the next window (BR-016).
+	•	De-duplication: at most one automated reminder per Next Step per day; manual nudges are additionally capped at one per step per day (BR-015).
+	•	Terminal stop: COMPLETED, CANCELLED, DECLINED and opt-out cancel all pending reminders immediately (BR-012).
+	•	Rescheduling a due date cancels unsent reminders and regenerates the schedule from the new date.
+	•	No consent → reminders are created as SUPPRESSED for auditability, and nothing is sent.
+12.3 Delivery pipeline
+Reminder engine (due evaluation, hourly) → Notification service → WhatsApp Business API via BSP → delivery webhooks update deliveryStatus (SENT → DELIVERED → READ / FAILED). One retry 30 minutes after failure; terminal failures surface in the worklist row. In DEEPLINK mode (FR-A-8.3), automated sends are disabled and all nudging is manual from the worklist — the pilot can begin this way before WhatsApp Business API onboarding completes.
+12.4 Unreachable handling
+unreachableAttempts increments on: logged failed contact attempts (FR-A-6.5) and terminal WhatsApp delivery failures. When attempts ≥ clinic threshold (default 3), the step surfaces in the Unreachable worklist section and the patient counts toward the doctor's Unreachable card. Any successful contact (logged outcome 'reached' or step completion) resets the counter.
+12.5 Message templates (shipped set, per language en/hi/kn)
+Code
+Kind
+Content (English rendering)
+T-0
+Visit summary
+Hello {patientName}, thank you for visiting {clinicName} today. Your next steps: {actionList}. We will remind you before each date. Reply STOP to opt out.
+T-1
+Advance (T−7/T−1)
+Hello {patientName}, a reminder from {clinicName}: {action} is due on {dueDate}. Please plan for it.
+T-2
+Due today
+Hello {patientName}, {action} is due today. — {clinicName}
+T-3
+Overdue
+Hello {patientName}, {action} was due on {dueDate} and is still pending. Please contact {clinicName} if you need help.
+T-4
+Manual nudge
+Hello {patientName}, this is {clinicName}. A gentle reminder about: {action} (due {dueDate}). Please let us know if you have completed it or need assistance.
+Templates never mention diagnosis or clinical content; {action} renders category + non-clinical detail only (e.g. 'HbA1c blood test'). All templates require WhatsApp pre-approval; template management is a Super Admin function.
+13. Dashboard Metric Definitions
+Normative formulas. Every metric derives solely from Next Step coordination state (BR-018). 'Period' means the doctor-selected window (7/30/90 days); a step belongs to a period by its due date unless stated otherwise. Percentages display with denominators (e.g. '78% (46 of 59)') so small numbers are never misleading.
+Metric
+Definition (numerator / denominator / window)
+Completion rate (overall and per category)
+Steps with status COMPLETED ÷ steps with dueDate in period and status not CANCELLED. DECLINED counts in the denominator (a declined action is uncompleted care); CANCELLED (entry error) is excluded.
+On-time completion rate
+COMPLETED with completedDate ≤ dueDate ÷ same denominator as above.
+Median days to completion
+Median of (completedDate − visitDate) over steps completed in the period, per category; referrals also split by specialty.
+Overdue next steps
+Count of open steps with isOverdue = true, as of now (snapshot, not period-bound); aged buckets 1–7 / 8–30 / 31–90 / 90+ days.
+Patients needing attention
+Distinct patients having ≥1 overdue or unreachable open step (snapshot).
+Unreachable patients
+Distinct patients having ≥1 open step with unreachableAttempts ≥ clinic threshold (snapshot).
+Lost to follow-up
+Distinct patients where every open step is ≥ lostToFollowUpDays overdue (default 30) AND unreachableAttempts ≥ threshold on the most recent of them, AND no visit since. Default proposal — pilot-configurable and listed as an open question (Section 20).
+Upcoming load
+Count of open steps with dueDate in the next 14 days, per day.
+Referral completion rate
+As completion rate, category = SPECIALIST_REFERRAL, split by specialty only — never by named destination (BR-019).
+Reminder reach
+Reminders SENT/DELIVERED/READ/FAILED in period; consent coverage = consented patients ÷ patients with ≥1 open step.
+Administrator throughput (admin worklist header only)
+Steps moved to a terminal state today ÷ steps that were actionable today. Not shown in the doctor app — follow-through, not staff performance (Section 3.3).
+14. Business Rules (Consolidated)
+ID
+Rule
+BR-001
+Always search before creating a patient; the create screen is reachable only via a search.
+BR-002
+Visit date/time defaults to the current timestamp and is not edited in the normal flow.
+BR-003
+Backdating a visit is an exception flow, limited to the past 30 days, and marks the visit isBackdated.
+BR-004
+One visit may contain multiple Next Steps; each has an independent lifecycle.
+BR-005
+Every Next Step has exactly one mandatory due date.
+BR-006
+Every Next Step belongs to exactly one visit.
+BR-007
+Completed Next Steps are immutable and can never be deleted; error correction is via audited Reopen within 48 hours.
+BR-008
+Patient mobile is the primary duplicate-detection key; matches warn but may be knowingly overridden (flagged possibleDuplicate). Merge is out of MVP scope.
+BR-009
+Offline supports create-and-update-by-the-same-device only; no collaborative offline editing, no merge logic.
+BR-010
+The server is the source of truth after successful sync; on conflict the server state wins and the client reconciles.
+BR-011
+Deferred entry (recording steps after the patient leaves) is excluded from MVP; the data model must not preclude it (a visit's steps are independent records that could be appended later).
+BR-012
+Terminal states (Completed, Cancelled, Declined) and opt-out immediately cancel all pending reminders.
+BR-013
+Cancellation requires a reason; decline reason is optional.
+BR-014
+Worklist ordering: priority first, then urgency (days overdue desc / due date asc), then patient name.
+BR-015
+At most one automated reminder per step per day; at most one manual nudge per step per day.
+BR-016
+Patient messages dispatch only within clinic quiet-hour bounds (default 09:00–19:00 local).
+BR-017
+No clinical data anywhere: no diagnosis, notes, prescriptions, results, or history fields exist in any entity, form or message.
+BR-018
+All dashboard metrics derive exclusively from Next Step coordination state.
+BR-019
+The system never ranks, scores, or compares named individual specialists; referral aggregation is by specialty only.
+BR-020
+Messages are sent only to patients with recorded WhatsApp consent; STOP replies and recorded withdrawals block sending immediately.
+15. Offline and Synchronization Design
+15.1 Local store and cache
+	•	The Admin app maintains an encrypted local database (Room over SQLCipher) containing: the clinic's full patient index (identity fields only), all open Next Steps and their visits, catalogue/template/config data, and the outbound sync queue.
+	•	Cache refresh: delta pull on every sync using a server-issued cursor (updatedSince); full re-pull on first login or after 30 days offline.
+	•	Estimated cache size for a 5,000-patient clinic: under 10 MB.
+15.2 Write path and idempotency
+	•	All offline-created records carry client-generated UUIDs which remain the canonical IDs after sync — no ID remapping.
+	•	Each mutation is enqueued as a SyncQueueItem with an idempotency key (recordId + revision); the server upserts idempotently, so retries never duplicate records.
+	•	Queue upload order: patients → visits → next steps → worklist actions → contact logs, preserving referential integrity.
+	•	Sync triggers: connectivity restored, app foregrounded, 15-minute background schedule, manual 'Sync now'. Retries use exponential backoff (1, 5, 15, 60 min) with the error surfaced after the fourth failure.
+15.3 Conflicts and duplicates
+	•	By design conflicts are rare: offline is create-oriented and single-device (BR-009). Where the same record was modified server-side (e.g. another administrator completed a step), the server state wins (BR-010); the client's conflicting action is rejected with a reconciliation notice ('Already completed by …').
+	•	Patient duplicates created offline (same mobile on two devices) are detected at sync: the later record is flagged possibleDuplicateOf and both surface in a Super Admin review list. Merge is a future capability; MVP resolves by editing/deactivating manually.
+	•	Reminder scheduling for offline-created steps happens server-side at sync time, applying the skip rules of Section 12.1.
+16. Privacy, Security and Consent
+16.1 Data minimization
+The system stores identity and coordination data only: name, mobile, optional gender/year of birth/clinic ID, visits (timestamps), next steps (category, non-clinical detail, dates, statuses), reminders and audit records. It stores no diagnosis, notes, prescriptions, results, address, or payment data (BR-017). The presence of a record in a diabetology clinic is itself sensitive; the full protection set below applies regardless of field-level content.
+16.2 Security controls
+	•	Encryption in transit: TLS 1.2+ for all traffic. Encryption at rest: server-side database encryption; on-device SQLCipher with keys in Android Keystore.
+	•	Role-based access: ADMIN (capture/worklist), DOCTOR (read-only dashboards), SUPER_ADMIN (configuration). Server enforces role and clinic scoping on every endpoint.
+	•	Authentication: credential login with rate limiting; PIN/biometric app lock; token expiry with silent refresh; remote deactivation of users and devices.
+	•	Masking: patient mobile numbers render masked in lists; full number visible only on the patient record and dialler action.
+	•	Backups encrypted; environment separation between pilot clinics (single-tenant-per-clinic data scoping).
+16.3 WhatsApp consent
+	•	Consent is captured verbally by the administrator at patient creation and recorded (value, timestamp, actor). The first message to any patient (T-0 or first reminder) includes opt-out instructions.
+	•	Opt-out paths: patient replies STOP (BSP webhook flips whatsappConsent to false automatically) or asks the clinic (administrator edits the record). Both are audited and take effect immediately (BR-020).
+	•	Consent state is visible on the patient record and every worklist row; without consent the coordination path is phone calls.
+	•	Alignment with India's DPDP Act 2023: minimal purpose-bound data, recorded consent for messaging, right to correction (identity fields editable on request), and deletion/retention policy per deployment agreement — retention default: coordination records retained for the pilot duration + 12 months, then anonymized for evaluation.
+16.4 Audit trail
+Audited events: login; patient create/edit; consent change; visit create (incl. backdating); next step create, status changes, reschedules, reopen; reminder send/suppress; configuration changes. Audit records are append-only, exportable by Super Admin, and retained for the deployment retention period.
+17. OpenPHC / Care Coordination Engine Interaction
+Next Steps owns the patient, visit and next-step workflow; CCE receives coordination events only. Clinical systems remain outside; CCE is not an EMR and stores no clinical information.
+	•	Event emission: the backend writes a CoordinationEvent to an outbox on every Next Step lifecycle change (CREATED, STATUS_CHANGED, COMPLETED, CANCELLED). A dispatcher delivers events to CCE asynchronously with retries; CCE unavailability never blocks clinic operations.
+	•	Suggested FHIR mapping: Next Step → FHIR Task (or ServiceRequest+Task pair): category → Task.code; dueDate → Task.restriction.period.end; status mapping CREATED/SCHEDULED → requested/ready, COMPLETED → completed, CANCELLED → cancelled, DECLINED → rejected. Patient → minimal FHIR Patient (name, telecom). Visit → Encounter reference (minimal).
+	•	Beckn: discovery/fulfilment interoperability via Beckn is a platform concern handled inside CCE; the app integrates only through the adapter.
+	•	Stub mode: for the pilot the adapter can run in stub mode (events logged, not dispatched), switchable by configuration — the app is fully functional standalone.
+	•	Identity: the app's UUIDs are carried as identifiers in CCE resources so commitments remain correlatable without duplicating patient registries.
+18. API Concepts
+Logical REST/JSON services (paths indicative; not a binding contract). All endpoints require auth and are clinic-scoped.
+Service
+Key operations
+Auth
+POST /auth/login; POST /auth/refresh; POST /auth/logout
+Patient
+GET /patients?query=&cursor= (search); GET /patients/{id}; POST /patients (idempotent upsert); PATCH /patients/{id}; GET /patients/{id}/timeline
+Visit
+POST /visits (with nested nextSteps[] for atomic capture); GET /visits/{id}
+NextStep
+PATCH /next-steps/{id}/status (complete/cancel/decline/reopen with reason); PATCH /next-steps/{id}/due-date; POST /next-steps/{id}/contact-attempts
+Worklist
+GET /worklist?section=&category= (server-computed ordering per BR-014)
+Reminder
+GET /next-steps/{id}/reminders; POST /next-steps/{id}/nudge (manual, rate-limited); webhook POST /webhooks/whatsapp (delivery + STOP)
+Dashboard
+GET /dashboard/summary; GET /dashboard/insights?period=&category= (server-side aggregates per Section 13)
+Sync
+GET /sync/changes?since=cursor (delta pull); POST /sync/batch (idempotent batched mutations)
+Config
+GET/PUT clinic settings, catalogues, templates (Super Admin)
+19. Non-Functional Requirements
+ID
+Requirement
+NFR-1
+Android minSdk 24 (Android 7.0); smooth operation on 2 GB RAM devices; APK ≤ 30 MB.
+NFR-2
+Cold start ≤ 3 s on reference low-end hardware; search results ≤ 2 s (local cache); capture flow interactions ≤ 200 ms perceived latency.
+NFR-3
+Full admin capture functionality with zero connectivity; typical sync payload ≤ 50 KB; tolerant of 2G/3G networks.
+NFR-4
+Localization-ready UI (externalized strings); MVP ships English UI with en/hi/kn patient message templates; numerals and dates render per locale.
+NFR-5
+Accessibility: minimum 44 dp touch targets, dynamic font scaling, TalkBack labels on all actionable elements.
+NFR-6
+Reliability: no data loss across app kill/restart mid-capture (drafts persisted); crash-free sessions ≥ 99.5%.
+NFR-7
+Scale (pilot): 25 clinics, 5,000 patients and 50,000 next steps per clinic, 10 concurrent users per clinic; dashboard aggregates ≤ 2 s server-side.
+NFR-8
+Observability: structured server logs, sync failure alerting, reminder pipeline delivery-rate monitoring; no PII in logs.
+NFR-9
+Battery/data respect: background sync ≤ every 15 min, batched; no wake-locks outside sync.
+20. Acceptance Criteria
+Each criterion is a black-box test; 'given/when/then' phrasing abbreviated. These extend, and where duplicated supersede, v0.9's list.
+20.1 Search, patients, visits
+ID
+Criterion
+AC-1
+Searching a cached patient by full mobile, 4-digit prefix, name prefix, or clinic ID returns the patient within 2 s, online or offline.
+AC-2
+Creating a patient with an existing mobile shows the duplicate warning listing the existing record; 'Create anyway' saves with possibleDuplicate flag; 'Use existing' opens the record.
+AC-3
+A patient cannot be saved without name and valid 10-digit mobile; the mobile stores as +91 E.164.
+AC-4
+Consent recorded at creation is visible on the record; setting consent = No results in zero WhatsApp sends (reminders created SUPPRESSED).
+AC-5
+A new visit defaults to now; the backdate flow accepts only dates within 30 days and marks isBackdated.
+AC-6
+A visit cannot be saved with zero Next Steps.
+20.2 Next Steps, worklist, completion
+ID
+Criterion
+AC-7
+A visit with three Next Steps creates three independent steps, each requiring a due date; quick-pick defaults match Section 8.5 configuration.
+AC-8
+Saving schedules reminders per the Section 12.1 matrix; past-dated reminder slots are skipped; a step due tomorrow gets T−1 (if in future), due-day and overdue reminders only.
+AC-9
+The worklist sections and ordering match BR-014 exactly for a seeded fixture of overdue/today/upcoming/high-priority steps.
+AC-10
+Mark complete stops all pending reminders (verified: none dispatch afterwards), sets completedBy/date, and the step appears in Completed today.
+AC-11
+A completed step exposes no delete anywhere; Reopen is available for 48 h, is audited, and restores SCHEDULED with future reminders reinstated.
+AC-12
+Cancel requires a reason; Declined stops reminders and appears on the doctor dashboard drill-down.
+AC-13
+Rescheduling a due date cancels unsent reminders, regenerates the schedule, increments rescheduleCount, and records the reason in history.
+AC-14
+Three logged failed contact attempts (default threshold) move the step into Unreachable and increment the doctor's Unreachable card.
+20.3 WhatsApp
+ID
+Criterion
+AC-15
+In API mode, an automated reminder renders the correct template/language/placeholders and its delivery status transitions QUEUED→SENT→DELIVERED on webhook callbacks; a failure retries once then shows FAILED on the worklist row.
+AC-16
+A STOP reply flips consent to false within one webhook cycle; all pending reminders for that patient become SUPPRESSED.
+AC-17
+Manual nudge is blocked with a clear message when one was already sent for that step today (BR-015).
+AC-18
+In DEEPLINK mode, the nudge opens WhatsApp with the pre-filled rendered message and the app records 'nudge initiated (manual)'.
+AC-19
+No message dispatches outside 09:00–19:00 clinic time; a reminder due at 20:00 dispatches at 09:00 next day.
+20.4 Offline and sync
+ID
+Criterion
+AC-20
+With airplane mode on: search cached patient, create new patient, create visit with two steps, mark an older step complete — all succeed locally; the sync indicator shows pending count.
+AC-21
+On reconnect, all queued records sync automatically within one minute; replaying the same batch (simulated retry) creates no duplicates.
+AC-22
+Two devices offline-create the same patient (same mobile); after both sync, the later record is flagged possibleDuplicateOf and appears in the Super Admin review list.
+AC-23
+A step completed on the server while a device holds an offline completion for the same step reconciles to the server state with a user-visible notice (BR-010).
+AC-24
+Kill the app mid-capture; on relaunch the draft visit and steps are restored.
+20.5 Doctor app and metrics
+ID
+Criterion
+AC-25
+All doctor screens are read-only: no create/edit/delete affordances exist; API tokens for the DOCTOR role are rejected on mutation endpoints.
+AC-26
+For a seeded fixture, every Section 13 metric matches its formula exactly, including DECLINED in denominators and CANCELLED excluded.
+AC-27
+Referral insights display by specialty only; no screen or API response aggregates by referralDestination (BR-019).
+AC-28
+Dashboard shows last-synced timestamp offline and refreshes within 2 s online.
+AC-29
+Audit log contains entries for every audited event type in Section 16.4 exercised by the test suite.
+21. Open Questions and Assumptions
+21.1 Open questions (to resolve during pilot setup)
+	•	WhatsApp Business API onboarding: which BSP, message pricing bearer, and template approval timeline; DEEPLINK mode is the shipped mitigation.
+	•	Lost-to-follow-up definition: the Section 13 default (30 days overdue + unreachable threshold) needs clinical sign-off from KCDD/RSSDI advisors.
+	•	Investigation catalogue and specialty list: confirm the seed lists with pilot clinicians; decide whether clinics may add items freely or from a curated superset.
+	•	Duplicate review workflow: is Super Admin manual resolution sufficient for the pilot, or is assisted merge needed sooner?
+	•	Reminder schedule tuning: are the default cadences right for this population? (Configurable per clinic; defaults matter for evaluation comparability.)
+	•	Consent script: exact verbal consent wording per language, agreed with the Koita Foundation for DPDP alignment.
+	•	Multi-doctor clinics: confirm the 'My patients = most recent visit' attribution rule is acceptable to pilot doctors.
+21.2 Assumptions
+	•	Every patient (or their household) has WhatsApp on the recorded mobile; where not, phone-call coordination is the fallback and is measured.
+	•	One administrator device is the norm; a second device is supported but simultaneous offline editing of the same records is not (BR-009).
+	•	Clinic staff can read English UI; patient-facing messages are the localized surface for MVP.
+	•	Pilot clinics accept cloud hosting of coordination data under the agreed data-processing terms.
+	•	The CCE adapter may run in stub mode for the pilot without affecting evaluation of the core hypothesis.
+22. Release Plan: MVP and Beyond
+22.1 MVP (pilot release)
+Everything in Sections 8–20, with these consciously minimal choices: DEEPLINK WhatsApp mode acceptable at launch; duplicate flagging without merge; insights limited to FR-D-3.1–3.5; single clinic per deployment; CCE adapter stub-capable.
+22.2 Explicitly deferred (Phase 2 candidates, in likely order)
+	•	Deferred entry: recording next steps after the patient has left (data model already permits appending steps to a visit).
+	•	Duplicate patient merge with history consolidation.
+	•	Full WhatsApp Business API automation where pilots began in DEEPLINK mode; richer delivery analytics.
+	•	Patient-facing surface (e.g. WhatsApp two-way confirmations: 'Reply 1 when your test is done').
+	•	Multi-clinic support and organization-level administration.
+	•	EMR/lab integrations via CCE once partner systems exist on the coordination layer.
+	•	Deeper insights only if they pass the guardrail test — e.g. reminder-effectiveness experiments (completion with vs without nudges).
+22.3 Success metrics for the pilot
+	•	Primary: change in follow-up visit completion rate, investigation completion rate, and referral completion rate over the pilot period (Section 13 formulas), against the first-month baseline of each clinic.
+	•	Secondary: median days-to-completion; lost-to-follow-up count trend; reminder reach and consent coverage.
+	•	Adoption: visits captured per clinic per week; capture time (instrumented, target ≤ 60 s median); worklist actions per day; doctor dashboard weekly active use.
+	•	Guardrail metric: zero clinical data fields requested/entered (audit of free-text detail sampling).
+23. Glossary
+Term
+Meaning
+Next Step
+A structured commitment recorded after a consultation: category + due date + status. The central object of the product.
+Visit
+A non-clinical anchor record for one consultation: patient, doctor, timestamp, administrator.
+Worklist
+The administrator's prioritized daily view of open Next Steps requiring action.
+Nudge
+A manual WhatsApp reminder sent by the administrator from the worklist.
+Follow-through
+Whether intended care actions were completed — the product's framing for all metrics.
+Lost to follow-up
+A patient whose open steps are long overdue and who is unreachable (Section 13).
+CCE
+OpenPHC Care Coordination Engine — the open coordination layer (FHIR/Beckn) receiving commitment events.
+BSP
+WhatsApp Business Solution Provider — the API intermediary for template messaging.
+DPDP Act
+India's Digital Personal Data Protection Act, 2023.
+Terminal state
+Completed, Cancelled, or Declined — states from which no further transitions occur.
+Appendix A. Implementation Guidance (Non-Binding)
+This appendix suggests a concrete stack to accelerate implementation; engineering may substitute equivalents provided all requirements hold.
+	•	Android apps: Kotlin, Jetpack Compose, single-activity; Room + SQLCipher for local store; WorkManager for sync; Retrofit/OkHttp; Hilt DI. Two app modules over a shared core library (models, sync, auth).
+	•	Backend: any mainstream stack (e.g. Kotlin/Spring Boot or Node/NestJS) with PostgreSQL; outbox pattern for CCE events and reminders; scheduled jobs for overdue evaluation (Section 11.3) and reminder dispatch (Section 12.3).
+	•	WhatsApp: Meta Cloud API via a BSP; webhook receiver for delivery + STOP handling; template registry mirroring Section 12.5.
+	•	Build order suggestion: (1) data model + auth + patient/visit/step APIs; (2) Admin capture flow offline-first; (3) sync; (4) worklist + completion; (5) reminder engine in DEEPLINK mode; (6) WhatsApp API mode; (7) Doctor dashboards; (8) CCE adapter; (9) hardening against Section 20.
+	•	Test fixtures: seed one synthetic clinic (2 doctors, 2 admins, 200 patients, 600 steps across all states) so Section 13 metrics and Section 20 criteria are verifiable deterministically.
