@@ -32,9 +32,11 @@ import type {
   Category,
   DrillKey,
   DueKey,
+  HistoryEntry,
   Id,
   Insights,
   Patient,
+  StepStatus,
   SummaryCard,
   Visit,
   WorklistSection,
@@ -56,6 +58,31 @@ function resolveIsBackdated(visitDateTime: Date, now: Date): boolean {
     throw new Error('Backdating is limited to the past 30 days (BR-003).');
   }
   return daysBack > 0;
+}
+
+/** §11.2: only these three statuses are terminal — CREATED/SCHEDULED are open. */
+const TERMINAL_STATUSES: ReadonlySet<StepStatus> = new Set(['COMPLETED', 'CANCELLED', 'DECLINED']);
+
+/** Fallback actor for transitions the caller doesn't attribute to a user (§11.4 requires byUser to be set). */
+const SYSTEM_ACTOR = 'system';
+
+/** FR-A-7.3/BR-007: the sole reopen window, inclusive at both ends (PROVISIONAL — see ITEM-2-TEST-CASES.md). */
+const REOPEN_WINDOW_MS = 48 * 60 * 60 * 1000;
+
+function assertNotTerminal(step: WorkStep, action: string): void {
+  if (TERMINAL_STATUSES.has(step.status)) {
+    throw new Error(`Cannot ${action} step ${step.id}: it is already ${step.status}, a terminal status (§11.2).`);
+  }
+}
+
+/** Calendar-day (UTC) boundary, so same-day visit/completion timestamps at different times of day still compare equal. */
+function dayStart(d: Date): number {
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+/** Defensive copy — history entries must never be a live reference into the store (§11.4). */
+function cloneStep(step: WorkStep): WorkStep {
+  return { ...step, history: step.history ? step.history.map((h) => ({ ...h })) : step.history };
 }
 
 const STORAGE_KEY = 'next-steps-cce-v3';
@@ -86,8 +113,6 @@ function normalizeSection(s: WorklistSection): WorklistSection {
 }
 
 interface Persisted {
-  completed: Record<Id, boolean>;
-  closed: Record<Id, boolean>;
   createdPatients: Patient[];
   createdSteps: WorkStep[];
   createdVisits: Visit[];
@@ -97,8 +122,6 @@ interface Persisted {
 
 function emptyState(): Persisted {
   return {
-    completed: {},
-    closed: {},
     createdPatients: [],
     createdSteps: [],
     createdVisits: [],
@@ -151,6 +174,13 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
               createdAt: new Date(v.createdAt),
             }));
           }
+          if (parsed.createdSteps) {
+            parsed.createdSteps = parsed.createdSteps.map((w) => ({
+              ...w,
+              completedDate: w.completedDate ? new Date(w.completedDate) : w.completedDate,
+              history: w.history?.map((h) => ({ ...h, at: new Date(h.at) })),
+            }));
+          }
           return { ...emptyState(), ...parsed };
         } catch {
           /* reseed */
@@ -184,17 +214,47 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   }
 
   private isClosed(id: Id): boolean {
-    return !!this.state.completed[id] || !!this.state.closed[id];
+    const step = this.allSteps().find((w) => w.id === id);
+    return !!step && TERMINAL_STATUSES.has(step.status);
   }
 
   // --- steps (single source of truth) -------------------------------------
 
   private allSteps(): WorkStep[] {
-    return [...this.state.createdSteps, ...WORK];
+    const overridden = new Set(this.state.createdSteps.map((w) => w.id));
+    return [...this.state.createdSteps, ...WORK.filter((w) => !overridden.has(w.id))];
   }
 
   private openSteps(): WorkStep[] {
     return this.allSteps().filter((w) => !this.isClosed(w.id));
+  }
+
+  /**
+   * The one mutable record for a step. SEED steps live in the shared, immutable
+   * `WORK` fixture, so the first transition against one clones it into
+   * `state.createdSteps` (per-instance) and every later transition mutates
+   * that clone in place — this is what lets `allSteps()` prefer it over WORK.
+   */
+  private materialize(id: Id): WorkStep | undefined {
+    const existing = this.state.createdSteps.find((w) => w.id === id);
+    if (existing) return existing;
+    const seed = WORK.find((w) => w.id === id);
+    if (!seed) return undefined;
+    const clone: WorkStep = { ...seed, history: seed.history ? seed.history.map((h) => ({ ...h })) : [] };
+    this.state.createdSteps = [clone, ...this.state.createdSteps];
+    return clone;
+  }
+
+  /** §11.4: append one immutable entry per transition; never mutate an existing one. */
+  private appendHistory(
+    step: WorkStep,
+    toStatus: StepStatus,
+    byUser: Id,
+    reason: string | null = null,
+    at: Date = new Date(),
+  ): void {
+    const entry: HistoryEntry = { at, byUser, fromStatus: step.status, toStatus, reason };
+    step.history = [...(step.history ?? []), entry];
   }
 
   // --- visits (single source of truth; BR-006 anchors every step to one) --
@@ -212,7 +272,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   async getStep(id: Id): Promise<WorkStep | undefined> {
     const result = this.allSteps().find((w) => w.id === id);
     await delay(SIMULATED_LATENCY_MS);
-    return result;
+    return result ? cloneStep(result) : undefined;
   }
 
   private countsFor(pid: Id): { open: number; overdue: number } {
@@ -390,7 +450,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   async doneRows(): Promise<DoneRow[]> {
     const fromSteps = this.allSteps()
-      .filter((w) => this.state.completed[w.id])
+      .filter((w) => w.status === 'COMPLETED')
       .map((w) => ({ name: w.name, detail: META[w.cat].label }));
     const result = [...DONE_BASE, ...fromSteps];
     await delay(SIMULATED_LATENCY_MS);
@@ -412,22 +472,96 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     return result;
   }
 
-  async completeStep(id: Id): Promise<void> {
-    this.state.completed[id] = true;
+  /** §11.2: CREATED -> SCHEDULED, the one legal transition into an open state. */
+  async scheduleStep(id: Id, byUser: Id = SYSTEM_ACTOR): Promise<void> {
+    const step = this.materialize(id);
+    if (!step) throw new Error(`Unknown step ${id}`);
+    if (step.status !== 'CREATED') {
+      throw new Error(
+        `Cannot schedule step ${id}: only a CREATED step may move to SCHEDULED (current status ${step.status}) (§11.2).`,
+      );
+    }
+    this.appendHistory(step, 'SCHEDULED', byUser);
+    step.status = 'SCHEDULED';
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);
   }
 
-  async cancelStep(id: Id): Promise<void> {
-    this.state.closed[id] = true;
+  /** §10.3/FR-A-7.1: completedDate must fall within [visit date, today], inclusive. */
+  async completeStep(id: Id, completedDate?: Date, completedBy: Id = SYSTEM_ACTOR): Promise<void> {
+    const step = this.materialize(id);
+    if (!step) throw new Error(`Unknown step ${id}`);
+    assertNotTerminal(step, 'complete');
+
+    const now = new Date();
+    const date = completedDate ?? now;
+    if (dayStart(date) > dayStart(now)) {
+      throw new Error(`Completion date cannot be in the future (FR-A-7.1): ${date.toISOString()}.`);
+    }
+    const visit = this.allVisits().find((v) => v.visitId === step.visitId);
+    if (visit && dayStart(date) < dayStart(visit.visitDateTime)) {
+      throw new Error(`Completion date cannot be before the visit date (FR-A-7.1): ${date.toISOString()}.`);
+    }
+
+    this.appendHistory(step, 'COMPLETED', completedBy, null, date);
+    step.status = 'COMPLETED';
+    step.completedDate = date;
+    step.completedBy = completedBy;
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);
   }
 
-  async declineStep(id: Id): Promise<void> {
-    this.state.closed[id] = true;
+  /** BR-013: cancellation always requires a reason. */
+  async cancelStep(id: Id, reason: string): Promise<void> {
+    const step = this.materialize(id);
+    if (!step) throw new Error(`Unknown step ${id}`);
+    assertNotTerminal(step, 'cancel');
+    if (!reason || !reason.trim()) {
+      throw new Error('Cancelling a step requires a reason (BR-013).');
+    }
+    this.appendHistory(step, 'CANCELLED', SYSTEM_ACTOR, reason);
+    step.status = 'CANCELLED';
+    step.reason = reason;
+    this.bump();
+    this.commit();
+    await delay(SIMULATED_LATENCY_MS);
+  }
+
+  /** §11.2: unlike cancel, a decline reason is optional — a patient declining care is a real outcome, not a correction. */
+  async declineStep(id: Id, reason?: string): Promise<void> {
+    const step = this.materialize(id);
+    if (!step) throw new Error(`Unknown step ${id}`);
+    assertNotTerminal(step, 'decline');
+    this.appendHistory(step, 'DECLINED', SYSTEM_ACTOR, reason ?? null);
+    step.status = 'DECLINED';
+    step.declineReason = reason ?? null;
+    this.bump();
+    this.commit();
+    await delay(SIMULATED_LATENCY_MS);
+  }
+
+  /** FR-A-7.3/BR-007: the sole exit from a terminal state, and only within the reopen window. */
+  async reopenStep(id: Id, byUser: Id = SYSTEM_ACTOR): Promise<void> {
+    const step = this.materialize(id);
+    if (!step) throw new Error(`Unknown step ${id}`);
+    if (step.status !== 'COMPLETED') {
+      throw new Error(
+        `Cannot reopen step ${id}: only a COMPLETED step may reopen to SCHEDULED (current status ${step.status}) (§11.2).`,
+      );
+    }
+    if (!step.completedDate) {
+      throw new Error(`Cannot reopen step ${id}: no completion date is recorded.`);
+    }
+    const elapsedMs = new Date().getTime() - step.completedDate.getTime();
+    if (elapsedMs > REOPEN_WINDOW_MS) {
+      throw new Error(`Cannot reopen step ${id}: the 48 hours reopen window has passed (FR-A-7.3).`);
+    }
+    this.appendHistory(step, 'SCHEDULED', byUser);
+    step.status = 'SCHEDULED';
+    step.completedDate = null;
+    step.completedBy = null;
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);

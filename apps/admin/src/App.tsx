@@ -150,7 +150,13 @@ export default function App() {
   const terminate = async (id: string, decline: boolean) => {
     try {
       const pid = await pidOf(id);
-      decline ? await engine.declineStep(id) : await engine.cancelStep(id);
+      if (decline) {
+        await engine.declineStep(id);
+      } else {
+        const reason = window.prompt('Reason for cancelling this step (required):')?.trim();
+        if (!reason) return;
+        await engine.cancelStep(id, reason);
+      }
       await closeAfter(pid);
       showToast(decline ? 'Marked patient declined' : 'Step cancelled');
     } catch (err) {

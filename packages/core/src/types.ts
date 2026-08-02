@@ -68,6 +68,18 @@ export interface Patient {
 }
 
 /**
+ * An immutable lifecycle transition record (PRD §11.4). Appended on every
+ * status change; never edited or removed once written.
+ */
+export interface HistoryEntry {
+  at: Date;
+  byUser: Id;
+  fromStatus: StepStatus | null;
+  toStatus: StepStatus;
+  reason?: string | null;
+}
+
+/**
  * A next step as it appears on the board / worklist (PRD §10.3).
  * `due` is a display label and `over` the whole days overdue — the prototype's
  * pre-computed coordination snapshot.
@@ -87,6 +99,15 @@ export interface WorkStep {
   attempts: number;
   section: WorklistSection;
   status: StepStatus;
+  /** Append-only transition log (§11.4). Absent until the first transition. */
+  history?: HistoryEntry[];
+  /** Set on completion; cleared on Reopen (§10.3, BR-007). */
+  completedDate?: Date | null;
+  completedBy?: Id | null;
+  /** Cancellation reason — mandatory when status is CANCELLED (BR-013). */
+  reason?: string | null;
+  /** Decline reason — optional (§11.2). */
+  declineReason?: string | null;
 }
 
 /** A next step being assembled during capture (PRD FR-A-5). */

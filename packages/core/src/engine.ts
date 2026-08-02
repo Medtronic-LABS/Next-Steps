@@ -92,9 +92,16 @@ export interface CoordinationEngine {
   openTotal(filter: Category | 'all'): Promise<number>;
   openStepsForPatient(patientId: Id): Promise<DecoratedStep[]>;
   getStep(id: Id): Promise<WorkStep | undefined>;
-  completeStep(id: Id): Promise<void>;
-  cancelStep(id: Id): Promise<void>;
-  declineStep(id: Id): Promise<void>;
+  /** CREATED -> SCHEDULED (§11.2); the one legal transition into an open state. */
+  scheduleStep(id: Id, byUser?: Id): Promise<void>;
+  /** CREATED/SCHEDULED -> COMPLETED. completedDate must be >= the visit date and <= today (FR-A-7.1). */
+  completeStep(id: Id, completedDate?: Date, completedBy?: Id): Promise<void>;
+  /** CREATED/SCHEDULED -> CANCELLED. Reason is mandatory (BR-013). */
+  cancelStep(id: Id, reason: string): Promise<void>;
+  /** CREATED/SCHEDULED -> DECLINED. Reason is optional (§11.2). */
+  declineStep(id: Id, reason?: string): Promise<void>;
+  /** COMPLETED -> SCHEDULED, the sole exit from a terminal state, within 48 hours (FR-A-7.3, BR-007). */
+  reopenStep(id: Id, byUser?: Id): Promise<void>;
 
   // --- doctor (read-only) ---
   summaryCards(): Promise<SummaryCard[]>;
