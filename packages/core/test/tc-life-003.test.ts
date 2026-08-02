@@ -17,7 +17,7 @@ type TerminalAction = (engine: InMemoryCoordinationEngine, id: Id) => Promise<vo
 
 const TERMINAL_ACTIONS: Record<'COMPLETED' | 'CANCELLED' | 'DECLINED', TerminalAction> = {
   COMPLETED: (engine, id) => engine.completeStep(id),
-  CANCELLED: (engine, id) => engine.cancelStep(id),
+  CANCELLED: (engine, id) => engine.cancelStep(id, 'test setup — reason required by BR-013'),
   DECLINED: (engine, id) => engine.declineStep(id),
 };
 

@@ -30,7 +30,7 @@ describe('TC-LIFE-001 — BR-013, FR-A-6.5 cancellation requires a reason (EXPEC
   it('leaves the stored status at SCHEDULED after a rejected no-reason cancel', async () => {
     const engine = new InMemoryCoordinationEngine();
     const call = engine as unknown as { cancelStep: CancelStepWithReason };
-    await call.cancelStep('w1');
+    await expect(call.cancelStep('w1')).rejects.toThrow();
     const step = await engine.getStep('w1');
     expect(step?.status).toBe('SCHEDULED');
   });
