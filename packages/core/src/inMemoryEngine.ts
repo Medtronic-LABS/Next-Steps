@@ -13,6 +13,7 @@ import {
   DRILL,
   INSIGHTS_BY_PERIOD,
   PATIENTS,
+  SEED_VISITS,
   WORK,
 } from './seed';
 import { decorate, orderSection, type DecoratedStep } from './logic';
@@ -23,6 +24,8 @@ import type {
   DrillRow,
   DrillView,
   NewPatient,
+  RecordVisitResult,
+  VisitOptions,
   WorklistSections,
 } from './engine';
 import type {
@@ -33,9 +36,27 @@ import type {
   Insights,
   Patient,
   SummaryCard,
+  Visit,
   WorklistSection,
   WorkStep,
 } from './types';
+
+/** BR-003: backdating is limited to the past 30 days; future dates are rejected. */
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_BACKDATE_DAYS = 30;
+
+/** Returns isBackdated, or throws when visitDateTime is out of the BR-003 window. */
+function resolveIsBackdated(visitDateTime: Date, now: Date): boolean {
+  const diffMs = now.getTime() - visitDateTime.getTime();
+  if (diffMs < 0) {
+    throw new Error('Visit date/time cannot be in the future (BR-003).');
+  }
+  const daysBack = Math.floor(diffMs / DAY_MS);
+  if (daysBack >= MAX_BACKDATE_DAYS) {
+    throw new Error('Backdating is limited to the past 30 days (BR-003).');
+  }
+  return daysBack > 0;
+}
 
 const STORAGE_KEY = 'next-steps-cce-v3';
 
@@ -69,12 +90,21 @@ interface Persisted {
   closed: Record<Id, boolean>;
   createdPatients: Patient[];
   createdSteps: WorkStep[];
+  createdVisits: Visit[];
   offline: boolean;
   pending: number;
 }
 
 function emptyState(): Persisted {
-  return { completed: {}, closed: {}, createdPatients: [], createdSteps: [], offline: false, pending: 0 };
+  return {
+    completed: {},
+    closed: {},
+    createdPatients: [],
+    createdSteps: [],
+    createdVisits: [],
+    offline: false,
+    pending: 0,
+  };
 }
 
 let idCounter = 0;
@@ -112,7 +142,16 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         try {
-          return { ...emptyState(), ...(JSON.parse(raw) as Persisted) };
+          const parsed = JSON.parse(raw) as Persisted;
+          // Dates don't survive JSON round-tripping through localStorage.
+          if (parsed.createdVisits) {
+            parsed.createdVisits = parsed.createdVisits.map((v) => ({
+              ...v,
+              visitDateTime: new Date(v.visitDateTime),
+              createdAt: new Date(v.createdAt),
+            }));
+          }
+          return { ...emptyState(), ...parsed };
         } catch {
           /* reseed */
         }
@@ -156,6 +195,18 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   private openSteps(): WorkStep[] {
     return this.allSteps().filter((w) => !this.isClosed(w.id));
+  }
+
+  // --- visits (single source of truth; BR-006 anchors every step to one) --
+
+  private allVisits(): Visit[] {
+    return [...this.state.createdVisits, ...SEED_VISITS];
+  }
+
+  private async visitCount(): Promise<number> {
+    const result = this.allVisits().length;
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
   }
 
   async getStep(id: Id): Promise<WorkStep | undefined> {
@@ -232,15 +283,67 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   // --- capture ------------------------------------------------------------
 
-  async recordVisit(patientId: Id, steps: CaptureInput[]): Promise<void> {
-    if (steps.length === 0) return;
-    const patient = this.getPatientSync(patientId);
-    if (!patient) return;
+  async recordVisit(
+    patientId: Id,
+    steps: CaptureInput[],
+    options?: VisitOptions,
+  ): Promise<RecordVisitResult> {
+    if (steps.length === 0) {
+      // Used as a no-op "nudge" call today (no visit to anchor an empty
+      // capture to) — nothing is validated or persisted.
+      await delay(SIMULATED_LATENCY_MS);
+      const now = new Date();
+      return {
+        visitId: '',
+        stepIds: [],
+        visit: {
+          visitId: '',
+          patientId,
+          doctorId: options?.doctorId ?? '',
+          visitDateTime: now,
+          isBackdated: false,
+          createdBy: options?.createdBy ?? '',
+          createdAt: now,
+        },
+      };
+    }
+
+    // BR-005: every Next Step has exactly one mandatory due date — rejected,
+    // and nothing persisted (not even the visit), before any state changes.
     for (const s of steps) {
+      if (!s.dueKey || !(s.dueKey in DUE)) {
+        throw new Error('Every next step requires a due date (BR-005).');
+      }
+    }
+
+    const patient = this.getPatientSync(patientId);
+    if (!patient) {
+      throw new Error(`Unknown patient ${patientId}`);
+    }
+
+    const now = new Date();
+    const visitDateTime = options?.visitDateTime ?? now;
+    const isBackdated = resolveIsBackdated(visitDateTime, now);
+
+    const visit: Visit = {
+      visitId: uid('visit'),
+      patientId,
+      doctorId: options?.doctorId ?? '',
+      visitDateTime,
+      isBackdated,
+      createdBy: options?.createdBy ?? '',
+      createdAt: now,
+    };
+
+    const stepIds: Id[] = [];
+    const newSteps: WorkStep[] = steps.map((s) => {
       const m = META[s.cat];
-      this.state.createdSteps.unshift({
-        id: uid('w'),
+      const id = uid('w');
+      stepIds.push(id);
+      return {
+        id,
         pid: patientId,
+        visitId: visit.visitId,
         name: patient.name,
         cat: s.cat,
         detail: m.label,
@@ -251,11 +354,15 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
         attempts: 0,
         section: SECTION_BY_DUE[s.dueKey],
         status: 'SCHEDULED',
-      });
-    }
+      };
+    });
+
+    this.state.createdVisits = [visit, ...this.state.createdVisits];
+    this.state.createdSteps = [...newSteps, ...this.state.createdSteps];
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);
+    return { visitId: visit.visitId, stepIds, visit };
   }
 
   // --- worklist -----------------------------------------------------------

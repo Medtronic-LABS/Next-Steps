@@ -30,6 +30,22 @@ export type WorklistSection = 'overdue' | 'today' | 'soon' | 'unreach' | 'future
 /** WhatsApp delivery status (PRD §10.4). '—' means no message applies. */
 export type Delivery = 'Queued' | 'Sent' | 'Delivered' | 'Read' | 'Failed' | '—';
 
+/**
+ * A recorded consultation (PRD §10.2). Anchors Next Steps and timestamps the
+ * consultation for metrics — carries no clinical fields (BR-017).
+ */
+export interface Visit {
+  visitId: Id;
+  patientId: Id;
+  doctorId: Id;
+  /** Defaults to now (BR-002). */
+  visitDateTime: Date;
+  /** True when the exception (backdating) flow was used (BR-003). */
+  isBackdated: boolean;
+  createdBy: Id;
+  createdAt: Date;
+}
+
 /** Patient identity (PRD §10.1) — no clinical data. */
 export interface Patient {
   id: Id;
@@ -59,6 +75,8 @@ export interface Patient {
 export interface WorkStep {
   id: Id;
   pid: Id;
+  /** Anchoring visit; exactly one per step (BR-006). */
+  visitId: Id;
   name: string;
   cat: Category;
   detail: string;

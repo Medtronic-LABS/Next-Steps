@@ -2,7 +2,7 @@
 // (Anand Diabetes Care), nine patients, ten next steps across all sections and
 // statuses, plus the doctor's pre-aggregated drill and insight figures.
 
-import type { Drill, DrillKey, Insights, Patient, WorkStep } from './types';
+import type { Drill, DrillKey, Insights, Patient, Visit, WorkStep } from './types';
 
 export const CLINIC = { name: 'Anand Diabetes Care', admin: 'Priya', doctor: 'Dr. Meera Anand' };
 
@@ -25,17 +25,35 @@ export const PATIENTS: Patient[] = [
 export const AVATARS = ['#EFEDFF|#1E14BE', '#E4F7EE|#128C4A', '#ECEDFB|#6165DE', '#FBEDE4|#C35721', '#FDECEC|#994242'];
 
 export const WORK: WorkStep[] = [
-  { id: 'w1', pid: 'p1', name: 'Ramesh Kulkarni', cat: 'LAB_INVESTIGATION', detail: '', due: '28 Jun', over: 8, priority: 'HIGH', delivery: 'Read', attempts: 0, section: 'overdue', status: 'SCHEDULED' },
-  { id: 'w2', pid: 'p6', name: 'Sunita Rao', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', due: '1 Jul', over: 5, priority: 'NORMAL', delivery: 'Delivered', attempts: 0, section: 'overdue', status: 'SCHEDULED' },
-  { id: 'w3', pid: 'p3', name: 'Iqbal Khan', cat: 'SPECIALIST_REFERRAL', detail: '', due: '30 Jun', over: 6, priority: 'NORMAL', delivery: 'Failed', attempts: 1, section: 'overdue', status: 'SCHEDULED' },
-  { id: 'w4', pid: 'p2', name: 'Lakshmi Iyer', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', due: 'Today', over: 0, priority: 'HIGH', delivery: 'Delivered', attempts: 0, section: 'today', status: 'SCHEDULED' },
-  { id: 'w5', pid: 'p5', name: 'Vijay Menon', cat: 'LAB_INVESTIGATION', detail: '', due: 'Today', over: 0, priority: 'NORMAL', delivery: 'Read', attempts: 0, section: 'today', status: 'SCHEDULED' },
-  { id: 'w6', pid: 'p4', name: 'Anjali Deshpande', cat: 'FOLLOW_UP_CALL', detail: 'Check-in call', due: '9 Jul', over: 0, priority: 'NORMAL', delivery: '—', attempts: 0, section: 'soon', status: 'SCHEDULED' },
-  { id: 'w7', pid: 'p7', name: 'Fatima Sheikh', cat: 'SPECIALIST_REFERRAL', detail: '', due: '13 Jul', over: 0, priority: 'NORMAL', delivery: 'Sent', attempts: 0, section: 'soon', status: 'SCHEDULED' },
-  { id: 'w8', pid: 'p8', name: 'Ganesh Pawar', cat: 'FOLLOW_UP_CALL', detail: 'Check-in call', due: '2 Jul', over: 4, priority: 'NORMAL', delivery: '—', attempts: 3, section: 'unreach', status: 'SCHEDULED' },
-  { id: 'w9', pid: 'p9', name: 'Meena Joshi', cat: 'LAB_INVESTIGATION', detail: '', due: '27 Jun', over: 9, priority: 'HIGH', delivery: 'Failed', attempts: 4, section: 'unreach', status: 'SCHEDULED' },
-  { id: 'w10', pid: 'p1', name: 'Ramesh Kulkarni', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', due: '28 Jul', over: 0, priority: 'NORMAL', delivery: 'Sent', attempts: 0, section: 'future', status: 'SCHEDULED' },
+  { id: 'w1', pid: 'p1', visitId: 'v1', name: 'Ramesh Kulkarni', cat: 'LAB_INVESTIGATION', detail: '', due: '28 Jun', over: 8, priority: 'HIGH', delivery: 'Read', attempts: 0, section: 'overdue', status: 'SCHEDULED' },
+  { id: 'w2', pid: 'p6', visitId: 'v2', name: 'Sunita Rao', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', due: '1 Jul', over: 5, priority: 'NORMAL', delivery: 'Delivered', attempts: 0, section: 'overdue', status: 'SCHEDULED' },
+  { id: 'w3', pid: 'p3', visitId: 'v3', name: 'Iqbal Khan', cat: 'SPECIALIST_REFERRAL', detail: '', due: '30 Jun', over: 6, priority: 'NORMAL', delivery: 'Failed', attempts: 1, section: 'overdue', status: 'SCHEDULED' },
+  { id: 'w4', pid: 'p2', visitId: 'v4', name: 'Lakshmi Iyer', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', due: 'Today', over: 0, priority: 'HIGH', delivery: 'Delivered', attempts: 0, section: 'today', status: 'SCHEDULED' },
+  { id: 'w5', pid: 'p5', visitId: 'v5', name: 'Vijay Menon', cat: 'LAB_INVESTIGATION', detail: '', due: 'Today', over: 0, priority: 'NORMAL', delivery: 'Read', attempts: 0, section: 'today', status: 'SCHEDULED' },
+  { id: 'w6', pid: 'p4', visitId: 'v6', name: 'Anjali Deshpande', cat: 'FOLLOW_UP_CALL', detail: 'Check-in call', due: '9 Jul', over: 0, priority: 'NORMAL', delivery: '—', attempts: 0, section: 'soon', status: 'SCHEDULED' },
+  { id: 'w7', pid: 'p7', visitId: 'v7', name: 'Fatima Sheikh', cat: 'SPECIALIST_REFERRAL', detail: '', due: '13 Jul', over: 0, priority: 'NORMAL', delivery: 'Sent', attempts: 0, section: 'soon', status: 'SCHEDULED' },
+  { id: 'w8', pid: 'p8', visitId: 'v8', name: 'Ganesh Pawar', cat: 'FOLLOW_UP_CALL', detail: 'Check-in call', due: '2 Jul', over: 4, priority: 'NORMAL', delivery: '—', attempts: 3, section: 'unreach', status: 'SCHEDULED' },
+  { id: 'w9', pid: 'p9', visitId: 'v9', name: 'Meena Joshi', cat: 'LAB_INVESTIGATION', detail: '', due: '27 Jun', over: 9, priority: 'HIGH', delivery: 'Failed', attempts: 4, section: 'unreach', status: 'SCHEDULED' },
+  { id: 'w10', pid: 'p1', visitId: 'v10', name: 'Ramesh Kulkarni', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', due: '28 Jul', over: 0, priority: 'NORMAL', delivery: 'Sent', attempts: 0, section: 'future', status: 'SCHEDULED' },
 ];
+
+/** Fixed instant used for every migrated seed Visit — no real capture time exists for legacy fixture data. */
+const SEED_VISIT_DATETIME = new Date('2026-06-01T09:00:00.000Z');
+
+/**
+ * BR-006 migration: every seed WorkStep above referenced no Visit at all.
+ * Each now carries a `visitId`; this derives the one-per-step Visit it
+ * resolves to, so no seed step is exempted from the invariant.
+ */
+export const SEED_VISITS: Visit[] = WORK.map((w) => ({
+  visitId: w.visitId,
+  patientId: w.pid,
+  doctorId: 'seed-doctor',
+  visitDateTime: SEED_VISIT_DATETIME,
+  isBackdated: false,
+  createdBy: 'seed-admin',
+  createdAt: SEED_VISIT_DATETIME,
+}));
 
 /** Steps completed earlier today, shown at the foot of the worklist. */
 export const DONE_BASE = [

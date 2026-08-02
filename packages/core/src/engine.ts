@@ -11,6 +11,7 @@ import type {
   Insights,
   Patient,
   SummaryCard,
+  Visit,
   WorkStep,
 } from './types';
 import type { DecoratedStep } from './logic';
@@ -28,6 +29,20 @@ export interface CaptureInput {
   cat: Category;
   dueKey: DueKey;
   priority: 'NORMAL' | 'HIGH';
+}
+
+/** Options for the visit anchoring a captured batch of Next Steps (§10.2). */
+export interface VisitOptions {
+  doctorId?: Id;
+  createdBy?: Id;
+  /** Omit to default to now; set to backdate (BR-003). */
+  visitDateTime?: Date;
+}
+
+export interface RecordVisitResult {
+  visitId: Id;
+  stepIds: Id[];
+  visit: Visit;
 }
 
 export interface WorklistSections {
@@ -69,7 +84,7 @@ export interface CoordinationEngine {
   createPatient(input: NewPatient): Promise<Patient>;
 
   // --- capture ---
-  recordVisit(patientId: Id, steps: CaptureInput[]): Promise<void>;
+  recordVisit(patientId: Id, steps: CaptureInput[], options?: VisitOptions): Promise<RecordVisitResult>;
 
   // --- worklist (admin) ---
   sections(filter: Category | 'all'): Promise<WorklistSections>;
