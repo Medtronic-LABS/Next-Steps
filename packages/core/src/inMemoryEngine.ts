@@ -56,7 +56,10 @@ const SECTION_BY_DUE: Record<DueKey, WorklistSection> = {
 };
 
 // The seed fixture uses section 'future' for its one not-yet-due step; treat it
-// as 'upcoming' so it renders alongside newly captured steps.
+// as 'upcoming' so it groups with newly captured far-out steps. Neither label
+// is a worklist section (FR-A-6.1 defines exactly five), so steps carrying
+// either value are excluded from every `pick()` below — they stay in the data
+// (visible on the patient screen via openStepsForPatient) but not on the worklist.
 function normalizeSection(s: WorklistSection): WorklistSection {
   return s === 'future' ? 'upcoming' : s;
 }
@@ -269,7 +272,6 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       today: pick('today'),
       soon: pick('soon'),
       unreach: pick('unreach'),
-      upcoming: pick('upcoming'),
     };
   }
 
@@ -290,7 +292,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   async openTotal(filter: Category | 'all'): Promise<number> {
     const s = this.sectionsSync(filter);
-    const result = s.overdue.length + s.today.length + s.soon.length + s.unreach.length + s.upcoming.length;
+    const result = s.overdue.length + s.today.length + s.soon.length + s.unreach.length;
     await delay(SIMULATED_LATENCY_MS);
     return result;
   }

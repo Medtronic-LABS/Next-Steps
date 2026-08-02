@@ -581,7 +581,7 @@ function SectionHead({ dot, label, count }: { dot: string; label: string; count:
     </div>
   );
 }
-const EMPTY_SECTIONS: WorklistSections = { overdue: [], today: [], soon: [], unreach: [], upcoming: [] };
+const EMPTY_SECTIONS: WorklistSections = { overdue: [], today: [], soon: [], unreach: [] };
 
 function Worklist({ filter, setFilter, onOpenPatient }: { filter: Category | 'all'; setFilter: (f: Category | 'all') => void; onOpenPatient: (pid: string) => void }) {
   const { data: sData } = useEngineData(() => engine.sections(filter), [filter]);
@@ -610,8 +610,6 @@ function Worklist({ filter, setFilter, onOpenPatient }: { filter: Category | 'al
         <Rows list={s.today} onOpenPatient={onOpenPatient} />
         <SectionHead dot="var(--ml-periwinkle)" label="Due soon · next 7 days" count={s.soon.length} />
         <Rows list={s.soon} onOpenPatient={onOpenPatient} />
-        <SectionHead dot="var(--ml-blue)" label="Upcoming · later" count={s.upcoming.length} />
-        <Rows list={s.upcoming} onOpenPatient={onOpenPatient} />
         <SectionHead dot="var(--ml-maroon)" label="Unreachable" count={s.unreach.length} />
         <Rows list={s.unreach} onOpenPatient={onOpenPatient} />
 

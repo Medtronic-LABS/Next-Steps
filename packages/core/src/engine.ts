@@ -35,7 +35,6 @@ export interface WorklistSections {
   today: DecoratedStep[];
   soon: DecoratedStep[];
   unreach: DecoratedStep[];
-  upcoming: DecoratedStep[];
 }
 
 export interface DoneRow {
