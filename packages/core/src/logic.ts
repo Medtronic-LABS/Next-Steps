@@ -104,8 +104,14 @@ export function trendPath(values: number[]): {
   return { line, area, dots };
 }
 
-/** Worklist ordering within a section (PRD BR-014). */
+/** Worklist ordering within a section (PRD BR-014, FR-A-6.3). */
 export function orderSection(steps: DecoratedStep[]): DecoratedStep[] {
+  // Unreachable orders by most failed attempts first (FR-A-6.3) — a distinct
+  // comparator from every other section, which orders by priority then days
+  // overdue.
+  if (steps.every((s) => s.section === 'unreach')) {
+    return [...steps].sort((a, b) => b.attempts - a.attempts || a.name.localeCompare(b.name));
+  }
   const pr = (s: DecoratedStep) => (s.priority === 'HIGH' ? 0 : 1);
   return [...steps].sort(
     (a, b) => pr(a) - pr(b) || b.over - a.over || a.name.localeCompare(b.name),
