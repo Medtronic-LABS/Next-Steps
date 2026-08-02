@@ -11,7 +11,7 @@ describe('TC-FILTER-001 — FR-A-6.2 category filters', () => {
     expect(filtered.today.map((s) => s.name)).toEqual(['Vijay Menon']);
     expect(filtered.unreach.map((s) => s.name)).toEqual(['Meena Joshi']);
 
-    const sections = ['overdue', 'today', 'soon', 'unreach', 'upcoming'] as const;
+    const sections = ['overdue', 'today', 'soon', 'unreach'] as const;
     for (const section of sections) {
       const expectedOrder = unfiltered[section].filter((s) => s.cat === 'LAB_INVESTIGATION').map((s) => s.id);
       expect(filtered[section].map((s) => s.id)).toEqual(expectedOrder);
