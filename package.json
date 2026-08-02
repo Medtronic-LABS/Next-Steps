@@ -15,7 +15,8 @@
     "build:doctor": "npm run build -w @next-steps/doctor",
     "build:hosting": "npm run build -w @next-steps/admin && npm run build -w @next-steps/doctor -- --base=/doctor/ && node scripts/assemble-hosting.mjs",
     "deploy": "bash scripts/deploy.sh",
-    "typecheck": "npm run typecheck -w @next-steps/core && npm run typecheck -w @next-steps/admin && npm run typecheck -w @next-steps/doctor"
+    "typecheck": "npm run typecheck -w @next-steps/core && npm run typecheck -w @next-steps/admin && npm run typecheck -w @next-steps/doctor",
+    "test": "npm run test -w @next-steps/core"
   },
   "engines": {
     "node": ">=20"
