@@ -15,7 +15,8 @@ export function initials(name: string): string {
 
 /** Masked mobile for lists (PRD FR-A-2.3), e.g. "98•••••210". */
 export function maskMobile(mobile: string): string {
-  return '98•••••' + mobile.replace(/\D/g, '').slice(-3);
+  const digits = mobile.replace(/\D/g, '');
+  return digits.slice(0, 2) + '•••••' + digits.slice(-3);
 }
 
 /** Avatar [background, foreground] for a patient index. */
