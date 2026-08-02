@@ -194,7 +194,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       ? all.slice(0, 6)
       : all.filter((p) => {
           const digits = q.replace(/\D/g, '');
-          if (/\d/.test(q)) return digits.length > 0 && p.mobile.replace(/\D/g, '').includes(digits);
+          if (/\d/.test(q)) return digits.length >= 4 && p.mobile.replace(/\D/g, '').startsWith(digits);
           return p.name.toLowerCase().split(' ').some((t) => t.startsWith(q)) || p.name.toLowerCase().startsWith(q);
         });
     await delay(SIMULATED_LATENCY_MS);
