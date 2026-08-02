@@ -40,7 +40,7 @@ import type {
 const STORAGE_KEY = 'next-steps-cce-v3';
 
 /** Simulated CCE network latency (PRD §17 stub mode). */
-const SIMULATED_LATENCY_MS = 200;
+const SIMULATED_LATENCY_MS = 0;
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
