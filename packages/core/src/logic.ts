@@ -2,7 +2,7 @@
 
 import { META } from './catalog';
 import { AVATARS } from './seed';
-import type { Delivery, Gender, StepStatus, WorklistSection, WorkStep } from './types';
+import type { Delivery, Gender, Id, StepStatus, WorklistSection, WorkStep } from './types';
 
 /** §11.2: only these three statuses are terminal — never overdue (§11.1). */
 const TERMINAL_STATUSES: ReadonlySet<StepStatus> = new Set(['COMPLETED', 'CANCELLED', 'DECLINED']);
@@ -67,6 +67,251 @@ export function deriveSection(
   if (dueIndex === todayIndex) return 'today';
   if (dueIndex <= todayIndex + 7) return 'soon';
   return null;
+}
+
+// §13 — dashboard metric formulas. Normative; every figure derives solely
+// from Next Step coordination state (BR-018). 'Period' membership is by
+// dueDate unless a metric states otherwise (median days to completion uses
+// completedDate; overdue buckets, patient counts and unreachable are
+// snapshots, never period-bound).
+
+/** A step's period membership: `date` falls within the `periodDays` ending on `now`, inclusive at both ends. */
+function inPeriod(date: Date, periodDays: number, now: Date): boolean {
+  const todayIndex = clinicDayIndex(now);
+  const dueIndex = clinicDayIndex(date);
+  return dueIndex <= todayIndex && todayIndex - dueIndex < periodDays;
+}
+
+function computeRatePct(numerator: number, denominator: number): number {
+  return denominator === 0 ? 0 : Math.round((numerator / denominator) * 100);
+}
+
+export interface RateResult {
+  numerator: number;
+  denominator: number;
+  rate: number;
+}
+
+function rateResult(numerator: number, denominator: number): RateResult {
+  return { numerator, denominator, rate: computeRatePct(numerator, denominator) };
+}
+
+/**
+ * §13 completion rate: COMPLETED ÷ steps with dueDate in period and status
+ * not CANCELLED. DECLINED counts in the denominator (uncompleted care);
+ * CANCELLED (entry error) is excluded from both numerator and denominator.
+ */
+export function completionRate<T extends { dueDate: Date; status: StepStatus }>(
+  steps: T[],
+  periodDays: number,
+  now: Date = new Date(),
+): RateResult {
+  const eligible = steps.filter((s) => s.status !== 'CANCELLED' && inPeriod(s.dueDate, periodDays, now));
+  const numerator = eligible.filter((s) => s.status === 'COMPLETED').length;
+  return rateResult(numerator, eligible.length);
+}
+
+/** §13 on-time completion rate: COMPLETED with completedDate <= dueDate (inclusive), over the same denominator as `completionRate`. */
+export function onTimeCompletionRate<
+  T extends { dueDate: Date; status: StepStatus; completedDate?: Date | null },
+>(steps: T[], periodDays: number, now: Date = new Date()): RateResult {
+  const eligible = steps.filter((s) => s.status !== 'CANCELLED' && inPeriod(s.dueDate, periodDays, now));
+  const numerator = eligible.filter(
+    (s) =>
+      s.status === 'COMPLETED' &&
+      s.completedDate != null &&
+      clinicDayIndex(s.completedDate) <= clinicDayIndex(s.dueDate),
+  ).length;
+  return rateResult(numerator, eligible.length);
+}
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+export interface MedianDaysResult {
+  overall: number;
+  byCategory: Record<string, number>;
+}
+
+/**
+ * §13 median days to completion: median of (completedDate - visitDate) over
+ * steps COMPLETED in the period, overall and per category. Period
+ * membership here is by completedDate — the opposite rule from
+ * `completionRate`, which is by dueDate.
+ */
+export function medianDaysToCompletion<
+  T extends { cat: string; visitDate: Date; status: StepStatus; completedDate?: Date | null },
+>(steps: T[], periodDays: number, now: Date = new Date()): MedianDaysResult {
+  const durations: number[] = [];
+  const byCategory = new Map<string, number[]>();
+  for (const s of steps) {
+    if (s.status !== 'COMPLETED' || s.completedDate == null) continue;
+    if (!inPeriod(s.completedDate, periodDays, now)) continue;
+    const days = clinicDayIndex(s.completedDate) - clinicDayIndex(s.visitDate);
+    durations.push(days);
+    const list = byCategory.get(s.cat);
+    if (list) list.push(days);
+    else byCategory.set(s.cat, [days]);
+  }
+  const byCategoryMedian: Record<string, number> = {};
+  for (const [cat, list] of byCategory) byCategoryMedian[cat] = median(list);
+  return { overall: median(durations), byCategory: byCategoryMedian };
+}
+
+export interface OverdueBuckets {
+  '1-7': Id[];
+  '8-30': Id[];
+  '31-90': Id[];
+  '90+': Id[];
+}
+
+/**
+ * §13 overdue buckets: open steps with isOverdue = true, as of now — a
+ * snapshot, never period-bound — aged into 1-7 / 8-30 / 31-90 / 90+ day
+ * buckets, boundary-inclusive and mutually exclusive.
+ */
+export function overdueBuckets<T extends { id: Id; dueDate: Date; status: StepStatus }>(
+  steps: T[],
+  now: Date = new Date(),
+): OverdueBuckets {
+  const buckets: OverdueBuckets = { '1-7': [], '8-30': [], '31-90': [], '90+': [] };
+  for (const s of steps) {
+    const { isOverdue, daysOverdue } = deriveOverdue(s.dueDate, s.status, now);
+    if (!isOverdue) continue;
+    if (daysOverdue <= 7) buckets['1-7'].push(s.id);
+    else if (daysOverdue <= 30) buckets['8-30'].push(s.id);
+    else if (daysOverdue <= 90) buckets['31-90'].push(s.id);
+    else buckets['90+'].push(s.id);
+  }
+  return buckets;
+}
+
+/**
+ * §13 patients needing attention: distinct patients having >= 1 overdue or
+ * unreachable open step — a snapshot. Counts patients, not steps, so a
+ * patient qualifying on both counts is still counted once.
+ */
+export function patientsNeedingAttention<T extends { pid: Id; dueDate: Date; status: StepStatus; attempts: number }>(
+  steps: T[],
+  unreachableThreshold: number = DEFAULT_UNREACHABLE_THRESHOLD,
+  now: Date = new Date(),
+): number {
+  const patients = new Set<Id>();
+  for (const s of steps) {
+    if (TERMINAL_STATUSES.has(s.status)) continue;
+    const { isOverdue } = deriveOverdue(s.dueDate, s.status, now);
+    if (isOverdue || s.attempts >= unreachableThreshold) patients.add(s.pid);
+  }
+  return patients.size;
+}
+
+/**
+ * §13, §10.5 unreachable patients: distinct patients having >= 1 open step
+ * with attempts >= the clinic-configured threshold — a snapshot. Terminal
+ * steps never count, regardless of attempts.
+ */
+export function unreachablePatients<T extends { pid: Id; status: StepStatus; attempts: number }>(
+  steps: T[],
+  threshold: number = DEFAULT_UNREACHABLE_THRESHOLD,
+): number {
+  const patients = new Set<Id>();
+  for (const s of steps) {
+    if (TERMINAL_STATUSES.has(s.status)) continue;
+    if (s.attempts >= threshold) patients.add(s.pid);
+  }
+  return patients.size;
+}
+
+/** Today plus the following 14 days, inclusive — 15 datapoints (PROVISIONAL far-boundary reading, ITEM-4-TEST-CASES.md). */
+const UPCOMING_LOAD_WINDOW_DAYS = 15;
+
+export interface UpcomingLoad {
+  /** Per-day counts; index 0 is today, index 14 is 14 days out. */
+  series: number[];
+  total: number;
+}
+
+/** §13 upcoming load: count of open steps with dueDate in the next 14 days, per day (not a single aggregate total). */
+export function upcomingLoad<T extends { dueDate: Date; status: StepStatus }>(
+  steps: T[],
+  now: Date = new Date(),
+): UpcomingLoad {
+  const series = new Array(UPCOMING_LOAD_WINDOW_DAYS).fill(0) as number[];
+  const todayIndex = clinicDayIndex(now);
+  for (const s of steps) {
+    if (TERMINAL_STATUSES.has(s.status)) continue;
+    const offset = clinicDayIndex(s.dueDate) - todayIndex;
+    if (offset >= 0 && offset < UPCOMING_LOAD_WINDOW_DAYS) series[offset]++;
+  }
+  return { series, total: series.reduce((a, b) => a + b, 0) };
+}
+
+/**
+ * §13, BR-019 referral completion rate: as `completionRate`, restricted to
+ * SPECIALIST_REFERRAL steps and split by specialty only. Callers must not
+ * pass a named destination through — grouping here keys on `specialty`
+ * alone, and only `dueDate`/`status` are copied into the per-specialty
+ * rate computation, so no destination string can leak into the result.
+ */
+export function referralCompletionRateBySpecialty<T extends { specialty: string; dueDate: Date; status: StepStatus }>(
+  steps: T[],
+  periodDays: number,
+  now: Date = new Date(),
+): Record<string, RateResult> {
+  const bySpecialty = new Map<string, { dueDate: Date; status: StepStatus }[]>();
+  for (const s of steps) {
+    const list = bySpecialty.get(s.specialty);
+    const entry = { dueDate: s.dueDate, status: s.status };
+    if (list) list.push(entry);
+    else bySpecialty.set(s.specialty, [entry]);
+  }
+  const result: Record<string, RateResult> = {};
+  for (const [specialty, list] of bySpecialty) result[specialty] = completionRate(list, periodDays, now);
+  return result;
+}
+
+/** §13: percentages display with their denominator, e.g. "50% (2 of 4)", so a small sample is never mistaken for a settled figure. */
+export function formatRateWithDenominator(numerator: number, denominator: number): string {
+  return `${computeRatePct(numerator, denominator)}% (${numerator} of ${denominator})`;
+}
+
+export interface LostToFollowUpOptions {
+  threshold: number;
+  lostToFollowUpDays: number;
+}
+
+/**
+ * §13 lost to follow-up (PROVISIONAL — flagged in §13/§20/§21 as a default
+ * proposal, not settled). Distinct patients where EVERY open step is >=
+ * lostToFollowUpDays overdue, AND attempts >= threshold on the most recent
+ * of them (ties broken by array order), AND no visit since those steps
+ * became due.
+ */
+export function lostToFollowUp<
+  T extends { patientId: Id; steps: { dueDate: Date; status: StepStatus; attempts: number }[]; lastVisitDate: Date },
+>(patients: T[], options: LostToFollowUpOptions, now: Date = new Date()): number {
+  let count = 0;
+  for (const patient of patients) {
+    const openSteps = patient.steps.filter((s) => !TERMINAL_STATUSES.has(s.status));
+    if (openSteps.length === 0) continue;
+
+    const allOverdueEnough = openSteps.every(
+      (s) => deriveOverdue(s.dueDate, s.status, now).daysOverdue >= options.lostToFollowUpDays,
+    );
+    if (!allOverdueEnough) continue;
+
+    const mostRecent = openSteps.reduce((latest, s) => (s.dueDate >= latest.dueDate ? s : latest));
+    if (mostRecent.attempts < options.threshold) continue;
+
+    const earliestDue = openSteps.reduce((earliest, s) => (s.dueDate < earliest.dueDate ? s : earliest)).dueDate;
+    if (patient.lastVisitDate >= earliestDue) continue;
+
+    count++;
+  }
+  return count;
 }
 
 /** §10, FR-A-6.4: the bare display label for a due date — 'Today', '19 Jun', '28 Jul' — derived, never stored. */
