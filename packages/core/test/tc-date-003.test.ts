@@ -1,17 +1,33 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { formatTodayLabel } from '../src/logic';
 
 // §10, FR-D-2.4 (data freshness): the "today" label shown in the admin
 // worklist header (apps/admin/src/App.tsx:606) must reflect the clinic's
 // actual current date, not a fixed calendar date baked in at build time
 // (ITEM-4-TEST-CASES.md TC-DATE-003). `TODAY_LABEL` in seed.ts is the
 // literal string 'Monday, 6 July' — correct only on that one date and wrong
-// on every other day the app is opened. Two checks: the source must not
-// assign TODAY_LABEL a fixed string literal, and re-deriving it for a
-// different "now" must produce a label that matches that "now", not 6 July.
-const SEED_PATH = join(__dirname, '..', 'src', 'seed.ts');
-const HARDCODED_LITERAL_ASSIGNMENT = /export const TODAY_LABEL\s*=\s*(['"])(?:(?!\1).)*\1\s*;/;
+// on every other day the app is opened. The fix removes TODAY_LABEL
+// entirely and replaces it with a derived label, so this asserts both that
+// TODAY_LABEL is gone and that a derived replacement exists.
+const CORE_SRC_DIR = join(__dirname, '..', 'src');
+const APPS_DIR = join(__dirname, '..', '..', '..', 'apps');
+const SKIP_DIRS = new Set(['node_modules', 'dist', '.git']);
+
+function collectSourceFiles(dir: string): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    if (SKIP_DIRS.has(entry)) continue;
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) {
+      files.push(...collectSourceFiles(full));
+    } else if (/\.(ts|tsx|js|jsx)$/.test(entry)) {
+      files.push(full);
+    }
+  }
+  return files;
+}
 
 function expectedTodayLabel(now: Date): string {
   const weekday = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata', weekday: 'long' });
@@ -21,7 +37,7 @@ function expectedTodayLabel(now: Date): string {
 }
 
 // Noon IST, a Saturday — deliberately not 6 July, so a properly derived
-// label and the current hardcoded literal cannot both be correct.
+// label and the removed hardcoded literal cannot both be correct.
 const ARBITRARY_NOW = new Date('2026-06-20T06:30:00.000Z');
 
 describe("TC-DATE-003 — today's date label is derived from now, not a fixed literal (EXPECTED FAIL)", () => {
@@ -36,16 +52,15 @@ describe("TC-DATE-003 — today's date label is derived from now, not a fixed li
     vi.resetModules();
   });
 
-  it('static check: TODAY_LABEL is not assigned a fixed string literal in seed.ts', () => {
-    const source = readFileSync(SEED_PATH, 'utf8');
-    expect(
-      HARDCODED_LITERAL_ASSIGNMENT.test(source),
-      'expected TODAY_LABEL to be computed from the current date, not assigned a fixed string literal',
-    ).toBe(false);
+  it('static check: TODAY_LABEL appears nowhere in packages/core/src or apps/', () => {
+    const violations: string[] = [];
+    for (const file of [...collectSourceFiles(CORE_SRC_DIR), ...collectSourceFiles(APPS_DIR)]) {
+      if (/TODAY_LABEL/.test(readFileSync(file, 'utf8'))) violations.push(file);
+    }
+    expect(violations, 'TODAY_LABEL must not remain anywhere in packages/core/src or apps/').toEqual([]);
   });
 
-  it('derives "today" from the current date instead of always reading "Monday, 6 July"', async () => {
-    const { TODAY_LABEL } = await import('../src/seed');
-    expect(TODAY_LABEL).toBe(expectedTodayLabel(ARBITRARY_NOW));
+  it('derives "today" from the current date instead of always reading "Monday, 6 July"', () => {
+    expect(formatTodayLabel(new Date())).toBe(expectedTodayLabel(ARBITRARY_NOW));
   });
 });
