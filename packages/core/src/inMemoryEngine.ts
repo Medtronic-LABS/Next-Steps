@@ -16,7 +16,7 @@ import {
   SEED_VISITS,
   WORK,
 } from './seed';
-import { decorate, orderSection, type DecoratedStep } from './logic';
+import { clinicDayIndex, decorate, deriveOverdue, formatDueLabel, orderSection, type DecoratedStep } from './logic';
 import type {
   CaptureInput,
   CoordinationEngine,
@@ -25,6 +25,7 @@ import type {
   DrillView,
   NewPatient,
   RecordVisitResult,
+  StepView,
   VisitOptions,
   WorklistSections,
 } from './engine';
@@ -73,11 +74,6 @@ function assertNotTerminal(step: WorkStep, action: string): void {
   if (TERMINAL_STATUSES.has(step.status)) {
     throw new Error(`Cannot ${action} step ${step.id}: it is already ${step.status}, a terminal status (§11.2).`);
   }
-}
-
-/** Calendar-day (UTC) boundary, so same-day visit/completion timestamps at different times of day still compare equal. */
-function dayStart(d: Date): number {
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
 /** Defensive copy — history entries must never be a live reference into the store (§11.4). */
@@ -269,15 +265,19 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     return result;
   }
 
-  async getStep(id: Id): Promise<WorkStep | undefined> {
+  async getStep(id: Id): Promise<StepView | undefined> {
     const result = this.allSteps().find((w) => w.id === id);
     await delay(SIMULATED_LATENCY_MS);
-    return result ? cloneStep(result) : undefined;
+    if (!result) return undefined;
+    return { ...cloneStep(result), ...deriveOverdue(result.dueDate, result.status) };
   }
 
   private countsFor(pid: Id): { open: number; overdue: number } {
     const open = this.openSteps().filter((w) => w.pid === pid);
-    return { open: open.length, overdue: open.filter((w) => w.over > 0).length };
+    return {
+      open: open.length,
+      overdue: open.filter((w) => deriveOverdue(w.dueDate, w.status).isOverdue).length,
+    };
   }
 
   private withCounts(p: Patient): Patient {
@@ -407,8 +407,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
         name: patient.name,
         cat: s.cat,
         detail: m.label,
-        due: DUE[s.dueKey].date,
-        over: 0,
+        dueDate: s.dueDate ?? new Date(now.getTime() + DUE[s.dueKey].days * DAY_MS),
         priority: s.priority,
         delivery: 'Sent',
         attempts: 0,
@@ -432,7 +431,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       orderSection(
         this.openSteps()
           .filter((w) => normalizeSection(w.section) === section && (filter === 'all' || w.cat === filter))
-          .map(decorate),
+          .map((w) => decorate(w)),
       );
     return {
       overdue: pick('overdue'),
@@ -467,7 +466,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   async openStepsForPatient(patientId: Id): Promise<DecoratedStep[]> {
     const result = this.openSteps()
       .filter((w) => w.pid === patientId)
-      .map(decorate);
+      .map((w) => decorate(w));
     await delay(SIMULATED_LATENCY_MS);
     return result;
   }
@@ -496,11 +495,11 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
     const now = new Date();
     const date = completedDate ?? now;
-    if (dayStart(date) > dayStart(now)) {
+    if (clinicDayIndex(date) > clinicDayIndex(now)) {
       throw new Error(`Completion date cannot be in the future (FR-A-7.1): ${date.toISOString()}.`);
     }
     const visit = this.allVisits().find((v) => v.visitId === step.visitId);
-    if (visit && dayStart(date) < dayStart(visit.visitDateTime)) {
+    if (visit && clinicDayIndex(date) < clinicDayIndex(visit.visitDateTime)) {
       throw new Error(`Completion date cannot be before the visit date (FR-A-7.1): ${date.toISOString()}.`);
     }
 
@@ -603,16 +602,18 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
         const w = WORK.find((x) => x.id === id)!;
         const m = META[w.cat];
         const isUnreach = w.section === 'unreach';
+        const label = formatDueLabel(w.dueDate);
+        const { isOverdue, daysOverdue } = deriveOverdue(w.dueDate, w.status);
         return {
           id: w.id,
           patientName: w.name,
           detail: m.label,
-          dueDate: w.due === 'Today' ? 'due today' : 'due ' + w.due,
+          dueDate: label === 'Today' ? 'due today' : 'due ' + label,
           color: m.color,
           soft: m.soft,
           iconPath: m.iconPath,
-          badge: isUnreach ? w.attempts + ' attempts' : w.over > 0 ? w.over + 'd overdue' : 'Due ' + w.due,
-          badgeColor: isUnreach || w.over > 0 ? '#994242' : '#C35721',
+          badge: isUnreach ? w.attempts + ' attempts' : isOverdue ? daysOverdue + 'd overdue' : 'Due ' + label,
+          badgeColor: isUnreach || isOverdue ? '#994242' : '#C35721',
           delivery: w.delivery === '—' ? 'call step' : w.delivery,
         };
       });

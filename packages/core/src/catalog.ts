@@ -57,13 +57,13 @@ export const CATEGORY_ORDER: Category[] = [
   'OTHER',
 ];
 
-/** Quick-pick due dates. Dates are display labels anchored to the demo "today". */
-export const DUE: Record<DueKey, { label: string; date: string }> = {
-  '3d': { label: '3 days', date: '9 Jul' },
-  '1w': { label: '1 week', date: '13 Jul' },
-  '2w': { label: '2 weeks', date: '20 Jul' },
-  '1m': { label: '1 month', date: '6 Aug' },
-  '3m': { label: '3 months', date: '6 Oct' },
+/** Quick-pick due dates: whole days from the moment of capture (FR-A-5.2). */
+export const DUE: Record<DueKey, { label: string; days: number }> = {
+  '3d': { label: '3 days', days: 3 },
+  '1w': { label: '1 week', days: 7 },
+  '2w': { label: '2 weeks', days: 14 },
+  '1m': { label: '1 month', days: 30 },
+  '3m': { label: '3 months', days: 90 },
 };
 
 /** Worklist filter chips → category (or 'all'). */

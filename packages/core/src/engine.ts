@@ -14,7 +14,10 @@ import type {
   Visit,
   WorkStep,
 } from './types';
-import type { DecoratedStep } from './logic';
+import type { DecoratedStep, OverdueInfo } from './logic';
+
+/** A step as read: the stored shape plus §11.1's overdue flags, derived fresh on every read. */
+export type StepView = WorkStep & OverdueInfo;
 
 export interface NewPatient {
   name: string;
@@ -29,6 +32,8 @@ export interface CaptureInput {
   cat: Category;
   dueKey: DueKey;
   priority: 'NORMAL' | 'HIGH';
+  /** Overrides the dueKey's default offset with an exact due date. Omit to derive from dueKey (FR-A-5.2). */
+  dueDate?: Date;
 }
 
 /** Options for the visit anchoring a captured batch of Next Steps (§10.2). */
@@ -91,7 +96,7 @@ export interface CoordinationEngine {
   doneRows(): Promise<DoneRow[]>;
   openTotal(filter: Category | 'all'): Promise<number>;
   openStepsForPatient(patientId: Id): Promise<DecoratedStep[]>;
-  getStep(id: Id): Promise<WorkStep | undefined>;
+  getStep(id: Id): Promise<StepView | undefined>;
   /** CREATED -> SCHEDULED (§11.2); the one legal transition into an open state. */
   scheduleStep(id: Id, byUser?: Id): Promise<void>;
   /** CREATED/SCHEDULED -> COMPLETED. completedDate must be >= the visit date and <= today (FR-A-7.1). */

@@ -81,8 +81,8 @@ export interface HistoryEntry {
 
 /**
  * A next step as it appears on the board / worklist (PRD §10.3).
- * `due` is a display label and `over` the whole days overdue — the prototype's
- * pre-computed coordination snapshot.
+ * `dueDate` is the one stored due value (§10.3); display labels and overdue
+ * status are derived from it on read, never stored (§11.1, §11.3).
  */
 export interface WorkStep {
   id: Id;
@@ -92,8 +92,8 @@ export interface WorkStep {
   name: string;
   cat: Category;
   detail: string;
-  due: string;
-  over: number;
+  /** Stored UTC; rendered/derived in the clinic timezone (§10, default Asia/Kolkata). */
+  dueDate: Date;
   priority: Priority;
   delivery: Delivery;
   attempts: number;

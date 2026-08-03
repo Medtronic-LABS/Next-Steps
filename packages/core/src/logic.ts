@@ -2,7 +2,54 @@
 
 import { META } from './catalog';
 import { AVATARS } from './seed';
-import type { Delivery, Gender, WorkStep } from './types';
+import type { Delivery, Gender, StepStatus, WorkStep } from './types';
+
+/** §11.2: only these three statuses are terminal — never overdue (§11.1). */
+const TERMINAL_STATUSES: ReadonlySet<StepStatus> = new Set(['COMPLETED', 'CANCELLED', 'DECLINED']);
+
+/** Clinic timezone (§10 default). Not yet clinic-configurable (§10.5 covers only the unreachable threshold). */
+export const CLINIC_TIMEZONE = 'Asia/Kolkata';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Calendar day index of `d` in the clinic timezone — equal iff same clinic calendar day. */
+export function clinicDayIndex(d: Date): number {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: CLINIC_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return Math.floor(Date.UTC(get('year'), get('month') - 1, get('day')) / DAY_MS);
+}
+
+function isValidDate(d: unknown): d is Date {
+  return d instanceof Date && !Number.isNaN(d.getTime());
+}
+
+export interface OverdueInfo {
+  isOverdue: boolean;
+  daysOverdue: number;
+}
+
+/** §11.1: isOverdue = dueDate < today AND status is not terminal; derived on read, never stored. */
+export function deriveOverdue(dueDate: Date, status: StepStatus, now: Date = new Date()): OverdueInfo {
+  if (!isValidDate(dueDate) || TERMINAL_STATUSES.has(status)) {
+    return { isOverdue: false, daysOverdue: 0 };
+  }
+  const daysOverdue = Math.max(0, clinicDayIndex(now) - clinicDayIndex(dueDate));
+  return { isOverdue: daysOverdue > 0, daysOverdue };
+}
+
+/** §10, FR-A-6.4: the bare display label for a due date — 'Today', '19 Jun', '28 Jul' — derived, never stored. */
+export function formatDueLabel(dueDate: Date, now: Date = new Date()): string {
+  if (!isValidDate(dueDate)) return '';
+  if (clinicDayIndex(dueDate) === clinicDayIndex(now)) return 'Today';
+  return new Intl.DateTimeFormat('en-GB', { timeZone: CLINIC_TIMEZONE, day: 'numeric', month: 'short' }).format(
+    dueDate,
+  );
+}
 
 export function initials(name: string): string {
   return name
@@ -42,6 +89,10 @@ export function deliveryColor(d: Delivery): string {
 
 /** A worklist/board step enriched with everything the UI renders. */
 export interface DecoratedStep extends WorkStep {
+  isOverdue: boolean;
+  daysOverdue: number;
+  /** Legacy alias for `daysOverdue` (BR-014 ordering, existing callers). */
+  over: number;
   categoryLabel: string;
   color: string;
   soft: string;
@@ -51,6 +102,7 @@ export interface DecoratedStep extends WorkStep {
   isHigh: boolean;
   showOver: boolean;
   overBadge: string;
+  /** Bare due-date label — 'Today', '19 Jun', '28 Jul' (§10, FR-A-6.4). */
   dueLabel: string;
   showAttempts: boolean;
   attemptsLabel: string;
@@ -58,25 +110,29 @@ export interface DecoratedStep extends WorkStep {
   deliveryTint: string;
 }
 
-export function decorate(w: WorkStep): DecoratedStep {
+export function decorate(w: WorkStep, now: Date = new Date()): DecoratedStep {
   const m = META[w.cat];
+  const { isOverdue, daysOverdue } = deriveOverdue(w.dueDate, w.status, now);
+  const label = formatDueLabel(w.dueDate, now);
   return {
     ...w,
+    isOverdue,
+    daysOverdue,
+    over: daysOverdue,
     categoryLabel: m.label,
     color: m.color,
     soft: m.soft,
     iconPath: m.iconPath,
-    statusText:
-      w.over > 0
-        ? 'Overdue · was due ' + w.due
-        : w.due === 'Today'
-          ? 'Due today'
-          : 'Due ' + w.due,
-    statusColor: w.over > 0 ? 'var(--status-danger)' : 'var(--text-muted)',
+    statusText: isOverdue
+      ? 'Overdue · was due ' + label
+      : label === 'Today'
+        ? 'Due today'
+        : 'Due ' + label,
+    statusColor: isOverdue ? 'var(--status-danger)' : 'var(--text-muted)',
     isHigh: w.priority === 'HIGH',
-    showOver: w.over > 0,
-    overBadge: w.over + 'd overdue',
-    dueLabel: w.due === 'Today' ? 'Due today' : 'Due ' + w.due,
+    showOver: isOverdue,
+    overBadge: daysOverdue + 'd overdue',
+    dueLabel: label,
     showAttempts: w.attempts > 0,
     attemptsLabel: w.attempts + ' failed attempts',
     showDelivery: w.delivery !== '—',

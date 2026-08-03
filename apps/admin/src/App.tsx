@@ -7,6 +7,7 @@ import {
   META,
   TODAY_LABEL,
   avatarFor,
+  formatDueLabel,
   guessGender,
   initials,
   maskMobile,
@@ -16,6 +17,7 @@ import {
   type DueKey,
   type Gender,
   type Patient,
+  type StepView,
   type WorklistSections,
   type WorkStep,
 } from '@next-steps/core';
@@ -23,6 +25,8 @@ import { engine, useEngineData, useEngineSync } from './lib/engine';
 import { Icon, Logo, Whatsapp, PATHS } from './components/icons';
 
 type Screen = 'search' | 'create' | 'patient' | 'capture' | 'saved' | 'worklist';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const S = {
   strong: 'var(--text-strong)',
@@ -524,7 +528,7 @@ function Capture({ sel, steps, onBack, addStep, removeStep, setDue, toggleHigh }
                   })}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 11, paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: 12.5, color: S.muted }}>Due <strong style={{ color: S.body }}>{DUE[s.due].date}</strong></span>
+                  <span style={{ fontSize: 12.5, color: S.muted }}>Due <strong style={{ color: S.body }}>{formatDueLabel(new Date(Date.now() + DUE[s.due].days * DAY_MS))}</strong></span>
                   <button onClick={() => toggleHigh(s.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1.5px solid ${high ? 'var(--status-warning)' : 'var(--border-default)'}`, background: high ? 'var(--status-warning-soft)' : '#fff', color: high ? '#C35721' : S.muted, fontSize: 12, fontWeight: 700, padding: '5px 11px', borderRadius: 999, cursor: 'pointer' }}>
                     <Icon path="M4 22V4a1 1 0 0 1 1-1h10l-1.5 4L15 11H5" size={13} stroke={high ? '#C35721' : S.muted} width={1.8} fill={high ? '#C35721' : 'none'} />{high ? 'High' : 'Normal'}
                   </button>
@@ -691,7 +695,7 @@ function ActionRow({ icon, bg, label, onClick }: { icon: React.ReactNode; bg: st
   );
 }
 function StepSheet({ step, onBack, onComplete, onNudge, onCall, onLog, onReschedule, onCancel, onDecline }: {
-  step: WorkStep; onBack: () => void; onComplete: () => void; onNudge: () => void; onCall: () => void; onLog: () => void; onReschedule: () => void; onCancel: () => void; onDecline: () => void;
+  step: StepView; onBack: () => void; onComplete: () => void; onNudge: () => void; onCall: () => void; onLog: () => void; onReschedule: () => void; onCancel: () => void; onDecline: () => void;
 }) {
   const m = META[step.cat];
   return (
@@ -701,7 +705,7 @@ function StepSheet({ step, onBack, onComplete, onNudge, onCall, onLog, onResched
         <button className="back-link" style={{ fontWeight: 700, fontSize: 12.5 }} onClick={onBack}><Icon path={PATHS.chevLeft} size={15} width={2.4} />All steps for {step.name}</button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)', margin: '8px 0 12px' }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, flex: 'none', background: m.soft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon path={m.iconPath} size={20} stroke={m.color} width={1.9} /></div>
-          <div><div style={{ fontSize: 15.5, fontWeight: 700, color: S.strong }}>{m.label}</div><div style={{ fontSize: 12.5, color: S.muted }}>Due {step.due}</div></div>
+          <div><div style={{ fontSize: 15.5, fontWeight: 700, color: S.strong }}>{m.label}</div><div style={{ fontSize: 12.5, color: S.muted }}>Due {formatDueLabel(step.dueDate)}</div></div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <ActionRow bg="#E9FBF0" label="Mark complete" onClick={onComplete} icon={<Icon path={PATHS.check} size={19} stroke="#128C4A" width={2.2} />} />
