@@ -76,7 +76,7 @@ export function deriveSection(
 // snapshots, never period-bound).
 
 /** A step's period membership: `date` falls within the `periodDays` ending on `now`, inclusive at both ends. */
-function inPeriod(date: Date, periodDays: number, now: Date): boolean {
+export function inPeriod(date: Date, periodDays: number, now: Date): boolean {
   const todayIndex = clinicDayIndex(now);
   const dueIndex = clinicDayIndex(date);
   return dueIndex <= todayIndex && todayIndex - dueIndex < periodDays;

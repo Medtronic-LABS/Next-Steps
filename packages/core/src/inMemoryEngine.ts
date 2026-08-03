@@ -6,24 +6,30 @@
 // badges, doctor counts) derives from `allSteps()` = seed fixture + steps the
 // administrator captures, minus any that reached a terminal state.
 
-import { DUE, META } from './catalog';
+import { CATEGORY_ORDER, DUE, META } from './catalog';
 import {
   CARD_DEFS,
   DONE_BASE,
-  DRILL,
-  INSIGHTS_BY_PERIOD,
   PATIENTS,
   SEED_VISITS,
   WORK,
 } from './seed';
 import {
   clinicDayIndex,
+  completionRate,
   decorate,
   DEFAULT_UNREACHABLE_THRESHOLD,
   deriveOverdue,
   deriveSection,
   formatDueLabel,
+  formatRateWithDenominator,
+  inPeriod,
+  lostToFollowUp,
+  medianDaysToCompletion,
   orderSection,
+  overdueBuckets,
+  patientsNeedingAttention,
+  unreachablePatients,
   type DecoratedStep,
 } from './logic';
 import type {
@@ -74,6 +80,51 @@ const TERMINAL_STATUSES: ReadonlySet<StepStatus> = new Set(['COMPLETED', 'CANCEL
 
 /** Fallback actor for transitions the caller doesn't attribute to a user (§11.4 requires byUser to be set). */
 const SYSTEM_ACTOR = 'system';
+
+/** FR-D-2.2: static title/sub copy per drill-down — the row set itself is derived live (BR-018). */
+const DRILL_META: Record<DrillKey, { title: string; sub: string }> = {
+  overdue: { title: 'Overdue next steps', sub: 'Steps past their due date' },
+  invest: { title: 'Investigations pending', sub: 'Lab investigations not yet done' },
+  referral: { title: 'Referrals pending', sub: 'Referrals not yet completed' },
+  unreach: { title: 'Unreachable patients', sub: 'Could not reach after 3+ attempts' },
+  lost: { title: 'Lost to follow-up', sub: 'Long overdue and unreachable' },
+};
+
+/** FR-D-2.2, BR-018: which live, open steps qualify for each drill-down key. */
+function matchesDrillKey(key: DrillKey, step: WorkStep, threshold: number, now: Date): boolean {
+  const { isOverdue } = deriveOverdue(step.dueDate, step.status, now);
+  switch (key) {
+    case 'overdue':
+      return isOverdue;
+    case 'invest':
+      return step.cat === 'LAB_INVESTIGATION';
+    case 'referral':
+      return step.cat === 'SPECIALIST_REFERRAL';
+    case 'unreach':
+      return step.attempts >= threshold;
+    case 'lost':
+      return isOverdue && step.attempts >= threshold;
+  }
+}
+
+/** §13 overdue-backlog bar presentation: proportional bar height per bucket, aged-severity colour ramp. */
+const BACKLOG_BUCKET_LABELS = ['1–7 d', '8–30 d', '31–90 d', '90+ d'];
+const BACKLOG_BUCKET_COLORS = ['#EB956A', '#C35721', '#994242', '#751A1A'];
+function backlogBars(values: number[]): { label: string; value: number; height: string; color: string }[] {
+  const max = Math.max(1, ...values);
+  return values.map((v, i) => ({
+    label: BACKLOG_BUCKET_LABELS[i],
+    value: v,
+    height: v === 0 ? '6%' : `${Math.round(Math.max(0.2, v / max) * 88)}%`,
+    color: BACKLOG_BUCKET_COLORS[i],
+  }));
+}
+
+/** §13 per-category completion bars exclude OTHER, matching the doctor dashboard's four-category layout. */
+const INSIGHTS_CATEGORIES = CATEGORY_ORDER.filter((c) => c !== 'OTHER');
+
+/** §13, PROVISIONAL: default lost-to-follow-up window, pending §21 clinician review. */
+const LOST_TO_FOLLOW_UP_DAYS = 30;
 
 /** FR-A-7.3/BR-007: the sole reopen window, inclusive at both ends (PROVISIONAL — see ITEM-2-TEST-CASES.md). */
 const REOPEN_WINDOW_MS = 48 * 60 * 60 * 1000;
@@ -253,6 +304,37 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     const result = this.allVisits().length;
     await delay(SIMULATED_LATENCY_MS);
     return result;
+  }
+
+  /** §13 median-days-to-completion is measured from visitDate (BR-006: exactly one visit per step). */
+  private stepsWithVisitDate(): (WorkStep & { visitDate: Date })[] {
+    const visitDates = new Map(this.allVisits().map((v) => [v.visitId, v.visitDateTime]));
+    return this.allSteps().map((w) => ({ ...w, visitDate: visitDates.get(w.visitId) ?? w.dueDate }));
+  }
+
+  /** §13 lost-to-follow-up: every step (open or closed) per patient, plus that patient's most recent visit. */
+  private patientsForLostToFollowUp(): {
+    patientId: Id;
+    steps: { dueDate: Date; status: StepStatus; attempts: number }[];
+    lastVisitDate: Date;
+  }[] {
+    const lastVisitByPatient = new Map<Id, Date>();
+    for (const v of this.allVisits()) {
+      const current = lastVisitByPatient.get(v.patientId);
+      if (!current || v.visitDateTime > current) lastVisitByPatient.set(v.patientId, v.visitDateTime);
+    }
+    const stepsByPatient = new Map<Id, { dueDate: Date; status: StepStatus; attempts: number }[]>();
+    for (const w of this.allSteps()) {
+      const entry = { dueDate: w.dueDate, status: w.status, attempts: w.attempts };
+      const list = stepsByPatient.get(w.pid);
+      if (list) list.push(entry);
+      else stepsByPatient.set(w.pid, [entry]);
+    }
+    return [...stepsByPatient.entries()].map(([patientId, steps]) => ({
+      patientId,
+      steps,
+      lastVisitDate: lastVisitByPatient.get(patientId) ?? new Date(0),
+    }));
   }
 
   async getStep(id: Id): Promise<StepView | undefined> {
@@ -562,9 +644,11 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   // --- doctor -------------------------------------------------------------
 
   async summaryCards(): Promise<SummaryCard[]> {
+    const now = new Date();
+    const open = this.openSteps();
     const result = CARD_DEFS.map((c) => ({
       key: c.key,
-      value: DRILL[c.key].rows.filter((id) => !this.isClosed(id)).length,
+      value: open.filter((w) => matchesDrillKey(c.key, w, DEFAULT_UNREACHABLE_THRESHOLD, now)).length,
       label: c.label,
       color: c.color,
       soft: c.soft,
@@ -575,28 +659,21 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   }
 
   async heroAttn(): Promise<number> {
-    const ids = new Set<Id>();
-    [...DRILL.overdue.rows, ...DRILL.unreach.rows]
-      .filter((id) => !this.isClosed(id))
-      .forEach((id) => {
-        const w = WORK.find((x) => x.id === id);
-        if (w) ids.add(w.pid);
-      });
-    const result = ids.size;
+    const result = patientsNeedingAttention(this.openSteps(), DEFAULT_UNREACHABLE_THRESHOLD, new Date());
     await delay(SIMULATED_LATENCY_MS);
     return result;
   }
 
   async drill(key: DrillKey): Promise<DrillView> {
-    const d = DRILL[key];
-    const rows: DrillRow[] = d.rows
-      .filter((id) => !this.isClosed(id))
-      .map((id) => {
-        const w = WORK.find((x) => x.id === id)!;
+    const now = new Date();
+    const meta = DRILL_META[key];
+    const rows: DrillRow[] = this.openSteps()
+      .filter((w) => matchesDrillKey(key, w, DEFAULT_UNREACHABLE_THRESHOLD, now))
+      .map((w) => {
         const m = META[w.cat];
         const isUnreach = deriveSection(w) === 'unreach';
-        const label = formatDueLabel(w.dueDate);
-        const { isOverdue, daysOverdue } = deriveOverdue(w.dueDate, w.status);
+        const label = formatDueLabel(w.dueDate, now);
+        const { isOverdue, daysOverdue } = deriveOverdue(w.dueDate, w.status, now);
         return {
           id: w.id,
           patientName: w.name,
@@ -610,13 +687,92 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
           delivery: w.delivery === '—' ? 'call step' : w.delivery,
         };
       });
-    const result = { title: d.title, sub: d.sub, rows };
+    const result = { title: meta.title, sub: meta.sub, rows };
     await delay(SIMULATED_LATENCY_MS);
     return result;
   }
 
+  /** FR-D-3, BR-018: every figure below is computed by the §13 functions in logic.ts, over live state. */
   async insights(periodDays: number): Promise<Insights> {
-    const result = INSIGHTS_BY_PERIOD[periodDays] ?? INSIGHTS_BY_PERIOD[30];
+    const now = new Date();
+    const steps = this.stepsWithVisitDate();
+    const open = this.openSteps();
+
+    const overall = completionRate(steps, periodDays, now);
+    const prevNow = new Date(now.getTime() - periodDays * DAY_MS);
+    const prevOverall = completionRate(steps, periodDays, prevNow);
+
+    const TREND_POINTS = 5;
+    const trendStepDays = Math.max(1, Math.round(periodDays / (TREND_POINTS - 1)));
+    const trend = Array.from({ length: TREND_POINTS }, (_, i) => {
+      const anchor = new Date(now.getTime() - (TREND_POINTS - 1 - i) * trendStepDays * DAY_MS);
+      return completionRate(steps, periodDays, anchor).rate;
+    });
+
+    const catBars = INSIGHTS_CATEGORIES.map((cat) => {
+      const r = completionRate(
+        steps.filter((s) => s.cat === cat),
+        periodDays,
+        now,
+      );
+      return {
+        label: META[cat].label,
+        pctLabel: formatRateWithDenominator(r.numerator, r.denominator),
+        width: `${r.rate}%`,
+        color: META[cat].color,
+      };
+    });
+
+    const buckets = overdueBuckets(open, now);
+    const backlog = backlogBars([
+      buckets['1-7'].length,
+      buckets['8-30'].length,
+      buckets['31-90'].length,
+      buckets['90+'].length,
+    ]);
+
+    const referralSteps = steps.filter((s) => s.cat === 'SPECIALIST_REFERRAL');
+    const referralRate = completionRate(referralSteps, periodDays, now);
+    const medians = medianDaysToCompletion(steps, periodDays, now);
+    const overallMedianDays = Number.isFinite(medians.overall) ? medians.overall : 0;
+
+    const eligible = steps.filter((s) => s.status !== 'CANCELLED' && inPeriod(s.dueDate, periodDays, now));
+    const patientsContacted = new Set(eligible.map((s) => s.pid)).size;
+    const callsCompleted = completionRate(
+      steps.filter((s) => s.cat === 'FOLLOW_UP_CALL'),
+      periodDays,
+      now,
+    ).numerator;
+    const unreachable = unreachablePatients(open, DEFAULT_UNREACHABLE_THRESHOLD);
+    const lost = lostToFollowUp(
+      this.patientsForLostToFollowUp(),
+      { threshold: DEFAULT_UNREACHABLE_THRESHOLD, lostToFollowUpDays: LOST_TO_FOLLOW_UP_DAYS },
+      now,
+    );
+
+    const result: Insights = {
+      completionRate: overall.rate,
+      completionOf: `${overall.numerator} of ${overall.denominator}`,
+      prevRate: prevOverall.rate,
+      deltaPts: overall.rate - prevOverall.rate,
+      trend,
+      catBars,
+      backlogBars: backlog,
+      referral: {
+        rate: referralRate.rate,
+        ofLabel: `${referralRate.numerator} of ${referralRate.denominator} completed`,
+        medianDays: medians.byCategory['SPECIALIST_REFERRAL'] ?? 0,
+      },
+      followThrough: [
+        { value: String(patientsContacted), label: 'Patients contacted', color: '#1E14BE', bg: '#EFEDFF' },
+        { value: String(callsCompleted), label: 'Follow-up calls completed', color: '#C35721', bg: '#FBEDE4' },
+        { value: `${referralRate.rate}%`, label: 'Referral completion', color: '#6165DE', bg: '#EEEDFB' },
+        { value: `${overallMedianDays} days`, label: 'Average days to complete', color: '#2E9E6B', bg: '#E4F7EE' },
+        { value: String(unreachable), label: 'Patients unreachable', color: '#994242', bg: '#FDECEC' },
+        { value: String(lost), label: 'Lost to follow-up', color: '#128C4A', bg: '#E4F7EE' },
+      ],
+      followThroughNote: 'Every figure comes only from next-step follow-through — never clinical outcomes.',
+    };
     await delay(SIMULATED_LATENCY_MS);
     return result;
   }

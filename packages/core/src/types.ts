@@ -140,14 +140,7 @@ export interface SummaryCard {
 
 export type DrillKey = 'overdue' | 'invest' | 'referral' | 'unreach' | 'lost';
 
-/** A doctor drill-down list (PRD FR-D-2.2). */
-export interface Drill {
-  title: string;
-  sub: string;
-  rows: Id[];
-}
-
-/** Care-completion insights (PRD FR-D-3), pre-aggregated for the period. */
+/** Care-completion insights (PRD FR-D-3), computed live for the period (BR-018). */
 export interface Insights {
   completionRate: number;
   completionOf: string;

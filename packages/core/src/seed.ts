@@ -2,7 +2,7 @@
 // (Anand Diabetes Care), nine patients, ten next steps across all sections and
 // statuses, plus the doctor's pre-aggregated drill and insight figures.
 
-import type { Drill, DrillKey, Insights, Patient, Visit, WorkStep } from './types';
+import type { DrillKey, Patient, Visit, WorkStep } from './types';
 
 export const CLINIC = { name: 'Anand Diabetes Care', admin: 'Priya', doctor: 'Dr. Meera Anand' };
 
@@ -68,16 +68,7 @@ export const DONE_BASE = [
   { name: 'Prakash Nair', detail: 'Lab investigation' },
 ];
 
-/** Doctor drill-downs (PRD FR-D-2). Rows reference WORK ids. */
-export const DRILL: Record<DrillKey, Drill> = {
-  overdue: { title: 'Overdue next steps', sub: 'Steps past their due date', rows: ['w1', 'w3', 'w2', 'w9'] },
-  invest: { title: 'Investigations pending', sub: 'Lab investigations not yet done', rows: ['w1', 'w5', 'w9'] },
-  referral: { title: 'Referrals pending', sub: 'Referrals not yet completed', rows: ['w3', 'w7'] },
-  unreach: { title: 'Unreachable patients', sub: 'Could not reach after 3+ attempts', rows: ['w8', 'w9'] },
-  lost: { title: 'Lost to follow-up', sub: 'Long overdue and unreachable', rows: ['w9', 'w8'] },
-};
-
-/** Summary-card metadata (value comes from the drill row counts). */
+/** Summary-card metadata (value comes from live drill-down counts, computed in inMemoryEngine.ts). */
 export const CARD_DEFS: { key: DrillKey; label: string; color: string; soft: string; iconPath: string }[] = [
   { key: 'overdue', label: 'Overdue next steps', color: '#994242', soft: '#FDECEC', iconPath: 'M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0ZM12 9v4M12 17h.01' },
   { key: 'invest', label: 'Investigations pending', color: '#2E9E6B', soft: '#E4F7EE', iconPath: 'M9 2h6M10 2v6.5L5.5 17a3 3 0 0 0 2.7 4.3h7.6A3 3 0 0 0 18.5 17L14 8.5V2M8 14h8' },
@@ -86,88 +77,3 @@ export const CARD_DEFS: { key: DrillKey; label: string; color: string; soft: str
   { key: 'lost', label: 'Lost to follow-up', color: '#909090', soft: '#F0EFEC', iconPath: 'M18 21a8 8 0 0 0-16 0M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 11l-3 3M19 11l3 3' },
 ];
 
-const CAT_LABELS = ['Follow-up visits', 'Investigations', 'Referrals', 'Phone calls'];
-const CAT_COLORS = ['#1E14BE', '#2E9E6B', '#6165DE', '#C35721'];
-function catBars(rows: { p: number; of: string }[]) {
-  return rows.map((r, i) => ({
-    label: CAT_LABELS[i],
-    pctLabel: `${r.p}% (${r.of})`,
-    width: `${r.p}%`,
-    color: CAT_COLORS[i],
-  }));
-}
-
-const BL_LABELS = ['1–7 d', '8–30 d', '31–90 d', '90+ d'];
-const BL_COLORS = ['#EB956A', '#C35721', '#994242', '#751A1A'];
-function backlog(values: number[]) {
-  const max = Math.max(1, ...values);
-  return values.map((v, i) => ({
-    label: BL_LABELS[i],
-    value: v,
-    height: v === 0 ? '6%' : `${Math.round(Math.max(0.2, v / max) * 88)}%`,
-    color: BL_COLORS[i],
-  }));
-}
-
-const FT_LABELS = [
-  'Patients contacted',
-  'Follow-up calls completed',
-  'Referral completion',
-  'Average days to complete',
-  'Patients unreachable',
-  'Lost to follow-up recovered',
-];
-const FT_STYLES: [string, string][] = [
-  ['#1E14BE', '#EFEDFF'],
-  ['#C35721', '#FBEDE4'],
-  ['#6165DE', '#EEEDFB'],
-  ['#2E9E6B', '#E4F7EE'],
-  ['#994242', '#FDECEC'],
-  ['#128C4A', '#E4F7EE'],
-];
-function followThrough(values: string[]) {
-  return values.map((v, i) => ({ value: v, label: FT_LABELS[i], color: FT_STYLES[i][0], bg: FT_STYLES[i][1] }));
-}
-const FT_NOTE = 'Every figure comes only from next-step follow-through — never clinical outcomes.';
-
-/** Insights per selected period (days). Driven by the 7/30/90 chips. */
-export const INSIGHTS_BY_PERIOD: Record<number, Insights> = {
-  7: {
-    completionRate: 74,
-    completionOf: '14 of 19',
-    prevRate: 70,
-    deltaPts: 4,
-    trend: [70, 71, 73, 72, 74],
-    catBars: catBars([{ p: 80, of: '8/10' }, { p: 71, of: '5/7' }, { p: 57, of: '4/7' }, { p: 86, of: '6/7' }]),
-    backlogBars: backlog([1, 1, 0, 0]),
-    referral: { rate: 57, ofLabel: '4 of 7 completed', medianDays: 9 },
-    followThrough: followThrough(['48', '11', '57%', '9 days', '3', '1']),
-    followThroughNote: FT_NOTE,
-  },
-  30: {
-    completionRate: 78,
-    completionOf: '46 of 59',
-    prevRate: 71,
-    deltaPts: 7,
-    trend: [64, 68, 71, 73, 78],
-    catBars: catBars([{ p: 82, of: '28/34' }, { p: 74, of: '17/23' }, { p: 61, of: '11/18' }, { p: 88, of: '22/25' }]),
-    backlogBars: backlog([2, 2, 0, 0]),
-    referral: { rate: 61, ofLabel: '11 of 18 completed', medianDays: 11 },
-    followThrough: followThrough(['182', '41', '61%', '11 days', '6', '4']),
-    followThroughNote: FT_NOTE,
-  },
-  90: {
-    completionRate: 80,
-    completionOf: '141 of 176',
-    prevRate: 74,
-    deltaPts: 6,
-    trend: [70, 73, 75, 78, 80],
-    catBars: catBars([{ p: 84, of: '70/83' }, { p: 77, of: '52/68' }, { p: 63, of: '34/54' }, { p: 90, of: '61/68' }]),
-    backlogBars: backlog([3, 4, 2, 1]),
-    referral: { rate: 63, ofLabel: '34 of 54 completed', medianDays: 12 },
-    followThrough: followThrough(['512', '128', '63%', '12 days', '14', '11']),
-    followThroughNote: FT_NOTE,
-  },
-};
-
-export const INSIGHTS: Insights = INSIGHTS_BY_PERIOD[30];

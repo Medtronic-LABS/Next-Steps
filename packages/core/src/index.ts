@@ -7,8 +7,6 @@ export {
   TODAY_LABEL,
   PATIENTS,
   WORK,
-  DRILL,
-  INSIGHTS,
   DONE_BASE,
   AVATARS,
 } from './seed';
