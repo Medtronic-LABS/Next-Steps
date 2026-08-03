@@ -5,9 +5,9 @@ import {
   DUE,
   FILTERS,
   META,
-  TODAY_LABEL,
   avatarFor,
   formatDueLabel,
+  formatTodayLabel,
   guessGender,
   initials,
   maskMobile,
@@ -603,7 +603,7 @@ function Worklist({ filter, setFilter, onOpenPatient }: { filter: Category | 'al
       <div style={{ padding: '6px 18px 10px', position: 'sticky', top: 0, background: 'var(--surface-page)', zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
           <div className="h-screen" style={{ fontSize: 21 }}>Today’s worklist</div>
-          <span style={{ fontSize: 12, color: S.muted, flex: 'none' }}>{TODAY_LABEL}</span>
+          <span style={{ fontSize: 12, color: S.muted, flex: 'none' }}>{formatTodayLabel()}</span>
         </div>
         <div className="nsScroll" style={{ display: 'flex', gap: 7, marginTop: 11, overflowX: 'auto' }}>
           {FILTERS.map((f) => {

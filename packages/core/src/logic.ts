@@ -323,6 +323,14 @@ export function formatDueLabel(dueDate: Date, now: Date = new Date()): string {
   );
 }
 
+/** §10, FR-D-2.4: the admin worklist header's "today" label, e.g. 'Monday, 6 July' — derived from `now` in clinic time, never a fixed literal. */
+export function formatTodayLabel(now: Date = new Date()): string {
+  const weekday = now.toLocaleString('en-US', { timeZone: CLINIC_TIMEZONE, weekday: 'long' });
+  const day = now.toLocaleString('en-US', { timeZone: CLINIC_TIMEZONE, day: 'numeric' });
+  const month = now.toLocaleString('en-US', { timeZone: CLINIC_TIMEZONE, month: 'long' });
+  return `${weekday}, ${day} ${month}`;
+}
+
 export function initials(name: string): string {
   return name
     .split(' ')

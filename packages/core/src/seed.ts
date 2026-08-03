@@ -6,9 +6,6 @@ import type { DrillKey, Patient, Visit, WorkStep } from './types';
 
 export const CLINIC = { name: 'Anand Diabetes Care', admin: 'Priya', doctor: 'Dr. Meera Anand' };
 
-/** The demo "today". */
-export const TODAY_LABEL = 'Monday, 6 July';
-
 export const PATIENTS: Patient[] = [
   { id: 'p1', name: 'Ramesh Kulkarni', mobile: '98450 12210', gender: 'Male', age: 58, cid: '2043', open: 2, overdue: 1, last: '28 Jun', consent: true },
   { id: 'p2', name: 'Lakshmi Iyer', mobile: '99001 44821', gender: 'Female', age: 63, cid: '1188', open: 1, overdue: 0, last: '6 Jul', consent: true },

@@ -4,7 +4,6 @@ export * from './logic';
 export * from './engine';
 export {
   CLINIC,
-  TODAY_LABEL,
   PATIENTS,
   WORK,
   DONE_BASE,
