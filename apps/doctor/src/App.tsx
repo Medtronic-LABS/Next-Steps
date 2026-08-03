@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { CLINIC, trendPath, type DrillKey, type DrillView, type Insights as InsightsData } from '@next-steps/core';
+import {
+  CLINIC,
+  CLINIC_TIMEZONE,
+  initials,
+  trendPath,
+  type DecoratedStep,
+  type DrillKey,
+  type DrillView,
+  type Id,
+  type Insights as InsightsData,
+  type TimelineVisit,
+} from '@next-steps/core';
 import { engine, useEngineData, useEngineSync } from './lib/engine';
 import { Icon, PATHS } from './components/icons';
 
@@ -23,8 +34,10 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('dash');
   const [drillKey, setDrillKey] = useState<DrillKey>('overdue');
   const [period, setPeriod] = useState(1); // 0=7d, 1=30d, 2=90d
+  const [timelinePatientId, setTimelinePatientId] = useState<Id | null>(null);
 
   const openDrill = (k: DrillKey) => { setDrillKey(k); setScreen('drill'); };
+  const openPatient = (pid: Id) => { setTimelinePatientId(pid); setScreen('timeline'); };
 
   return (
     <div className="screen">
@@ -38,8 +51,8 @@ export default function App() {
 
       <div className="body nsScroll">
         {screen === 'dash' && <Dashboard onOpenDrill={openDrill} />}
-        {screen === 'drill' && <DrillDown drillKey={drillKey} onBack={() => setScreen('dash')} onOpenPatient={() => setScreen('timeline')} />}
-        {screen === 'timeline' && <Timeline onBack={() => setScreen('drill')} />}
+        {screen === 'drill' && <DrillDown drillKey={drillKey} onBack={() => setScreen('dash')} onOpenPatient={openPatient} />}
+        {screen === 'timeline' && <Timeline patientId={timelinePatientId} onBack={() => setScreen('drill')} />}
         {screen === 'insights' && <Insights period={period} setPeriod={setPeriod} />}
       </div>
 
@@ -97,7 +110,7 @@ function Dashboard({ onOpenDrill }: { onOpenDrill: (k: DrillKey) => void }) {
 // ============================================================================
 const EMPTY_DRILL: DrillView = { title: '', sub: '', rows: [] };
 
-function DrillDown({ drillKey, onBack, onOpenPatient }: { drillKey: DrillKey; onBack: () => void; onOpenPatient: () => void }) {
+function DrillDown({ drillKey, onBack, onOpenPatient }: { drillKey: DrillKey; onBack: () => void; onOpenPatient: (pid: Id) => void }) {
   const { data } = useEngineData(() => engine.drill(drillKey), [drillKey]);
   const d = data ?? EMPTY_DRILL;
   return (
@@ -107,7 +120,7 @@ function DrillDown({ drillKey, onBack, onOpenPatient }: { drillKey: DrillKey; on
       <div className="p-sub" style={{ marginBottom: 14 }}>{d.sub}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
         {d.rows.map((r) => (
-          <button key={r.id} className="ns-row" style={{ borderLeft: `3px solid ${r.color}`, borderRadius: 13, padding: '12px 13px' }} onClick={onOpenPatient}>
+          <button key={r.id} className="ns-row" style={{ borderLeft: `3px solid ${r.color}`, borderRadius: 13, padding: '12px 13px' }} onClick={() => onOpenPatient(r.pid)}>
             <div style={{ width: 34, height: 34, borderRadius: 9, flex: 'none', background: r.soft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon path={r.iconPath} size={18} stroke={r.color} width={1.9} /></div>
             <div className="grow"><div style={{ fontSize: 14.5, fontWeight: 600, color: S.strong }}>{r.patientName}</div><div style={{ fontSize: 12.5, color: S.muted }}>{r.detail} · {r.dueDate}</div></div>
             <div style={{ textAlign: 'right', flex: 'none' }}><div style={{ fontSize: 11.5, fontWeight: 700, color: r.badgeColor, whiteSpace: 'nowrap' }}>{r.badge}</div><div style={{ fontSize: 11, color: S.subtle, marginTop: 3, whiteSpace: 'nowrap' }}>{r.delivery}</div></div>
@@ -119,58 +132,95 @@ function DrillDown({ drillKey, onBack, onOpenPatient }: { drillKey: DrillKey; on
 }
 
 // ============================================================================
-// Care timeline (coordination only)
+// Care timeline (coordination only) — FR-D-2.3, §11.4
 // ============================================================================
-function TimelineStep({ label, badge, badgeColor, badgeBg, meta }: { label: string; badge: string; badgeColor: string; badgeBg: string; meta: string }) {
+function formatClinicDate(d: Date): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: CLINIC_TIMEZONE, day: 'numeric', month: 'short', year: 'numeric' }).format(d);
+}
+
+/** A visit's dot colour reflects its steps' coordination state — never a clinical judgement. */
+function visitDotColor(steps: DecoratedStep[]): string {
+  if (steps.some((s) => s.isOverdue)) return 'var(--status-danger)';
+  if (steps.length > 0 && steps.every((s) => s.status === 'COMPLETED')) return 'var(--status-success)';
+  return 'var(--ml-blue)';
+}
+
+function TimelineStep({ step }: { step: DecoratedStep }) {
+  const isTerminal = step.status === 'CANCELLED' || step.status === 'DECLINED';
+  const badge =
+    step.status === 'COMPLETED' ? 'Completed'
+    : step.status === 'CANCELLED' ? 'Cancelled'
+    : step.status === 'DECLINED' ? 'Declined'
+    : step.isOverdue ? `Overdue ${step.daysOverdue}d`
+    : 'Scheduled';
+  const badgeColor =
+    step.status === 'COMPLETED' ? 'var(--status-success)'
+    : isTerminal ? S.muted
+    : step.isOverdue ? 'var(--status-danger)'
+    : 'var(--ml-blue)';
+  const badgeBg =
+    step.status === 'COMPLETED' ? 'var(--status-success-soft)'
+    : isTerminal ? 'var(--surface-page)'
+    : step.isOverdue ? 'var(--status-danger-soft)'
+    : 'var(--surface-brand-soft)';
+  const meta =
+    step.status === 'COMPLETED' && step.completedDate ? `Completed ${formatClinicDate(step.completedDate)}`
+    : step.status === 'CANCELLED' ? `Cancelled${step.reason ? ' · ' + step.reason : ''}`
+    : step.status === 'DECLINED' ? `Declined${step.declineReason ? ' · ' + step.declineReason : ''}`
+    : step.statusText;
   return (
     <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 11, padding: '10px 12px', background: '#fff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 13.5, fontWeight: 600, color: S.strong }}>{label}</span>
+        <span style={{ fontSize: 13.5, fontWeight: 600, color: S.strong }}>{step.categoryLabel}</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: badgeColor, background: badgeBg, padding: '2px 8px', borderRadius: 999 }}>{badge}</span>
       </div>
       <div style={{ fontSize: 11.5, color: S.muted, marginTop: 5 }}>{meta}</div>
     </div>
   );
 }
-function Timeline({ onBack }: { onBack: () => void }) {
+
+const EMPTY_TIMELINE: TimelineVisit[] = [];
+
+function Timeline({ patientId, onBack }: { patientId: Id | null; onBack: () => void }) {
+  const { data: visitsData } = useEngineData(
+    () => (patientId ? engine.patientTimeline(patientId) : Promise.resolve(EMPTY_TIMELINE)),
+    [patientId],
+  );
+  const { data: patient } = useEngineData(
+    () => (patientId ? engine.getPatient(patientId) : Promise.resolve(undefined)),
+    [patientId],
+  );
+  const visits = visitsData ?? EMPTY_TIMELINE;
+
   return (
     <div style={{ animation: 'nsFade .2s ease' }}>
       <div style={{ background: 'linear-gradient(135deg,#6165DE,#1E14BE)', padding: '14px 18px 18px', color: '#fff' }}>
         <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'rgba(255,255,255,.16)', cursor: 'pointer', color: '#fff', fontSize: 12.5, fontWeight: 600, padding: '6px 11px', borderRadius: 999, marginBottom: 13 }}><Icon path={PATHS.chevLeft} size={15} width={2.4} />Back</button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="avatar" style={{ width: 48, height: 48, background: 'rgba(255,255,255,.2)', color: '#fff', fontSize: 17 }}>RK</div>
-          <div><div style={{ fontSize: 19, fontWeight: 700 }}>Ramesh Kulkarni</div><div style={{ fontSize: 12.5, opacity: 0.85 }}>Male · 58 · last visit 28 Jun</div></div>
+          <div className="avatar" style={{ width: 48, height: 48, background: 'rgba(255,255,255,.2)', color: '#fff', fontSize: 17 }}>{patient ? initials(patient.name) : ''}</div>
+          <div>
+            <div style={{ fontSize: 19, fontWeight: 700 }}>{patient?.name ?? ''}</div>
+            <div style={{ fontSize: 12.5, opacity: 0.85 }}>{patient ? `${patient.gender} · ${patient.age} · last visit ${patient.last}` : ''}</div>
+          </div>
         </div>
       </div>
       <div style={{ padding: '16px 18px 24px' }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: S.subtle, letterSpacing: '.03em', marginBottom: 12 }}>CARE TIMELINE · coordination only</div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none' }}><div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--ml-blue)', border: '3px solid var(--surface-brand-soft)' }} /><div style={{ width: 2, flex: 1, background: 'var(--border-subtle)' }} /></div>
-          <div style={{ flex: 1, paddingBottom: 20 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: S.strong }}>Visit · 28 Jun 2026</div>
-            <div style={{ marginTop: 9, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <TimelineStep label="Lab investigation" badge="Overdue 8d" badgeColor="var(--status-danger)" badgeBg="var(--status-danger-soft)" meta="Due 28 Jun · T−1 delivered · due-day read · overdue+2 sent" />
-              <TimelineStep label="Follow-up visit" badge="Scheduled" badgeColor="var(--ml-blue)" badgeBg="var(--surface-brand-soft)" meta="Due 28 Jul · reminders scheduled" />
+        {visits.map((v, i) => (
+          <div key={v.visitId} style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none' }}>
+              <div style={{ width: 12, height: 12, borderRadius: '50%', background: visitDotColor(v.steps), border: '3px solid var(--surface-page)' }} />
+              {i < visits.length - 1 && <div style={{ width: 2, flex: 1, background: 'var(--border-subtle)' }} />}
+            </div>
+            <div style={{ flex: 1, paddingBottom: i < visits.length - 1 ? 20 : 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: S.strong }}>Visit · {formatClinicDate(v.visitDateTime)}</div>
+              <div style={{ marginTop: 9, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {v.steps.map((s) => <TimelineStep key={s.id} step={s} />)}
+              </div>
             </div>
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none' }}><div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--status-success)', border: '3px solid #E4F7EE' }} /><div style={{ width: 2, flex: 1, background: 'var(--border-subtle)' }} /></div>
-          <div style={{ flex: 1, paddingBottom: 20 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: S.strong }}>Visit · 15 May 2026</div>
-            <div style={{ marginTop: 9, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <TimelineStep label="Follow-up visit" badge="Completed" badgeColor="var(--status-success)" badgeBg="#E4F7EE" meta="Completed 20 May · on time" />
-              <TimelineStep label="Lab investigation" badge="Completed" badgeColor="var(--status-success)" badgeBg="#E4F7EE" meta="Completed 18 May · 3 days" />
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none' }}><div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--status-success)', border: '3px solid #E4F7EE' }} /></div>
-          <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 700, color: S.strong }}>Visit · 3 Apr 2026</div><div style={{ fontSize: 11.5, color: S.muted, marginTop: 6 }}>Lab investigation · completed 9 Apr</div></div>
-        </div>
+        ))}
       </div>
     </div>
   );

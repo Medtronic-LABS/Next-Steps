@@ -41,6 +41,7 @@ import type {
   NewPatient,
   RecordVisitResult,
   StepView,
+  TimelineVisit,
   VisitOptions,
   WorklistSections,
 } from './engine';
@@ -676,6 +677,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
         const { isOverdue, daysOverdue } = deriveOverdue(w.dueDate, w.status, now);
         return {
           id: w.id,
+          pid: w.pid,
           patientName: w.name,
           detail: m.label,
           dueDate: label === 'Today' ? 'due today' : 'due ' + label,
@@ -773,6 +775,27 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       ],
       followThroughNote: 'Every figure comes only from next-step follow-through — never clinical outcomes.',
     };
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
+  }
+
+  /** FR-D-2.3, §11.4: this patient's visits, most recent first, each with its steps and their history. */
+  async patientTimeline(patientId: Id): Promise<TimelineVisit[]> {
+    const now = new Date();
+    const stepsByVisit = new Map<Id, WorkStep[]>();
+    for (const w of this.allSteps().filter((w) => w.pid === patientId)) {
+      const list = stepsByVisit.get(w.visitId);
+      if (list) list.push(w);
+      else stepsByVisit.set(w.visitId, [w]);
+    }
+    const result = this.allVisits()
+      .filter((v) => v.patientId === patientId)
+      .map((v) => ({
+        visitId: v.visitId,
+        visitDateTime: v.visitDateTime,
+        steps: (stepsByVisit.get(v.visitId) ?? []).map((w) => decorate(w, now)),
+      }))
+      .sort((a, b) => b.visitDateTime.getTime() - a.visitDateTime.getTime());
     await delay(SIMULATED_LATENCY_MS);
     return result;
   }

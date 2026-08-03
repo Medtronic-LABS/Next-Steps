@@ -64,6 +64,7 @@ export interface DoneRow {
 
 export interface DrillRow {
   id: Id;
+  pid: Id;
   patientName: string;
   detail: string;
   dueDate: string;
@@ -79,6 +80,13 @@ export interface DrillView {
   title: string;
   sub: string;
   rows: DrillRow[];
+}
+
+/** A visit and its Next Steps, as shown in the patient timeline (FR-D-2.3, §11.4) — coordination data only (BR-017). */
+export interface TimelineVisit {
+  visitId: Id;
+  visitDateTime: Date;
+  steps: DecoratedStep[];
 }
 
 export interface CoordinationEngine {
@@ -114,6 +122,8 @@ export interface CoordinationEngine {
   heroAttn(): Promise<number>;
   drill(key: DrillKey): Promise<DrillView>;
   insights(periodDays: number): Promise<Insights>;
+  /** FR-D-2.3, §11.4: a patient's visits, most recent first, each with its steps and their history. */
+  patientTimeline(patientId: Id): Promise<TimelineVisit[]>;
 
   // --- device sync state ---
   isOffline(): boolean;
