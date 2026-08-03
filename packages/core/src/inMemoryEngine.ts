@@ -16,7 +16,16 @@ import {
   SEED_VISITS,
   WORK,
 } from './seed';
-import { clinicDayIndex, decorate, deriveOverdue, formatDueLabel, orderSection, type DecoratedStep } from './logic';
+import {
+  clinicDayIndex,
+  decorate,
+  DEFAULT_UNREACHABLE_THRESHOLD,
+  deriveOverdue,
+  deriveSection,
+  formatDueLabel,
+  orderSection,
+  type DecoratedStep,
+} from './logic';
 import type {
   CaptureInput,
   CoordinationEngine,
@@ -32,7 +41,6 @@ import type {
 import type {
   Category,
   DrillKey,
-  DueKey,
   HistoryEntry,
   Id,
   Insights,
@@ -88,24 +96,6 @@ const SIMULATED_LATENCY_MS = 0;
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** Which worklist bucket a freshly captured, future-dated step lands in. */
-const SECTION_BY_DUE: Record<DueKey, WorklistSection> = {
-  '3d': 'soon',
-  '1w': 'soon',
-  '2w': 'upcoming',
-  '1m': 'upcoming',
-  '3m': 'upcoming',
-};
-
-// The seed fixture uses section 'future' for its one not-yet-due step; treat it
-// as 'upcoming' so it groups with newly captured far-out steps. Neither label
-// is a worklist section (FR-A-6.1 defines exactly five), so steps carrying
-// either value are excluded from every `pick()` below — they stay in the data
-// (visible on the patient screen via openStepsForPatient) but not on the worklist.
-function normalizeSection(s: WorklistSection): WorklistSection {
-  return s === 'future' ? 'upcoming' : s;
 }
 
 interface Persisted {
@@ -411,7 +401,6 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
         priority: s.priority,
         delivery: 'Sent',
         attempts: 0,
-        section: SECTION_BY_DUE[s.dueKey],
         status: 'SCHEDULED',
       };
     });
@@ -426,23 +415,27 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   // --- worklist -----------------------------------------------------------
 
-  private sectionsSync(filter: Category | 'all'): WorklistSections {
-    const pick = (section: WorklistSection): DecoratedStep[] =>
-      orderSection(
-        this.openSteps()
-          .filter((w) => normalizeSection(w.section) === section && (filter === 'all' || w.cat === filter))
-          .map((w) => decorate(w)),
-      );
+  /** FR-A-6.1, §11.3: section membership is derived per step on every call, never stored. */
+  private sectionsSync(
+    filter: Category | 'all',
+    unreachableThreshold: number = DEFAULT_UNREACHABLE_THRESHOLD,
+  ): WorklistSections {
+    const buckets: Record<WorklistSection, WorkStep[]> = { overdue: [], today: [], soon: [], unreach: [] };
+    for (const w of this.openSteps()) {
+      if (filter !== 'all' && w.cat !== filter) continue;
+      const section = deriveSection(w, unreachableThreshold);
+      if (section) buckets[section].push(w);
+    }
     return {
-      overdue: pick('overdue'),
-      today: pick('today'),
-      soon: pick('soon'),
-      unreach: pick('unreach'),
+      overdue: orderSection(buckets.overdue.map((w) => decorate(w)), false),
+      today: orderSection(buckets.today.map((w) => decorate(w)), false),
+      soon: orderSection(buckets.soon.map((w) => decorate(w)), false),
+      unreach: orderSection(buckets.unreach.map((w) => decorate(w)), true),
     };
   }
 
-  async sections(filter: Category | 'all'): Promise<WorklistSections> {
-    const result = this.sectionsSync(filter);
+  async sections(filter: Category | 'all', unreachableThreshold?: number): Promise<WorklistSections> {
+    const result = this.sectionsSync(filter, unreachableThreshold);
     await delay(SIMULATED_LATENCY_MS);
     return result;
   }
@@ -601,7 +594,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       .map((id) => {
         const w = WORK.find((x) => x.id === id)!;
         const m = META[w.cat];
-        const isUnreach = w.section === 'unreach';
+        const isUnreach = deriveSection(w) === 'unreach';
         const label = formatDueLabel(w.dueDate);
         const { isOverdue, daysOverdue } = deriveOverdue(w.dueDate, w.status);
         return {

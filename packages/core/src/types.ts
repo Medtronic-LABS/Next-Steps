@@ -24,8 +24,8 @@ export type Gender = 'Male' | 'Female' | 'Other' | 'Prefer not to say';
 /** Due-date quick-pick keys (PRD FR-A-5.2). */
 export type DueKey = '3d' | '1w' | '2w' | '1m' | '3m';
 
-/** Worklist buckets (PRD FR-A-6.1). 'future' is the seed label for 'upcoming'. */
-export type WorklistSection = 'overdue' | 'today' | 'soon' | 'unreach' | 'future' | 'upcoming';
+/** Worklist buckets (PRD FR-A-6.1), derived on read from dueDate/status/attempts (§11.3) — never stored. */
+export type WorklistSection = 'overdue' | 'today' | 'soon' | 'unreach';
 
 /** WhatsApp delivery status (PRD §10.4). '—' means no message applies. */
 export type Delivery = 'Queued' | 'Sent' | 'Delivered' | 'Read' | 'Failed' | '—';
@@ -97,7 +97,6 @@ export interface WorkStep {
   priority: Priority;
   delivery: Delivery;
   attempts: number;
-  section: WorklistSection;
   status: StepStatus;
   /** Append-only transition log (§11.4). Absent until the first transition. */
   history?: HistoryEntry[];

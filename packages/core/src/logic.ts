@@ -2,7 +2,7 @@
 
 import { META } from './catalog';
 import { AVATARS } from './seed';
-import type { Delivery, Gender, StepStatus, WorkStep } from './types';
+import type { Delivery, Gender, StepStatus, WorklistSection, WorkStep } from './types';
 
 /** §11.2: only these three statuses are terminal — never overdue (§11.1). */
 const TERMINAL_STATUSES: ReadonlySet<StepStatus> = new Set(['COMPLETED', 'CANCELLED', 'DECLINED']);
@@ -40,6 +40,33 @@ export function deriveOverdue(dueDate: Date, status: StepStatus, now: Date = new
   }
   const daysOverdue = Math.max(0, clinicDayIndex(now) - clinicDayIndex(dueDate));
   return { isOverdue: daysOverdue > 0, daysOverdue };
+}
+
+/** §10.5: default unreachable-attempts threshold, when a clinic hasn't configured its own. */
+export const DEFAULT_UNREACHABLE_THRESHOLD = 3;
+
+/**
+ * FR-A-6.1, §11.3: worklist section membership, derived on every read from
+ * dueDate, status and attempts — never stored. Returns null when a step
+ * qualifies for none of the five sections (e.g. due more than 7 days out).
+ *
+ * PROVISIONAL: Unreachable takes precedence over Overdue when a step
+ * qualifies for both — FR-A-6.1 doesn't state a precedence rule; this is
+ * pending a PRD ruling (see ITEM-3-TEST-CASES.md TC-SECT-003's open question).
+ */
+export function deriveSection(
+  step: WorkStep,
+  unreachableThreshold: number = DEFAULT_UNREACHABLE_THRESHOLD,
+  now: Date = new Date(),
+): WorklistSection | null {
+  if (TERMINAL_STATUSES.has(step.status)) return null;
+  if (step.attempts >= unreachableThreshold) return 'unreach';
+  const todayIndex = clinicDayIndex(now);
+  const dueIndex = clinicDayIndex(step.dueDate);
+  if (dueIndex < todayIndex) return 'overdue';
+  if (dueIndex === todayIndex) return 'today';
+  if (dueIndex <= todayIndex + 7) return 'soon';
+  return null;
 }
 
 /** §10, FR-A-6.4: the bare display label for a due date — 'Today', '19 Jun', '28 Jul' — derived, never stored. */
@@ -161,12 +188,22 @@ export function trendPath(values: number[]): {
   return { line, area, dots };
 }
 
-/** Worklist ordering within a section (PRD BR-014, FR-A-6.3). */
-export function orderSection(steps: DecoratedStep[]): DecoratedStep[] {
+/**
+ * Worklist ordering within a section (PRD BR-014, FR-A-6.3). `isUnreach`
+ * should be passed explicitly by callers that already know which section a
+ * list came from (section membership is derived, not stored — see
+ * `deriveSection`); when omitted it falls back to inspecting each step's own
+ * `section`, for callers working from a hand-built fixture rather than a
+ * bucket the caller already labelled.
+ */
+export function orderSection(
+  steps: DecoratedStep[],
+  isUnreach: boolean = steps.every((s) => (s as unknown as { section?: string }).section === 'unreach'),
+): DecoratedStep[] {
   // Unreachable orders by most failed attempts first (FR-A-6.3) — a distinct
   // comparator from every other section, which orders by priority then days
   // overdue.
-  if (steps.every((s) => s.section === 'unreach')) {
+  if (isUnreach) {
     return [...steps].sort((a, b) => b.attempts - a.attempts || a.name.localeCompare(b.name));
   }
   const pr = (s: DecoratedStep) => (s.priority === 'HIGH' ? 0 : 1);

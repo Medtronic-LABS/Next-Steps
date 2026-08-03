@@ -92,7 +92,8 @@ export interface CoordinationEngine {
   recordVisit(patientId: Id, steps: CaptureInput[], options?: VisitOptions): Promise<RecordVisitResult>;
 
   // --- worklist (admin) ---
-  sections(filter: Category | 'all'): Promise<WorklistSections>;
+  /** unreachableThreshold is clinic configuration (§10.5); defaults to DEFAULT_UNREACHABLE_THRESHOLD. */
+  sections(filter: Category | 'all', unreachableThreshold?: number): Promise<WorklistSections>;
   doneRows(): Promise<DoneRow[]>;
   openTotal(filter: Category | 'all'): Promise<number>;
   openStepsForPatient(patientId: Id): Promise<DecoratedStep[]>;
