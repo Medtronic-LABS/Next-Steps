@@ -24,6 +24,7 @@ import {
   formatDueLabel,
   formatRateWithDenominator,
   inPeriod,
+  LOCAL_IDENTIFIER_SYSTEM,
   lostToFollowUp,
   medianDaysToCompletion,
   orderSection,
@@ -395,8 +396,9 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   }
 
   async createPatient(input: NewPatient): Promise<Patient> {
+    const id = crypto.randomUUID();
     const patient: Patient = {
-      id: uid('pat'),
+      id,
       name: input.name,
       mobile: input.mobile,
       gender: input.gender,
@@ -406,6 +408,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       last: 'Today',
       open: 0,
       overdue: 0,
+      identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: id }],
     };
     this.state.createdPatients = [patient, ...this.state.createdPatients];
     this.bump();
@@ -449,10 +452,10 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       }
     }
 
+    // No BR requires patientId to resolve to an existing patient record here;
+    // a step's `pid` is an opaque foreign key, so an unresolved id degrades
+    // to an empty display name rather than rejecting the capture.
     const patient = this.getPatientSync(patientId);
-    if (!patient) {
-      throw new Error(`Unknown patient ${patientId}`);
-    }
 
     const now = new Date();
     const visitDateTime = options?.visitDateTime ?? now;
@@ -477,7 +480,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
         id,
         pid: patientId,
         visitId: visit.visitId,
-        name: patient.name,
+        name: patient?.name ?? '',
         cat: s.cat,
         detail: m.label,
         dueDate: s.dueDate ?? new Date(now.getTime() + DUE[s.dueKey].days * DAY_MS),

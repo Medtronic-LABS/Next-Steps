@@ -46,6 +46,12 @@ export interface Visit {
   createdAt: Date;
 }
 
+/** An external identity reference (PRD §17), shaped as FHIR `Patient.identifier`. */
+export interface Identifier {
+  system: string;
+  value: string;
+}
+
 /** Patient identity (PRD §10.1) — no clinical data. */
 export interface Patient {
   id: Id;
@@ -65,6 +71,8 @@ export interface Patient {
   overdue: number;
   /** Set when created via "Create anyway" against a mobile match (BR-008). */
   possibleDuplicate?: boolean;
+  /** §17: at least a local identifier; a programme identifier (e.g. UPID/ABHA) is appended, never replacing it. */
+  identifier: Identifier[];
 }
 
 /**

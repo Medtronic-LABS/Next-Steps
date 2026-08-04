@@ -42,7 +42,7 @@ export default function App() {
   useEngineSync();
   const [screen, setScreen] = useState<Screen>('search');
   const [query, setQuery] = useState('');
-  const [selId, setSelId] = useState('p1');
+  const [selId, setSelId] = useState('');
   const [consent, setConsent] = useState(true);
   const [showOptional, setShowOptional] = useState(false);
   const [form, setForm] = useState<NewForm>({ name: '', mobile: '', abha: '', gender: 'Male', yob: '', cid: '' });

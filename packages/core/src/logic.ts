@@ -4,6 +4,8 @@ import { META } from './catalog';
 import { AVATARS } from './seed';
 import type { Delivery, Gender, Id, StepStatus, WorklistSection, WorkStep } from './types';
 
+export * from './identity';
+
 /** §11.2: only these three statuses are terminal — never overdue (§11.1). */
 const TERMINAL_STATUSES: ReadonlySet<StepStatus> = new Set(['COMPLETED', 'CANCELLED', 'DECLINED']);
 
