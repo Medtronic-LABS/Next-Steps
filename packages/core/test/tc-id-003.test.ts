@@ -18,10 +18,10 @@ interface IdentifierEntry {
 type ResolveUpid = (patient: Patient, config?: { patientIdentifierSystem?: string }) => string;
 
 const LOCAL_SYSTEM = 'http://next-steps.local/identifier/patient';
-// Mirrors the system URI PRD §17 documents as the default UPID system.
-// Declared locally since `../src/identity` (and its DEFAULT_UPID_SYSTEM
-// export) does not exist yet.
-const DEFAULT_UPID_SYSTEM_FIXTURE = 'http://rssdi.example.org/identifier/upid';
+// A non-default programme system URI, set via deployment configuration
+// (cce.collector.fhir.patient-identifier-system per §17) rather than being
+// the built-in default — this is what makes the test exercise configurability.
+const CONFIGURED_UPID_SYSTEM = 'http://rssdi.example.org/identifier/upid';
 
 function fixturePatient(identifier: IdentifierEntry[]): Patient & { identifier: IdentifierEntry[] } {
   return {
@@ -42,8 +42,9 @@ function fixturePatient(identifier: IdentifierEntry[]): Patient & { identifier: 
 describe('TC-ID-003 — resolveUpid returns the configured system (EXPECTED FAIL)', () => {
   it('prefers the configured-system identifier over the local one', async () => {
     const local: IdentifierEntry = { system: LOCAL_SYSTEM, value: 'local-abc' };
-    const upid: IdentifierEntry = { system: DEFAULT_UPID_SYSTEM_FIXTURE, value: 'upid-xyz' };
+    const upid: IdentifierEntry = { system: CONFIGURED_UPID_SYSTEM, value: 'upid-xyz' };
     const patient = fixturePatient([local, upid]);
+    const config = { patientIdentifierSystem: CONFIGURED_UPID_SYSTEM };
 
     let resolveUpid: ResolveUpid | undefined;
     try {
@@ -52,9 +53,10 @@ describe('TC-ID-003 — resolveUpid returns the configured system (EXPECTED FAIL
       resolveUpid = undefined;
     }
 
-    expect(resolveUpid?.(patient)).toBe(upid.value);
-    expect(resolveUpid?.(patient), 'must not return the local identifier when a programme one exists').not.toBe(
-      local.value,
-    );
+    expect(resolveUpid?.(patient, config)).toBe(upid.value);
+    expect(
+      resolveUpid?.(patient, config),
+      'must not return the local identifier when a programme one exists',
+    ).not.toBe(local.value);
   });
 });
