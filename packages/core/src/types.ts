@@ -6,6 +6,13 @@
 
 export type Id = string;
 
+/** A deployment's seed clinic identity (FR-A-5.2) — display only, no clinical meaning. */
+export interface Clinic {
+  name: string;
+  admin: string;
+  doctor: string;
+}
+
 /** The five next-step categories (PRD FR-A-5.1). */
 export type Category =
   | 'FOLLOW_UP_VISIT'

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   CATEGORY_ORDER,
-  CLINIC,
   CLINIC_TIMEZONE,
   DUE,
   FILTERS,
@@ -193,7 +192,7 @@ export default function App() {
           <div className="logo"><Logo /></div>
           <div>
             <div className="appbar__title">Next Steps</div>
-            <div className="appbar__sub">{CLINIC.name} · {CLINIC.admin}</div>
+            <div className="appbar__sub">{engine.clinic().name} · {engine.clinic().admin}</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -568,7 +567,7 @@ function Saved({ firstName, count, onWorklist, onNext }: { firstName: string; co
       <div style={{ fontSize: 14, color: S.muted, margin: '6px 0 22px', maxWidth: 270 }}>{count} next step{count === 1 ? '' : 's'} for {firstName} · reminders scheduled automatically.</div>
       <div style={{ width: '100%', maxWidth: 300, background: '#0B141A', borderRadius: 16, padding: 12, textAlign: 'left', marginBottom: 22 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}><Whatsapp size={18} /><span style={{ fontSize: 12, fontWeight: 700, color: '#E6EAED' }}>WhatsApp · sent to {firstName}</span></div>
-        <div style={{ background: '#075E54', color: '#fff', borderRadius: '8px 8px 8px 3px', padding: '10px 12px', fontSize: 12.5, lineHeight: 1.5 }}>Hello {firstName}, thank you for visiting {CLINIC.name} today. Your next steps are saved — we’ll remind you before each date. Reply STOP to opt out.</div>
+        <div style={{ background: '#075E54', color: '#fff', borderRadius: '8px 8px 8px 3px', padding: '10px 12px', fontSize: 12.5, lineHeight: 1.5 }}>Hello {firstName}, thank you for visiting {engine.clinic().name} today. Your next steps are saved — we’ll remind you before each date. Reply STOP to opt out.</div>
       </div>
       <button className="btn btn--primary btn--full btn--h50" style={{ maxWidth: 300, marginBottom: 10 }} onClick={onWorklist}>Go to worklist</button>
       <button className="btn btn--ghost btn--full btn--h50" style={{ maxWidth: 300 }} onClick={onNext}>Next patient →</button>

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  CLINIC,
   CLINIC_TIMEZONE,
   initials,
   trendPath,
@@ -44,7 +43,7 @@ export default function App() {
       <header className="appbar" style={{ paddingBottom: 12 }}>
         <div>
           <div style={{ fontSize: 20, fontWeight: 700, color: S.strong, letterSpacing: '-.01em' }}>Good morning, doctor</div>
-          <div style={{ fontSize: 12.5, color: S.muted }}>{CLINIC.name} · synced 9:38 AM</div>
+          <div style={{ fontSize: 12.5, color: S.muted }}>{engine.clinic().name} · synced 9:38 AM</div>
         </div>
         <div className="avatar" style={{ width: 40, height: 40, background: 'var(--ml-periwinkle)', color: '#fff', fontSize: 14 }}>MA</div>
       </header>

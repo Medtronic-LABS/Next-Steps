@@ -8,13 +8,8 @@
 
 import { CATEGORY_ORDER, DUE, META } from './catalog';
 import { getCategoryDefaultDue, getCategoryLabel, type ProgrammeProfile } from './profile';
-import {
-  CARD_DEFS,
-  DONE_BASE,
-  PATIENTS,
-  SEED_VISITS,
-  WORK,
-} from './seed';
+import { CARD_DEFS } from './seed';
+import { getSeedClinic, resolveProfileKey, type ProfileKey, type SeedClinic } from './profiles';
 import {
   buildCloudEvent,
   clinicDayIndex,
@@ -56,6 +51,7 @@ import type {
 } from './engine';
 import type {
   Category,
+  Clinic,
   DrillKey,
   DueKey,
   HistoryEntry,
@@ -149,7 +145,8 @@ function cloneStep(step: WorkStep): WorkStep {
   return { ...step, history: step.history ? step.history.map((h) => ({ ...h })) : step.history };
 }
 
-const STORAGE_KEY = 'next-steps-cce-v3';
+/** Namespaced per profile (below) so switching profiles never mixes one deployment's captured data into another's. */
+const STORAGE_KEY_PREFIX = 'next-steps-cce-v3';
 
 /** Simulated CCE network latency (PRD §17 stub mode). */
 const SIMULATED_LATENCY_MS = 0;
@@ -192,22 +189,27 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   private dispatcher?: Dispatcher;
   private dispatcherMode: DispatcherMode;
   private profile?: ProgrammeProfile;
+  private seedClinic: SeedClinic;
+  private storageKey: string;
 
   constructor(options?: EngineOptions) {
     this.dispatcher = options?.dispatcher;
     this.dispatcherMode = options?.dispatcherMode ?? 'stub';
-    this.profile = options?.profile;
+    const profileKey: ProfileKey = options?.profileKey ?? resolveProfileKey();
+    this.seedClinic = getSeedClinic(profileKey);
+    this.profile = options?.profile ?? this.seedClinic.profile;
+    this.storageKey = `${STORAGE_KEY_PREFIX}:${profileKey}`;
     this.state = this.load();
     if (typeof window !== 'undefined') {
       if ('BroadcastChannel' in window) {
-        this.channel = new BroadcastChannel(STORAGE_KEY);
+        this.channel = new BroadcastChannel(this.storageKey);
         this.channel.onmessage = () => {
           this.state = this.load();
           this.emit();
         };
       }
       window.addEventListener('storage', (e) => {
-        if (e.key === STORAGE_KEY) {
+        if (e.key === this.storageKey) {
           this.state = this.load();
           this.emit();
         }
@@ -217,7 +219,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   private load(): Persisted {
     if (typeof localStorage !== 'undefined') {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(this.storageKey);
       if (raw) {
         try {
           const parsed = JSON.parse(raw) as Persisted;
@@ -250,7 +252,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   private commit(): void {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      localStorage.setItem(this.storageKey, JSON.stringify(this.state));
     }
     if (this.channel) this.channel.postMessage('update');
     this.emit();
@@ -277,6 +279,10 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     return getCategoryDefaultDue(cat, this.profile);
   }
 
+  clinic(): Clinic {
+    return this.seedClinic.clinic;
+  }
+
   private bump(): void {
     if (this.state.offline) this.state.pending += 1;
   }
@@ -290,7 +296,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   private allSteps(): WorkStep[] {
     const overridden = new Set(this.state.createdSteps.map((w) => w.id));
-    return [...this.state.createdSteps, ...WORK.filter((w) => !overridden.has(w.id))];
+    return [...this.state.createdSteps, ...this.seedClinic.work.filter((w) => !overridden.has(w.id))];
   }
 
   private openSteps(): WorkStep[] {
@@ -306,7 +312,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   private materialize(id: Id): WorkStep | undefined {
     const existing = this.state.createdSteps.find((w) => w.id === id);
     if (existing) return existing;
-    const seed = WORK.find((w) => w.id === id);
+    const seed = this.seedClinic.work.find((w) => w.id === id);
     if (!seed) return undefined;
     const clone: WorkStep = { ...seed, history: seed.history ? seed.history.map((h) => ({ ...h })) : [] };
     this.state.createdSteps = [clone, ...this.state.createdSteps];
@@ -405,7 +411,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   // --- visits (single source of truth; BR-006 anchors every step to one) --
 
   private allVisits(): Visit[] {
-    return [...this.state.createdVisits, ...SEED_VISITS];
+    return [...this.state.createdVisits, ...this.seedClinic.visits];
   }
 
   private async visitCount(): Promise<number> {
@@ -467,11 +473,11 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   // --- patients -----------------------------------------------------------
 
   private allPatientsSync(): Patient[] {
-    return [...this.state.createdPatients, ...PATIENTS].map((p) => this.withCounts(p));
+    return [...this.state.createdPatients, ...this.seedClinic.patients].map((p) => this.withCounts(p));
   }
 
   private getPatientSync(id: Id): Patient | undefined {
-    const p = [...this.state.createdPatients, ...PATIENTS].find((x) => x.id === id);
+    const p = [...this.state.createdPatients, ...this.seedClinic.patients].find((x) => x.id === id);
     return p ? this.withCounts(p) : undefined;
   }
 
@@ -638,7 +644,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     const fromSteps = this.allSteps()
       .filter((w) => w.status === 'COMPLETED')
       .map((w) => ({ name: w.name, detail: getCategoryLabel(w.cat, this.profile) }));
-    const result = [...DONE_BASE, ...fromSteps];
+    const result = [...this.seedClinic.doneBase, ...fromSteps];
     await delay(SIMULATED_LATENCY_MS);
     return result;
   }

@@ -11,9 +11,9 @@
 // named specialist, only the referral category.
 
 import { LOCAL_IDENTIFIER_SYSTEM } from './identity';
-import type { Patient, Visit, WorkStep } from './types';
+import type { Clinic, Patient, Visit, WorkStep } from './types';
 
-export const MATERNAL_CLINIC = { name: 'Sahyog Maternal Health Centre', admin: 'Kavita', doctor: 'Dr. Nandini Rao' };
+export const MATERNAL_CLINIC: Clinic = { name: 'Sahyog Maternal Health Centre', admin: 'Kavita', doctor: 'Dr. Nandini Rao' };
 
 const SEED_PATIENT_IDS = {
   p1: 'b1a2c3d4-1111-4a5b-8c9d-0e1f2a3b4c01',

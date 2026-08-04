@@ -3,9 +3,9 @@
 // statuses, plus the doctor's pre-aggregated drill and insight figures.
 
 import { LOCAL_IDENTIFIER_SYSTEM } from './identity';
-import type { DrillKey, Patient, Visit, WorkStep } from './types';
+import type { Clinic, DrillKey, Patient, Visit, WorkStep } from './types';
 
-export const CLINIC = { name: 'Anand Diabetes Care', admin: 'Priya', doctor: 'Dr. Meera Anand' };
+export const CLINIC: Clinic = { name: 'Anand Diabetes Care', admin: 'Priya', doctor: 'Dr. Meera Anand' };
 
 /** Stable seed patient UUIDs (§15, §10.1) — fixed, not regenerated per run, so the fixture stays reproducible. */
 const SEED_PATIENT_IDS = {

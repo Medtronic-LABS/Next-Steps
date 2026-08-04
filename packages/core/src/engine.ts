@@ -4,6 +4,7 @@
 
 import type {
   Category,
+  Clinic,
   DrillKey,
   DueKey,
   Gender,
@@ -16,6 +17,7 @@ import type {
 } from './types';
 import type { CloudEvent, DecoratedStep, OverdueInfo } from './logic';
 import type { ProgrammeProfile } from './profile';
+import type { ProfileKey } from './profiles';
 
 /** A step as read: the stored shape plus §11.1's overdue flags, derived fresh on every read. */
 export type StepView = WorkStep & OverdueInfo;
@@ -127,6 +129,8 @@ export interface EngineOptions {
   dispatcherMode?: DispatcherMode;
   /** FR-A-5.2, §10.5: the active programme profile. Absent fields fall back to catalog.ts's documented defaults. */
   profile?: ProgrammeProfile;
+  /** FR-A-5.2: which seed clinic (and, absent an explicit `profile`, which programme profile) to load. Defaults to the diabetes deployment. */
+  profileKey?: ProfileKey;
 }
 
 export interface CoordinationEngine {
@@ -135,6 +139,8 @@ export interface CoordinationEngine {
   categoryLabel(cat: Category): string;
   /** A category's default due-date key under the active programme profile (falls back to catalog.ts's documented default). */
   categoryDefaultDue(cat: Category): DueKey;
+  /** The active deployment's seed clinic identity (FR-A-5.2) — display only. */
+  clinic(): Clinic;
 
   // --- patients ---
   allPatients(): Promise<Patient[]>;
