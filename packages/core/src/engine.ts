@@ -104,6 +104,8 @@ export interface CoordinationEvent {
   eventType: EventType;
   payload: CloudEvent;
   dispatchStatus: DispatchStatus;
+  /** When this event was written to the outbox. The CloudEvents envelope itself carries no `time` attribute (§17). */
+  createdAt: Date;
 }
 
 /** Sends one already-built envelope to the CCE. Never called in stub mode (§17, §21.2). */
@@ -159,6 +161,10 @@ export interface CoordinationEngine {
   insights(periodDays: number): Promise<Insights>;
   /** FR-D-2.3, §11.4: a patient's visits, most recent first, each with its steps and their history. */
   patientTimeline(patientId: Id): Promise<TimelineVisit[]>;
+
+  // --- coordination event outbox (read-only, admin) ---
+  /** §10.5: every CoordinationEvent written so far, oldest first. */
+  outbox(): Promise<CoordinationEvent[]>;
 
   // --- device sync state ---
   isOffline(): boolean;

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   CATEGORY_ORDER,
   CLINIC,
+  CLINIC_TIMEZONE,
   DUE,
   FILTERS,
   META,
@@ -13,8 +14,11 @@ import {
   maskMobile,
   type Category,
   type CaptureStep,
+  type CoordinationEvent,
   type DecoratedStep,
+  type DispatchStatus,
   type DueKey,
+  type EventType,
   type Gender,
   type Patient,
   type StepView,
@@ -24,7 +28,7 @@ import {
 import { engine, useEngineData, useEngineSync } from './lib/engine';
 import { Icon, Logo, Whatsapp, PATHS } from './components/icons';
 
-type Screen = 'search' | 'create' | 'patient' | 'capture' | 'saved' | 'worklist';
+type Screen = 'search' | 'create' | 'patient' | 'capture' | 'saved' | 'worklist' | 'events';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -192,7 +196,17 @@ export default function App() {
             <div className="appbar__sub">{CLINIC.name} · {CLINIC.admin}</div>
           </div>
         </div>
-        <SyncChip />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            onClick={() => go('events')}
+            title="Coordination event stream"
+            aria-label="Coordination event stream"
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: S.subtle, display: 'flex', alignItems: 'center', padding: 6 }}
+          >
+            <Icon path={PATHS.activity} size={17} width={2} />
+          </button>
+          <SyncChip />
+        </div>
       </header>
 
       <div className="body nsScroll">
@@ -210,6 +224,7 @@ export default function App() {
         {screen === 'capture' && sel && <Capture sel={sel} steps={steps} onBack={() => go('patient')} addStep={addStep} removeStep={removeStep} setDue={setDue} toggleHigh={toggleHigh} />}
         {screen === 'saved' && <Saved firstName={selFirst} count={steps.length} onWorklist={() => go('worklist')} onNext={() => { setQuery(''); go('search'); }} />}
         {screen === 'worklist' && <Worklist filter={filter} setFilter={setFilter} onOpenPatient={(pid) => { setSheetPid(pid); setSheetStep(null); }} />}
+        {screen === 'events' && <EventStream onBack={() => go('worklist')} />}
       </div>
 
       {screen === 'capture' && (
@@ -642,6 +657,89 @@ function Worklist({ filter, setFilter, onOpenPatient }: { filter: Category | 'al
 }
 function Rows({ list, onOpenPatient }: { list: DecoratedStep[]; onOpenPatient: (pid: string) => void }) {
   return <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>{list.map((r) => <WorklistRow key={r.id} r={r} onOpen={() => onOpenPatient(r.pid)} />)}</div>;
+}
+
+// ============================================================================
+// Coordination event stream (§10.5, §17 — technical, read-only)
+// ============================================================================
+const EVENT_TYPE_STYLE: Record<EventType, [string, string]> = {
+  CREATED: [S.blue, 'var(--surface-brand-soft)'],
+  STATUS_CHANGED: [S.muted, 'var(--border-subtle)'],
+  COMPLETED: ['var(--status-success)', 'var(--status-success-soft)'],
+  CANCELLED: ['var(--status-danger)', 'var(--status-danger-soft)'],
+};
+const DISPATCH_STYLE: Record<DispatchStatus, [string, string]> = {
+  PENDING: ['var(--status-warning)', 'var(--status-warning-soft)'],
+  DISPATCHED: ['var(--status-success)', 'var(--status-success-soft)'],
+  FAILED: ['var(--status-danger)', 'var(--status-danger-soft)'],
+  STUBBED: ['var(--status-info)', 'var(--surface-brand-soft)'],
+};
+const eventTimeFmt = new Intl.DateTimeFormat('en-GB', {
+  timeZone: CLINIC_TIMEZONE, day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
+});
+
+function EventRow({ event, open, onToggle }: { event: CoordinationEvent; open: boolean; onToggle: () => void }) {
+  const [typeColor, typeSoft] = EVENT_TYPE_STYLE[event.eventType];
+  const [dispColor, dispSoft] = DISPATCH_STYLE[event.dispatchStatus];
+  return (
+    <div className="card">
+      <button
+        onClick={onToggle}
+        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '13px 14px', display: 'flex', alignItems: 'center', gap: 10 }}
+      >
+        <div className="grow">
+          <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span className="badge" style={{ color: typeColor, background: typeSoft }}>{event.eventType}</span>
+            <span className="badge" style={{ color: dispColor, background: dispSoft }}>{event.dispatchStatus}</span>
+          </div>
+          <div style={{ fontSize: 12.5, color: S.muted, marginTop: 6, fontFamily: 'monospace' }}>Step {event.nextStepId}</div>
+          <div style={{ fontSize: 11.5, color: S.subtle, marginTop: 3 }}>{eventTimeFmt.format(event.createdAt)}</div>
+        </div>
+        <Icon path={open ? PATHS.chevDown : PATHS.chevRight} size={18} stroke="var(--text-subtle)" width={2.2} />
+      </button>
+      {open && (
+        <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '11px 14px 14px' }}>
+          <div className="section-label" style={{ marginBottom: 7 }}>CloudEvents envelope</div>
+          <pre className="nsScroll" style={{ margin: 0, background: 'var(--surface-page)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 11, fontSize: 11.5, lineHeight: 1.5, color: S.body, overflowX: 'auto', fontFamily: 'monospace' }}>
+            {JSON.stringify(event.payload, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EventStream({ onBack }: { onBack: () => void }) {
+  const { data } = useEngineData(() => engine.outbox(), []);
+  const events = data ? [...data].reverse() : [];
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  return (
+    <div style={{ padding: '4px 18px 24px', animation: 'nsFade .2s ease' }}>
+      <button className="back-link" onClick={onBack}><Icon path={PATHS.chevLeft} size={17} width={2.2} />Back to worklist</button>
+      <div className="h-screen" style={{ margin: '2px 0 3px', fontSize: 21 }}>Coordination event stream</div>
+      <div className="p-sub" style={{ marginBottom: 16 }}>
+        Read-only. Every accepted Next Step transition writes one CloudEvents envelope to the CCE outbox — most recent first.
+      </div>
+
+      {events.length === 0 ? (
+        <div style={{ border: '1.5px dashed var(--border-default)', borderRadius: 14, padding: '26px 16px', textAlign: 'center', color: S.muted, fontSize: 13.5 }}>
+          No events yet. Capturing or updating a next step writes one here.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+          {events.map((e) => (
+            <EventRow
+              key={e.eventId}
+              event={e}
+              open={expandedId === e.eventId}
+              onToggle={() => setExpandedId((cur) => (cur === e.eventId ? null : e.eventId))}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ============================================================================

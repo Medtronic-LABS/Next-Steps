@@ -234,6 +234,9 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
               history: w.history?.map((h) => ({ ...h, at: new Date(h.at) })),
             }));
           }
+          if (parsed.outbox) {
+            parsed.outbox = parsed.outbox.map((e) => ({ ...e, createdAt: new Date(e.createdAt) }));
+          }
           return { ...emptyState(), ...parsed };
         } catch {
           /* reseed */
@@ -325,6 +328,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
         eventType,
         payload: buildCloudEvent(task),
         dispatchStatus: 'PENDING',
+        createdAt: new Date(),
       };
     } catch {
       return;
@@ -358,6 +362,11 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   /** The outbox, defensively copied so callers can't mutate engine state. */
   getOutbox(): CoordinationEvent[] {
     return this.state.outbox.map((e) => ({ ...e, payload: { ...e.payload } }));
+  }
+
+  /** §10.5, CoordinationEngine's read-only outbox view: apps reach the outbox only through this. */
+  async outbox(): Promise<CoordinationEvent[]> {
+    return this.getOutbox();
   }
 
   /** §17, verified collector contract: reuses the failed event's own envelope — same id, same source — never mints a fresh one. */
