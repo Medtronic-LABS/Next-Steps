@@ -2,7 +2,8 @@
 
 import { META } from './catalog';
 import { AVATARS } from './seed';
-import type { Delivery, Gender, Id, StepStatus, WorklistSection, WorkStep } from './types';
+import { resolveUpid, type IdentityConfig } from './identity';
+import type { Category, Delivery, Gender, Id, Patient, StepStatus, WorklistSection, WorkStep } from './types';
 
 export * from './identity';
 
@@ -507,4 +508,59 @@ export function guessGender(fullName: string): Gender | null {
   if (FEMALE_NAMES.has(first)) return 'Female';
   if (MALE_NAMES.has(first)) return 'Male';
   return null;
+}
+
+// FHIR R4 Task mapping (PRD §17, ITEM-5-TEST-CASES.md 5b). BR-017: coordination
+// metadata only — who (for, identifier), what category (code), by when
+// (restriction), current status (status). No reasonCode, reasonReference, or
+// any field carrying step.detail; a step's free-text never travels here.
+// BR-019: code carries category only, never a referral destination.
+
+/** Task.code coding system for the five categories — distinct, coded values a receiver can route on. */
+export const NEXT_STEPS_TASK_CODE_SYSTEM = 'http://next-steps.local/fhir/task-code';
+
+/** Task.identifier[] system for the internal step id, distinct from any patient identifier system. */
+export const NEXT_STEPS_STEP_IDENTIFIER_SYSTEM = 'http://next-steps.local/identifier/step';
+
+const TASK_CODE_BY_CATEGORY: Record<Category, string> = {
+  FOLLOW_UP_VISIT: 'follow-up-visit',
+  LAB_INVESTIGATION: 'lab-investigation',
+  SPECIALIST_REFERRAL: 'specialist-referral',
+  FOLLOW_UP_CALL: 'follow-up-call',
+  OTHER: 'other',
+};
+
+/** §11.2, §13: DECLINED maps to `rejected`, distinct from CANCELLED's `cancelled` — the asymmetry the metrics rest on. */
+const TASK_STATUS_BY_STEP_STATUS: Record<StepStatus, string> = {
+  CREATED: 'requested',
+  SCHEDULED: 'ready',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+  DECLINED: 'rejected',
+};
+
+export interface FhirTask {
+  resourceType: 'Task';
+  identifier: { system: string; value: string }[];
+  status: string;
+  code: { coding: { system: string; code: string }[] };
+  for: { reference: string };
+  encounter: { reference: string };
+  restriction: { period: { end: string } };
+}
+
+/**
+ * §17: maps a Next Step to a minimal FHIR R4 Task carrying only coordination
+ * metadata — who this is for, what category, by when, and current status.
+ */
+export function mapNextStepToFhirTask(step: WorkStep, patient: Patient, config?: IdentityConfig): FhirTask {
+  return {
+    resourceType: 'Task',
+    identifier: [{ system: NEXT_STEPS_STEP_IDENTIFIER_SYSTEM, value: step.id }],
+    status: TASK_STATUS_BY_STEP_STATUS[step.status],
+    code: { coding: [{ system: NEXT_STEPS_TASK_CODE_SYSTEM, code: TASK_CODE_BY_CATEGORY[step.cat] }] },
+    for: { reference: `Patient/${resolveUpid(patient, config)}` },
+    encounter: { reference: `Encounter/${step.visitId}` },
+    restriction: { period: { end: step.dueDate.toISOString() } },
+  };
 }
