@@ -15,6 +15,7 @@ import {
   WORK,
 } from './seed';
 import {
+  buildCloudEvent,
   clinicDayIndex,
   completionRate,
   decorate,
@@ -26,6 +27,7 @@ import {
   inPeriod,
   LOCAL_IDENTIFIER_SYSTEM,
   lostToFollowUp,
+  mapNextStepToFhirTask,
   medianDaysToCompletion,
   orderSection,
   overdueBuckets,
@@ -36,9 +38,14 @@ import {
 import type {
   CaptureInput,
   CoordinationEngine,
+  CoordinationEvent,
+  Dispatcher,
+  DispatcherMode,
   DoneRow,
   DrillRow,
   DrillView,
+  EngineOptions,
+  EventType,
   NewPatient,
   RecordVisitResult,
   StepView,
@@ -157,6 +164,8 @@ interface Persisted {
   createdVisits: Visit[];
   offline: boolean;
   pending: number;
+  /** §10.5 CCE outbox — one CoordinationEvent per accepted lifecycle transition. */
+  outbox: CoordinationEvent[];
 }
 
 function emptyState(): Persisted {
@@ -166,6 +175,7 @@ function emptyState(): Persisted {
     createdVisits: [],
     offline: false,
     pending: 0,
+    outbox: [],
   };
 }
 
@@ -179,8 +189,12 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   private state: Persisted;
   private listeners = new Set<() => void>();
   private channel?: BroadcastChannel;
+  private dispatcher?: Dispatcher;
+  private dispatcherMode: DispatcherMode;
 
-  constructor() {
+  constructor(options?: EngineOptions) {
+    this.dispatcher = options?.dispatcher;
+    this.dispatcherMode = options?.dispatcherMode ?? 'stub';
     this.state = this.load();
     if (typeof window !== 'undefined') {
       if ('BroadcastChannel' in window) {
@@ -282,6 +296,77 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     const clone: WorkStep = { ...seed, history: seed.history ? seed.history.map((h) => ({ ...h })) : [] };
     this.state.createdSteps = [clone, ...this.state.createdSteps];
     return clone;
+  }
+
+  /** §17: an outbox event needs a patient to resolve the UPID; an unresolved pid degrades to its own value (mirrors recordVisit's patient lookup) rather than blocking the transition. */
+  private patientRefFor(pid: Id): Patient {
+    return this.getPatientSync(pid) ?? ({ id: pid, identifier: [] } as unknown as Patient);
+  }
+
+  /**
+   * §10.5, §17: writes exactly one CoordinationEvent for an accepted
+   * transition, starting PENDING. Building the envelope must never propagate
+   * into the caller either, so a step this can't map (e.g. one missing a
+   * dueDate) simply leaves no event behind rather than failing the
+   * transition. A CREATED event (capture) is queued for later dispatch rather
+   * than sent immediately — a multi-step visit shouldn't fan out N
+   * synchronous dispatch attempts of its own (TC-OUT-003, TC-OUT-006); every
+   * other, individually user-triggered transition attempts dispatch right
+   * away, but never lets a rejection escape (§17: CCE unavailability must
+   * never block clinic operations).
+   */
+  private async writeEvent(step: WorkStep, eventType: EventType): Promise<void> {
+    let event: CoordinationEvent;
+    try {
+      const task = mapNextStepToFhirTask(step, this.patientRefFor(step.pid));
+      event = {
+        eventId: uid('evt'),
+        nextStepId: step.id,
+        eventType,
+        payload: buildCloudEvent(task),
+        dispatchStatus: 'PENDING',
+      };
+    } catch {
+      return;
+    }
+    this.state.outbox = [...this.state.outbox, event];
+    if (eventType !== 'CREATED') {
+      await this.attemptDispatch(event);
+    }
+  }
+
+  /**
+   * §17, §21.2: with no dispatcher configured there is no channel to send
+   * through, so the event is left PENDING. Stub mode marks STUBBED without
+   * ever calling the dispatcher. Live mode attempts a send and swallows a
+   * rejection into FAILED, leaving the event retryable.
+   */
+  private async attemptDispatch(event: CoordinationEvent): Promise<void> {
+    if (!this.dispatcher) return;
+    if (this.dispatcherMode === 'stub') {
+      event.dispatchStatus = 'STUBBED';
+      return;
+    }
+    try {
+      await this.dispatcher.send(event.payload);
+      event.dispatchStatus = 'DISPATCHED';
+    } catch {
+      event.dispatchStatus = 'FAILED';
+    }
+  }
+
+  /** The outbox, defensively copied so callers can't mutate engine state. */
+  getOutbox(): CoordinationEvent[] {
+    return this.state.outbox.map((e) => ({ ...e, payload: { ...e.payload } }));
+  }
+
+  /** §17, verified collector contract: reuses the failed event's own envelope — same id, same source — never mints a fresh one. */
+  async retryDispatch(eventId: Id): Promise<void> {
+    const event = this.state.outbox.find((e) => e.eventId === eventId);
+    if (!event) return;
+    await this.attemptDispatch(event);
+    this.commit();
+    await delay(SIMULATED_LATENCY_MS);
   }
 
   /** §11.4: append one immutable entry per transition; never mutate an existing one. */
@@ -493,6 +578,9 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
     this.state.createdVisits = [visit, ...this.state.createdVisits];
     this.state.createdSteps = [...newSteps, ...this.state.createdSteps];
+    for (const step of newSteps) {
+      await this.writeEvent(step, 'CREATED');
+    }
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);
@@ -561,6 +649,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     }
     this.appendHistory(step, 'SCHEDULED', byUser);
     step.status = 'SCHEDULED';
+    await this.writeEvent(step, 'STATUS_CHANGED');
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);
@@ -586,6 +675,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     step.status = 'COMPLETED';
     step.completedDate = date;
     step.completedBy = completedBy;
+    await this.writeEvent(step, 'COMPLETED');
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);
@@ -602,6 +692,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     this.appendHistory(step, 'CANCELLED', SYSTEM_ACTOR, reason);
     step.status = 'CANCELLED';
     step.reason = reason;
+    await this.writeEvent(step, 'CANCELLED');
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);
@@ -615,6 +706,8 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     this.appendHistory(step, 'DECLINED', SYSTEM_ACTOR, reason ?? null);
     step.status = 'DECLINED';
     step.declineReason = reason ?? null;
+    // §10.5: DECLINED has no eventType of its own — it lands under STATUS_CHANGED.
+    await this.writeEvent(step, 'STATUS_CHANGED');
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);
@@ -640,6 +733,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     step.status = 'SCHEDULED';
     step.completedDate = null;
     step.completedBy = null;
+    await this.writeEvent(step, 'STATUS_CHANGED');
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);

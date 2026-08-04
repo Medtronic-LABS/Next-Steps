@@ -14,7 +14,7 @@ import type {
   Visit,
   WorkStep,
 } from './types';
-import type { DecoratedStep, OverdueInfo } from './logic';
+import type { CloudEvent, DecoratedStep, OverdueInfo } from './logic';
 
 /** A step as read: the stored shape plus §11.1's overdue flags, derived fresh on every read. */
 export type StepView = WorkStep & OverdueInfo;
@@ -87,6 +87,41 @@ export interface TimelineVisit {
   visitId: Id;
   visitDateTime: Date;
   steps: DecoratedStep[];
+}
+
+// Coordination event outbox (PRD §10.5, §17, ITEM-5-TEST-CASES.md 5d). Every
+// accepted lifecycle transition writes exactly one CoordinationEvent; a
+// transition rejected by §11.2 writes none. DECLINED has no eventType of its
+// own — it and any other status change land under STATUS_CHANGED.
+export type EventType = 'CREATED' | 'STATUS_CHANGED' | 'COMPLETED' | 'CANCELLED';
+
+/** STUBBED is distinct from both PENDING (not yet attempted) and DISPATCHED (sent). */
+export type DispatchStatus = 'PENDING' | 'DISPATCHED' | 'FAILED' | 'STUBBED';
+
+export interface CoordinationEvent {
+  eventId: Id;
+  nextStepId: Id;
+  eventType: EventType;
+  payload: CloudEvent;
+  dispatchStatus: DispatchStatus;
+}
+
+/** Sends one already-built envelope to the CCE. Never called in stub mode (§17, §21.2). */
+export interface Dispatcher {
+  send(envelope: CloudEvent): Promise<void>;
+}
+
+export type DispatcherMode = 'stub' | 'live';
+
+/**
+ * §17: without a `dispatcher`, a transition still writes its event but has no
+ * channel to send it through, so it is left PENDING (TC-OUT-003). With one,
+ * `dispatcherMode` defaults to 'stub' — deploying a dispatcher does not, by
+ * itself, opt into live sends.
+ */
+export interface EngineOptions {
+  dispatcher?: Dispatcher;
+  dispatcherMode?: DispatcherMode;
 }
 
 export interface CoordinationEngine {
