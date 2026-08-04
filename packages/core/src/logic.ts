@@ -564,3 +564,49 @@ export function mapNextStepToFhirTask(step: WorkStep, patient: Patient, config?:
     restriction: { period: { end: step.dueDate.toISOString() } },
   };
 }
+
+// CloudEvents v1.0 structured-mode envelope (PRD §17, ITEM-5-TEST-CASES.md 5c;
+// verified cce-collector-service contract). Context attribute names are exact,
+// lowercase CloudEvents spec names — the collector's 400 on a malformed
+// envelope is a case-sensitive key match, so `dataContentType` is a distinct,
+// wrong key rather than a harmless variant of `datacontenttype`.
+
+/** CloudEvents `source`: identifies this Next Steps deployment. No patient, clinic, or otherwise identifying content. */
+export const NEXT_STEPS_EVENT_SOURCE = 'http://next-steps.local/source';
+
+/** CloudEvents `type`: identifies this as a Next Steps Task coordination event. */
+export const NEXT_STEPS_EVENT_TYPE = 'org.openphc.next-steps.task';
+
+export interface CloudEvent {
+  specversion: '1.0';
+  id: string;
+  source: string;
+  type: string;
+  subject: string;
+  datacontenttype: 'application/fhir+json';
+  correlationid: string;
+  data: FhirTask;
+}
+
+/**
+ * §17, verified collector contract: wraps a single mapped Task in a
+ * CloudEvents v1.0 envelope. One envelope per step — never a Bundle, never an
+ * array in `data` — since the collector has no Bundle handling. `subject` is
+ * read back out of `task.for.reference` (the very value mapNextStepToFhirTask
+ * built Task.for from) with the "Patient/" prefix stripped, rather than
+ * recomputed independently from the patient — any drift between `subject`
+ * and the reference inside `data` is the collector's hardest validation, a
+ * hard 422.
+ */
+export function buildCloudEvent(task: FhirTask): CloudEvent {
+  return {
+    specversion: '1.0',
+    id: crypto.randomUUID(),
+    source: NEXT_STEPS_EVENT_SOURCE,
+    type: NEXT_STEPS_EVENT_TYPE,
+    subject: task.for.reference.replace(/^Patient\//, ''),
+    datacontenttype: 'application/fhir+json',
+    correlationid: task.identifier[0]?.value ?? '',
+    data: task,
+  };
+}
