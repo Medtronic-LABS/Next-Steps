@@ -146,7 +146,7 @@ export interface SummaryCard {
   iconPath: string;
 }
 
-export type DrillKey = 'overdue' | 'invest' | 'referral' | 'unreach' | 'lost';
+export type DrillKey = Category | 'overdue' | 'unreach' | 'lost';
 
 /** Care-completion insights (PRD FR-D-3), computed live for the period (BR-018). */
 export interface Insights {

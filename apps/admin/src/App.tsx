@@ -120,7 +120,7 @@ export default function App() {
 
   // ---- capture ----
   const addStep = (cat: Category) =>
-    setSteps((prev) => [{ id: `s${stepSeq++}`, cat, due: META[cat].due, priority: 'NORMAL', detail: META[cat].detail }, ...prev]);
+    setSteps((prev) => [{ id: `s${stepSeq++}`, cat, due: engine.categoryDefaultDue(cat), priority: 'NORMAL', detail: META[cat].detail }, ...prev]);
   const removeStep = (id: string) => setSteps((prev) => prev.filter((s) => s.id !== id));
   const setDue = (id: string, due: DueKey) => setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, due } : s)));
   const toggleHigh = (id: string) =>
@@ -437,7 +437,7 @@ function Create({ form, onField, onPickGender, canSave, consent, setConsent, sho
       </div>
 
       <button className="btn btn--primary btn--full btn--h52" style={{ marginTop: 16 }} disabled={!canSave} onClick={onSave}>Save &amp; open patient</button>
-      <div style={{ fontSize: 11.5, color: S.subtle, textAlign: 'center', marginTop: 10 }}>{canSave ? 'No address, diagnosis, HbA1c or prescriptions — ever.' : 'Enter a name and a 10-digit mobile to save.'}</div>
+      <div style={{ fontSize: 11.5, color: S.subtle, textAlign: 'center', marginTop: 10 }}>{canSave ? 'No address, diagnosis, lab results or prescriptions — ever.' : 'Enter a name and a 10-digit mobile to save.'}</div>
     </div>
   );
 }
@@ -513,7 +513,7 @@ function Capture({ sel, steps, onBack, addStep, removeStep, setDue, toggleHigh }
             return (
               <button key={c} onClick={() => addStep(c)} style={{ border: `1.5px solid ${m.color}`, background: m.soft, borderRadius: 14, padding: '13px 12px', display: 'flex', flexDirection: 'column', gap: 7, cursor: 'pointer', textAlign: 'left' }}>
                 <Icon path={m.iconPath} size={22} stroke={m.color} width={1.9} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: S.strong, lineHeight: 1.15 }}>{m.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: S.strong, lineHeight: 1.15 }}>{engine.categoryLabel(c)}</span>
               </button>
             );
           })}
@@ -532,7 +532,7 @@ function Capture({ sel, steps, onBack, addStep, removeStep, setDue, toggleHigh }
               <div key={s.id} className="card" style={{ borderLeft: `3px solid ${m.color}`, padding: '13px 13px 12px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                   <div style={{ width: 34, height: 34, borderRadius: 9, flex: 'none', background: m.soft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon path={m.iconPath} size={18} stroke={m.color} width={1.9} /></div>
-                  <div className="grow"><div style={{ fontSize: 15, fontWeight: 700, color: S.strong }}>{m.label}</div></div>
+                  <div className="grow"><div style={{ fontSize: 15, fontWeight: 700, color: S.strong }}>{engine.categoryLabel(s.cat)}</div></div>
                   <button onClick={() => removeStep(s.id)} style={{ border: 'none', background: '#F5F4F1', width: 26, height: 26, borderRadius: '50%', cursor: 'pointer', color: S.muted, flex: 'none' }}>✕</button>
                 </div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: S.subtle, margin: '11px 0 6px' }}>DUE</div>
@@ -803,7 +803,7 @@ function StepSheet({ step, onBack, onComplete, onNudge, onCall, onLog, onResched
         <button className="back-link" style={{ fontWeight: 700, fontSize: 12.5 }} onClick={onBack}><Icon path={PATHS.chevLeft} size={15} width={2.4} />All steps for {step.name}</button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)', margin: '8px 0 12px' }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, flex: 'none', background: m.soft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon path={m.iconPath} size={20} stroke={m.color} width={1.9} /></div>
-          <div><div style={{ fontSize: 15.5, fontWeight: 700, color: S.strong }}>{m.label}</div><div style={{ fontSize: 12.5, color: S.muted }}>Due {formatDueLabel(step.dueDate)}</div></div>
+          <div><div style={{ fontSize: 15.5, fontWeight: 700, color: S.strong }}>{engine.categoryLabel(step.cat)}</div><div style={{ fontSize: 12.5, color: S.muted }}>Due {formatDueLabel(step.dueDate)}</div></div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <ActionRow bg="#E9FBF0" label="Mark complete" onClick={onComplete} icon={<Icon path={PATHS.check} size={19} stroke="#128C4A" width={2.2} />} />
@@ -829,7 +829,7 @@ function CompleteDialog({ step, onBack, onConfirm }: { step: WorkStep; onBack: (
     <div className="dialog-scrim" onClick={onBack}>
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
         <div style={{ fontSize: 18, fontWeight: 700, color: S.strong, marginBottom: 3 }}>Mark complete</div>
-        <div style={{ fontSize: 13, color: S.muted, marginBottom: 16 }}>{step.name} · {META[step.cat].label}</div>
+        <div style={{ fontSize: 13, color: S.muted, marginBottom: 16 }}>{step.name} · {engine.categoryLabel(step.cat)}</div>
         <div className="field-label">Completion date</div>
         <div style={{ height: 46, borderRadius: 12, border: '1.5px solid var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', fontSize: 14.5, fontWeight: 600, color: S.strong, margin: '0 0 14px' }}>Today · 6 Jul 2026<Icon path={PATHS.calendar} size={18} stroke="var(--text-muted)" width={2} /></div>
         <div className="field-label">Note <span style={{ fontWeight: 500, color: S.subtle }}>optional · non-clinical</span></div>

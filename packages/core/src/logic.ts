@@ -3,6 +3,7 @@
 import { META } from './catalog';
 import { AVATARS } from './seed';
 import { resolveUpid, type IdentityConfig } from './identity';
+import { getCategoryLabel, type ProgrammeProfile } from './profile';
 import type { Category, Delivery, Gender, Id, Patient, StepStatus, WorklistSection, WorkStep } from './types';
 
 export * from './identity';
@@ -393,7 +394,7 @@ export interface DecoratedStep extends WorkStep {
   deliveryTint: string;
 }
 
-export function decorate(w: WorkStep, now: Date = new Date()): DecoratedStep {
+export function decorate(w: WorkStep, now: Date = new Date(), profile?: ProgrammeProfile): DecoratedStep {
   const m = META[w.cat];
   const { isOverdue, daysOverdue } = deriveOverdue(w.dueDate, w.status, now);
   const label = formatDueLabel(w.dueDate, now);
@@ -402,7 +403,7 @@ export function decorate(w: WorkStep, now: Date = new Date()): DecoratedStep {
     isOverdue,
     daysOverdue,
     over: daysOverdue,
-    categoryLabel: m.label,
+    categoryLabel: getCategoryLabel(w.cat, profile),
     color: m.color,
     soft: m.soft,
     iconPath: m.iconPath,

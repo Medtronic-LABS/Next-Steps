@@ -15,6 +15,7 @@ import type {
   WorkStep,
 } from './types';
 import type { CloudEvent, DecoratedStep, OverdueInfo } from './logic';
+import type { ProgrammeProfile } from './profile';
 
 /** A step as read: the stored shape plus §11.1's overdue flags, derived fresh on every read. */
 export type StepView = WorkStep & OverdueInfo;
@@ -124,9 +125,17 @@ export type DispatcherMode = 'stub' | 'live';
 export interface EngineOptions {
   dispatcher?: Dispatcher;
   dispatcherMode?: DispatcherMode;
+  /** FR-A-5.2, §10.5: the active programme profile. Absent fields fall back to catalog.ts's documented defaults. */
+  profile?: ProgrammeProfile;
 }
 
 export interface CoordinationEngine {
+  // --- programme profile (FR-A-5.1, FR-A-5.2) ---
+  /** A category's label under the active programme profile (falls back to catalog.ts's documented default). */
+  categoryLabel(cat: Category): string;
+  /** A category's default due-date key under the active programme profile (falls back to catalog.ts's documented default). */
+  categoryDefaultDue(cat: Category): DueKey;
+
   // --- patients ---
   allPatients(): Promise<Patient[]>;
   searchPatients(query: string): Promise<Patient[]>;

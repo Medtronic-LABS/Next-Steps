@@ -7,6 +7,7 @@
 // administrator captures, minus any that reached a terminal state.
 
 import { CATEGORY_ORDER, DUE, META } from './catalog';
+import { getCategoryDefaultDue, getCategoryLabel, type ProgrammeProfile } from './profile';
 import {
   CARD_DEFS,
   DONE_BASE,
@@ -56,6 +57,7 @@ import type {
 import type {
   Category,
   DrillKey,
+  DueKey,
   HistoryEntry,
   Id,
   Insights,
@@ -90,29 +92,27 @@ const TERMINAL_STATUSES: ReadonlySet<StepStatus> = new Set(['COMPLETED', 'CANCEL
 /** Fallback actor for transitions the caller doesn't attribute to a user (§11.4 requires byUser to be set). */
 const SYSTEM_ACTOR = 'system';
 
-/** FR-D-2.2: static title/sub copy per drill-down — the row set itself is derived live (BR-018). */
-const DRILL_META: Record<DrillKey, { title: string; sub: string }> = {
+/** FR-D-2.2: static title/sub copy per drill-down key actually used by CARD_DEFS — the row set itself is derived live (BR-018). */
+const DRILL_META: Partial<Record<DrillKey, { title: string; sub: string }>> = {
   overdue: { title: 'Overdue next steps', sub: 'Steps past their due date' },
-  invest: { title: 'Investigations pending', sub: 'Lab investigations not yet done' },
-  referral: { title: 'Referrals pending', sub: 'Referrals not yet completed' },
+  LAB_INVESTIGATION: { title: 'Investigations pending', sub: 'Lab investigations not yet done' },
+  SPECIALIST_REFERRAL: { title: 'Referrals pending', sub: 'Referrals not yet completed' },
   unreach: { title: 'Unreachable patients', sub: 'Could not reach after 3+ attempts' },
   lost: { title: 'Lost to follow-up', sub: 'Long overdue and unreachable' },
 };
 
-/** FR-D-2.2, BR-018: which live, open steps qualify for each drill-down key. */
+/** FR-D-2.2, BR-018: which live, open steps qualify for each drill-down key — a category key or a coordination state. */
 function matchesDrillKey(key: DrillKey, step: WorkStep, threshold: number, now: Date): boolean {
   const { isOverdue } = deriveOverdue(step.dueDate, step.status, now);
   switch (key) {
     case 'overdue':
       return isOverdue;
-    case 'invest':
-      return step.cat === 'LAB_INVESTIGATION';
-    case 'referral':
-      return step.cat === 'SPECIALIST_REFERRAL';
     case 'unreach':
       return step.attempts >= threshold;
     case 'lost':
       return isOverdue && step.attempts >= threshold;
+    default:
+      return step.cat === key;
   }
 }
 
@@ -191,10 +191,12 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   private channel?: BroadcastChannel;
   private dispatcher?: Dispatcher;
   private dispatcherMode: DispatcherMode;
+  private profile?: ProgrammeProfile;
 
   constructor(options?: EngineOptions) {
     this.dispatcher = options?.dispatcher;
     this.dispatcherMode = options?.dispatcherMode ?? 'stub';
+    this.profile = options?.profile;
     this.state = this.load();
     if (typeof window !== 'undefined') {
       if ('BroadcastChannel' in window) {
@@ -263,6 +265,16 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     return () => {
       this.listeners.delete(listener);
     };
+  }
+
+  // --- programme profile (FR-A-5.1, FR-A-5.2) -----------------------------
+
+  categoryLabel(cat: Category): string {
+    return getCategoryLabel(cat, this.profile);
+  }
+
+  categoryDefaultDue(cat: Category): DueKey {
+    return getCategoryDefaultDue(cat, this.profile);
   }
 
   private bump(): void {
@@ -567,7 +579,6 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
     const stepIds: Id[] = [];
     const newSteps: WorkStep[] = steps.map((s) => {
-      const m = META[s.cat];
       const id = uid('w');
       stepIds.push(id);
       return {
@@ -576,7 +587,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
         visitId: visit.visitId,
         name: patient?.name ?? '',
         cat: s.cat,
-        detail: m.label,
+        detail: getCategoryLabel(s.cat, this.profile),
         dueDate: s.dueDate ?? new Date(now.getTime() + DUE[s.dueKey].days * DAY_MS),
         priority: s.priority,
         delivery: 'Sent',
@@ -610,10 +621,10 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       if (section) buckets[section].push(w);
     }
     return {
-      overdue: orderSection(buckets.overdue.map((w) => decorate(w)), false),
-      today: orderSection(buckets.today.map((w) => decorate(w)), false),
-      soon: orderSection(buckets.soon.map((w) => decorate(w)), false),
-      unreach: orderSection(buckets.unreach.map((w) => decorate(w)), true),
+      overdue: orderSection(buckets.overdue.map((w) => decorate(w, new Date(), this.profile)), false),
+      today: orderSection(buckets.today.map((w) => decorate(w, new Date(), this.profile)), false),
+      soon: orderSection(buckets.soon.map((w) => decorate(w, new Date(), this.profile)), false),
+      unreach: orderSection(buckets.unreach.map((w) => decorate(w, new Date(), this.profile)), true),
     };
   }
 
@@ -626,7 +637,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   async doneRows(): Promise<DoneRow[]> {
     const fromSteps = this.allSteps()
       .filter((w) => w.status === 'COMPLETED')
-      .map((w) => ({ name: w.name, detail: META[w.cat].label }));
+      .map((w) => ({ name: w.name, detail: getCategoryLabel(w.cat, this.profile) }));
     const result = [...DONE_BASE, ...fromSteps];
     await delay(SIMULATED_LATENCY_MS);
     return result;
@@ -642,7 +653,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   async openStepsForPatient(patientId: Id): Promise<DecoratedStep[]> {
     const result = this.openSteps()
       .filter((w) => w.pid === patientId)
-      .map((w) => decorate(w));
+      .map((w) => decorate(w, new Date(), this.profile));
     await delay(SIMULATED_LATENCY_MS);
     return result;
   }
@@ -773,7 +784,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   async drill(key: DrillKey): Promise<DrillView> {
     const now = new Date();
-    const meta = DRILL_META[key];
+    const meta = DRILL_META[key] ?? { title: '', sub: '' };
     const rows: DrillRow[] = this.openSteps()
       .filter((w) => matchesDrillKey(key, w, DEFAULT_UNREACHABLE_THRESHOLD, now))
       .map((w) => {
@@ -785,7 +796,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
           id: w.id,
           pid: w.pid,
           patientName: w.name,
-          detail: m.label,
+          detail: getCategoryLabel(w.cat, this.profile),
           dueDate: label === 'Today' ? 'due today' : 'due ' + label,
           color: m.color,
           soft: m.soft,
@@ -824,7 +835,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
         now,
       );
       return {
-        label: META[cat].label,
+        label: getCategoryLabel(cat, this.profile),
         pctLabel: formatRateWithDenominator(r.numerator, r.denominator),
         width: `${r.rate}%`,
         color: META[cat].color,
@@ -899,7 +910,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       .map((v) => ({
         visitId: v.visitId,
         visitDateTime: v.visitDateTime,
-        steps: (stepsByVisit.get(v.visitId) ?? []).map((w) => decorate(w, now)),
+        steps: (stepsByVisit.get(v.visitId) ?? []).map((w) => decorate(w, now, this.profile)),
       }))
       .sort((a, b) => b.visitDateTime.getTime() - a.visitDateTime.getTime());
     await delay(SIMULATED_LATENCY_MS);
