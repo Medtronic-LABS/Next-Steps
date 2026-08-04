@@ -522,7 +522,8 @@ export const NEXT_STEPS_TASK_CODE_SYSTEM = 'http://next-steps.local/fhir/task-co
 /** Task.identifier[] system for the internal step id, distinct from any patient identifier system. */
 export const NEXT_STEPS_STEP_IDENTIFIER_SYSTEM = 'http://next-steps.local/identifier/step';
 
-const TASK_CODE_BY_CATEGORY: Record<Category, string> = {
+/** The category → Task.code mapping — fixed across every programme profile (§17, TC-CFG-004). */
+export const TASK_CODE_BY_CATEGORY: Record<Category, string> = {
   FOLLOW_UP_VISIT: 'follow-up-visit',
   LAB_INVESTIGATION: 'lab-investigation',
   SPECIALIST_REFERRAL: 'specialist-referral',

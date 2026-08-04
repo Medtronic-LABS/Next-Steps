@@ -1,0 +1,56 @@
+// Programme profile (PRD FR-A-5.2, §10.5, ITEM-6-TEST-CASES.md TC-CFG-001..005).
+//
+// A profile is deployment configuration, not code: category labels, category
+// default due dates, the unreachable-attempts threshold and the
+// lost-to-follow-up window. It never changes the five FR-A-5.1 category keys
+// or the §17 Task.code mapping (TC-CFG-004), and it never reaches a §13
+// formula. BR-017: labels, intervals and thresholds only — no diagnostic
+// thresholds, protocols, dosages or treatment guidance.
+
+import { META } from './catalog';
+import { DEFAULT_UNREACHABLE_THRESHOLD, TASK_CODE_BY_CATEGORY } from './logic';
+import type { Category, DueKey } from './types';
+
+/** §10.5 documented default lost-to-follow-up window, absent a profile override. */
+export const DEFAULT_LOST_TO_FOLLOW_UP_DAYS = 30;
+
+/**
+ * Per-deployment configuration (FR-A-5.2, §10.5). Every field is optional;
+ * an absent field falls back to its documented default (TC-CFG-005).
+ */
+export interface ProgrammeProfile {
+  categoryLabels?: Partial<Record<Category, string>>;
+  categoryDefaultDue?: Partial<Record<Category, DueKey>>;
+  unreachableThreshold?: number;
+  lostToFollowUpDays?: number;
+}
+
+/** TC-CFG-002: a category's label under `profile`, falling back to catalog.ts's default. */
+export function getCategoryLabel(category: Category, profile?: ProgrammeProfile): string {
+  return profile?.categoryLabels?.[category] ?? META[category].label;
+}
+
+/** TC-CFG-001: a category's default due-date key under `profile`, falling back to catalog.ts's default. */
+export function getCategoryDefaultDue(category: Category, profile?: ProgrammeProfile): DueKey {
+  return profile?.categoryDefaultDue?.[category] ?? META[category].due;
+}
+
+/** TC-CFG-003, TC-CFG-005: the unreachable-attempts threshold under `profile`, falling back to the documented default of 3. */
+export function getUnreachableThreshold(profile?: ProgrammeProfile): number {
+  return profile?.unreachableThreshold ?? DEFAULT_UNREACHABLE_THRESHOLD;
+}
+
+/** TC-CFG-003, TC-CFG-005: the lost-to-follow-up window (days) under `profile`, falling back to the documented default of 30. */
+export function getLostToFollowUpDays(profile?: ProgrammeProfile): number {
+  return profile?.lostToFollowUpDays ?? DEFAULT_LOST_TO_FOLLOW_UP_DAYS;
+}
+
+/**
+ * TC-CFG-004: a category's FHIR Task.code — identical under every profile.
+ * Takes a `profile` parameter only to match the other accessors' call shape;
+ * it is never consulted. A profile may relabel a category; it may never
+ * change the interoperability contract.
+ */
+export function getCategoryTaskCode(category: Category, _profile?: ProgrammeProfile): string {
+  return TASK_CODE_BY_CATEGORY[category];
+}
