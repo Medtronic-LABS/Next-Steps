@@ -5,6 +5,7 @@
 import type {
   Category,
   Clinic,
+  CompletionLocation,
   DrillKey,
   DueKey,
   Gender,
@@ -121,17 +122,39 @@ export interface WorklistRow extends Patient {
   referralId?: Id;
 }
 
+/** NS-4: an open referral's arrival status — pending until the escalation-adjacent overdue threshold, derived on read, never stored. */
+export type ArrivalStatus = 'PENDING' | 'OVERDUE';
+
 /** NS-4: a row on a facility's arrival worklist — the referral itself, as seen by the expecting party. */
 export interface ArrivalRow {
   id: Id;
   patientId: Id;
   expectedAtFacilityId: Id;
   direction: ReferralDirection;
+  status: ArrivalStatus;
 }
 
 export interface RaiseReferralInput {
   expectedAtFacilityId: Id;
   direction: ReferralDirection;
+}
+
+/** NS-6: completionLocation is optional on close — a facility confirming arrival may not yet know it; defaults to REFERRED_PUBLIC_FACILITY (NS-5/NS-6 close together). */
+export interface CloseReferralInput {
+  completionLocation?: CompletionLocation;
+}
+
+/** NS-5: closure attribution counted separately, never merged. */
+export interface ReferralClosureSummary {
+  facilityConfirmed: number;
+  reported: number;
+}
+
+/** NS-6: referral resolution as a total with the public/private split available separately. */
+export interface ReferralResolutionSummary {
+  total: number;
+  public: number;
+  private: number;
 }
 
 // Coordination event outbox (PRD §10.5, §17, ITEM-5-TEST-CASES.md 5d). Every
@@ -232,6 +255,20 @@ export interface CoordinationEngine {
   raiseReferral(patientId: Id, input: RaiseReferralInput, context: RoleContext): Promise<Referral>;
   /** NS-4: the facility's arrival worklist — referrals expected there, until resolved. */
   arrivalWorklist(context: RoleContext): Promise<ArrivalRow[]>;
+  /** A single referral, read back by id — e.g. to confirm a closed referral was not mutated into an onward one (NS-4). */
+  getReferral(referralId: Id): Promise<Referral | undefined>;
+  /**
+   * NS-5, NS-6: resolves a referral. `closedByRole` is the closer's role;
+   * attribution is FACILITY_CONFIRMED when the closer is the expecting
+   * facility itself, REPORTED otherwise. Closing does not mutate the
+   * referral into an onward one — an onward referral is always a fresh
+   * `raiseReferral` call (NS-4).
+   */
+  closeReferral(referralId: Id, context: RoleContext, input?: CloseReferralInput): Promise<Referral>;
+  /** NS-5: FACILITY_CONFIRMED and REPORTED closures, counted separately — never merged. */
+  referralClosureSummary(context: RoleContext): Promise<ReferralClosureSummary>;
+  /** NS-6: referral resolution as a total with the public/private split available separately. */
+  referralResolutionSummary(context: RoleContext): Promise<ReferralResolutionSummary>;
 
   // --- device sync state ---
   isOffline(): boolean;

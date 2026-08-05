@@ -114,16 +114,34 @@ export interface Facility {
 /** NS-4: a referral back to a sub-centre is DOWNWARD; anything else raised is UPWARD. */
 export type ReferralDirection = 'UPWARD' | 'DOWNWARD';
 
+/** NS-4: an open referral is PENDING; COMPLETED is stored (it is the outcome of a closure), unlike overdue which stays derived (§11.1's precedent). */
+export type ReferralStatus = 'PENDING' | 'COMPLETED';
+
+/** NS-5: whether the closer was the expected party. Both are permitted and must never be merged in an aggregate. */
+export type ReferralAttribution = 'FACILITY_CONFIRMED' | 'REPORTED';
+
+/** NS-6: where care happened. Private is a resolution, not a failure. */
+export type CompletionLocation = 'REFERRED_PUBLIC_FACILITY' | 'OTHER_PUBLIC_FACILITY' | 'PRIVATE_FACILITY';
+
 /** NS-4: a referral is a two-party commitment — an explicit destination and direction, distinct from an ordinary next step. */
 export interface Referral {
   id: Id;
   patientId: Id;
+  /** NS-4: a referral is a SPECIALIST_REFERRAL step. */
+  cat: 'SPECIALIST_REFERRAL';
   expectedAtFacilityId: Id;
   direction: ReferralDirection;
   /** Who raised it. The raising ASHA/ANM's own pending-referral view is scoped by this pair, not by the patient's registration facility (NS-1, NS-11). */
   raisedByRole: Role;
   raisedByScope?: string;
   raisedAt: Date;
+  status: ReferralStatus;
+  /** NS-5: set on closure — who closed it and whether they were the expected party. */
+  closedByRole?: Role;
+  attribution?: ReferralAttribution;
+  /** NS-6: set on closure — where care happened. */
+  completionLocation?: CompletionLocation;
+  closedAt?: Date;
 }
 
 /**

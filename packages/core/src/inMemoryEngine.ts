@@ -35,6 +35,7 @@ import {
 import type {
   ArrivalRow,
   CaptureInput,
+  CloseReferralInput,
   CoordinationEngine,
   CoordinationEvent,
   Dispatcher,
@@ -47,6 +48,8 @@ import type {
   NewPatient,
   RaiseReferralInput,
   RecordVisitResult,
+  ReferralClosureSummary,
+  ReferralResolutionSummary,
   StepView,
   TimelineVisit,
   VisitOptions,
@@ -254,7 +257,11 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
             parsed.outbox = parsed.outbox.map((e) => ({ ...e, createdAt: new Date(e.createdAt) }));
           }
           if (parsed.referrals) {
-            parsed.referrals = parsed.referrals.map((r) => ({ ...r, raisedAt: new Date(r.raisedAt) }));
+            parsed.referrals = parsed.referrals.map((r) => ({
+              ...r,
+              raisedAt: new Date(r.raisedAt),
+              closedAt: r.closedAt ? new Date(r.closedAt) : r.closedAt,
+            }));
           }
           return { ...emptyState(), ...parsed };
         } catch {
@@ -596,7 +603,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   private referralPendingRows(context: RoleContext): WorklistRow[] {
     return this.state.referrals
-      .filter((r) => this.referralInScope(r, context))
+      .filter((r) => r.status === 'PENDING' && this.referralInScope(r, context))
       .map((r) => {
         const patient = this.getPatientSync(r.patientId);
         return patient ? { ...patient, referralId: r.id } : ({ id: r.patientId, referralId: r.id } as WorklistRow);
@@ -635,11 +642,13 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     const referral: Referral = {
       id: uid('ref'),
       patientId,
+      cat: 'SPECIALIST_REFERRAL',
       expectedAtFacilityId: input.expectedAtFacilityId,
       direction: input.direction,
       raisedByRole: context.role,
       raisedByScope: context.scope ?? context.facilityId,
       raisedAt: new Date(),
+      status: 'PENDING',
     };
     this.state.referrals = [referral, ...this.state.referrals];
     this.bump();
@@ -648,11 +657,90 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     return referral;
   }
 
-  /** NS-4: the facility's arrival worklist — referrals expected there. */
+  /**
+   * NS-4: a referral is expected to arrive the day after it is raised; a
+   * facility calendar day beyond that with no arrival makes it overdue. This
+   * is display state derived on read, never stored — the same precedent as
+   * `deriveOverdue` for an ordinary step's due date (§11.1).
+   */
+  private arrivalStatus(referral: Referral, now: Date): ArrivalRow['status'] {
+    const expectedByIndex = clinicDayIndex(referral.raisedAt) + 1;
+    return clinicDayIndex(now) > expectedByIndex ? 'OVERDUE' : 'PENDING';
+  }
+
+  /** NS-4: the facility's arrival worklist — open referrals expected there, until resolved. */
   async arrivalWorklist(context: RoleContext): Promise<ArrivalRow[]> {
+    const now = new Date();
     const result = this.state.referrals
-      .filter((r) => r.expectedAtFacilityId === context.facilityId)
-      .map((r) => ({ id: r.id, patientId: r.patientId, expectedAtFacilityId: r.expectedAtFacilityId, direction: r.direction }));
+      .filter((r) => r.expectedAtFacilityId === context.facilityId && r.status === 'PENDING')
+      .map((r) => ({
+        id: r.id,
+        patientId: r.patientId,
+        expectedAtFacilityId: r.expectedAtFacilityId,
+        direction: r.direction,
+        status: this.arrivalStatus(r, now),
+      }));
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
+  }
+
+  /** A single referral, read back by id — e.g. to confirm a closed referral was not mutated into an onward one (NS-4). */
+  async getReferral(referralId: Id): Promise<Referral | undefined> {
+    const result = this.state.referrals.find((r) => r.id === referralId);
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
+  }
+
+  /**
+   * NS-5: attribution is FACILITY_CONFIRMED only when the closer is the
+   * expecting facility itself; every other closer — an ANM or ASHA acting on
+   * tracking — is REPORTED. Both are permitted.
+   */
+  private referralAttribution(referral: Referral, context: RoleContext) {
+    const isExpectingFacility =
+      (context.role === 'PHC_SN' || context.role === 'DH_SN') && context.facilityId === referral.expectedAtFacilityId;
+    return isExpectingFacility ? 'FACILITY_CONFIRMED' : 'REPORTED';
+  }
+
+  /**
+   * NS-5, NS-6: resolves a referral in place — it is the same record,
+   * transitioned to COMPLETED, never mutated into an onward one. An onward
+   * referral is always a fresh `raiseReferral` call (TC-REF-005).
+   */
+  async closeReferral(referralId: Id, context: RoleContext, input?: CloseReferralInput): Promise<Referral> {
+    const referral = this.state.referrals.find((r) => r.id === referralId);
+    if (!referral) throw new Error(`Unknown referral ${referralId}`);
+    referral.status = 'COMPLETED';
+    referral.closedByRole = context.role;
+    referral.attribution = this.referralAttribution(referral, context);
+    referral.completionLocation = input?.completionLocation ?? 'REFERRED_PUBLIC_FACILITY';
+    referral.closedAt = new Date();
+    this.bump();
+    this.commit();
+    await delay(SIMULATED_LATENCY_MS);
+    return referral;
+  }
+
+  /** NS-5: FACILITY_CONFIRMED and REPORTED closures for referrals in scope of `context`, counted separately — never merged. */
+  async referralClosureSummary(context: RoleContext): Promise<ReferralClosureSummary> {
+    const closed = this.state.referrals.filter((r) => this.referralInScope(r, context) && r.status === 'COMPLETED');
+    const result: ReferralClosureSummary = {
+      facilityConfirmed: closed.filter((r) => r.attribution === 'FACILITY_CONFIRMED').length,
+      reported: closed.filter((r) => r.attribution === 'REPORTED').length,
+    };
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
+  }
+
+  /** NS-6: referral resolution for referrals in scope of `context`, as a total with the public/private split available separately. */
+  async referralResolutionSummary(context: RoleContext): Promise<ReferralResolutionSummary> {
+    const closed = this.state.referrals.filter((r) => this.referralInScope(r, context) && r.status === 'COMPLETED');
+    const priv = closed.filter((r) => r.completionLocation === 'PRIVATE_FACILITY').length;
+    const result: ReferralResolutionSummary = {
+      total: closed.length,
+      public: closed.length - priv,
+      private: priv,
+    };
     await delay(SIMULATED_LATENCY_MS);
     return result;
   }
