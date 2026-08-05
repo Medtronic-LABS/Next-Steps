@@ -3,11 +3,10 @@
 // clinic — apps never see maternalProfile.ts, maternalSeed.ts or seed.ts
 // directly, only a key threaded through the CoordinationEngine boundary.
 
-import { CLINIC, DONE_BASE, PATIENTS, SEED_VISITS, WORK } from './seed';
+import { CLINIC, PATIENTS, SEED_VISITS, WORK } from './seed';
 import { MATERNAL_CLINIC, MATERNAL_PATIENTS, MATERNAL_VISITS, MATERNAL_WORK } from './maternalSeed';
 import { MATERNAL_PROFILE } from './maternalProfile';
 import type { ProgrammeProfile } from './profile';
-import type { DoneRow } from './engine';
 import type { Clinic, Patient, Visit, WorkStep } from './types';
 
 export type ProfileKey = 'diabetes' | 'maternal';
@@ -20,18 +19,16 @@ export interface SeedClinic {
   patients: Patient[];
   work: WorkStep[];
   visits: Visit[];
-  doneBase: DoneRow[];
   profile?: ProgrammeProfile;
 }
 
 const REGISTRY: Record<ProfileKey, SeedClinic> = {
-  diabetes: { clinic: CLINIC, patients: PATIENTS, work: WORK, visits: SEED_VISITS, doneBase: DONE_BASE },
+  diabetes: { clinic: CLINIC, patients: PATIENTS, work: WORK, visits: SEED_VISITS },
   maternal: {
     clinic: MATERNAL_CLINIC,
     patients: MATERNAL_PATIENTS,
     work: MATERNAL_WORK,
     visits: MATERNAL_VISITS,
-    doneBase: [],
     profile: MATERNAL_PROFILE,
   },
 };

@@ -53,6 +53,20 @@ export const WORK: WorkStep[] = [
   { id: 'w8', pid: SEED_PATIENT_IDS.p8, visitId: 'v8', name: 'Ganesh Pawar', cat: 'FOLLOW_UP_CALL', detail: 'Check-in call', dueDate: daysFromNow(-4), priority: 'NORMAL', delivery: '—', attempts: 3, status: 'SCHEDULED' },
   { id: 'w9', pid: SEED_PATIENT_IDS.p9, visitId: 'v9', name: 'Meena Joshi', cat: 'LAB_INVESTIGATION', detail: '', dueDate: daysFromNow(-9), priority: 'HIGH', delivery: 'Failed', attempts: 4, status: 'SCHEDULED' },
   { id: 'w10', pid: SEED_PATIENT_IDS.p1, visitId: 'v10', name: 'Ramesh Kulkarni', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', dueDate: daysFromNow(22), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'SCHEDULED' },
+  // Closed steps (TC-SEED-002): real completions, spread across the last 30
+  // days, so the completion, on-time and median-days figures are derived
+  // from actual coordination state rather than a fixture (BR-018).
+  { id: 'w11', pid: SEED_PATIENT_IDS.p2, visitId: 'v11', name: 'Lakshmi Iyer', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', dueDate: daysFromNow(-10), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-12) },
+  { id: 'w12', pid: SEED_PATIENT_IDS.p3, visitId: 'v12', name: 'Iqbal Khan', cat: 'LAB_INVESTIGATION', detail: '', dueDate: daysFromNow(-15), priority: 'NORMAL', delivery: 'Read', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-15) },
+  { id: 'w13', pid: SEED_PATIENT_IDS.p4, visitId: 'v13', name: 'Anjali Deshpande', cat: 'FOLLOW_UP_CALL', detail: 'Check-in call', dueDate: daysFromNow(-20), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-21) },
+  { id: 'w14', pid: SEED_PATIENT_IDS.p5, visitId: 'v14', name: 'Vijay Menon', cat: 'LAB_INVESTIGATION', detail: '', dueDate: daysFromNow(-3), priority: 'NORMAL', delivery: 'Read', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-5) },
+  { id: 'w15', pid: SEED_PATIENT_IDS.p6, visitId: 'v15', name: 'Sunita Rao', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', dueDate: daysFromNow(-25), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-27) },
+  { id: 'w16', pid: SEED_PATIENT_IDS.p7, visitId: 'v16', name: 'Fatima Sheikh', cat: 'SPECIALIST_REFERRAL', detail: '', dueDate: daysFromNow(-18), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-10) },
+  { id: 'w17', pid: SEED_PATIENT_IDS.p8, visitId: 'v17', name: 'Ganesh Pawar', cat: 'FOLLOW_UP_CALL', detail: 'Check-in call', dueDate: daysFromNow(-22), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-14) },
+  { id: 'w18', pid: SEED_PATIENT_IDS.p9, visitId: 'v18', name: 'Meena Joshi', cat: 'LAB_INVESTIGATION', detail: '', dueDate: daysFromNow(-12), priority: 'NORMAL', delivery: 'Read', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-2) },
+  { id: 'w19', pid: SEED_PATIENT_IDS.p1, visitId: 'v19', name: 'Ramesh Kulkarni', cat: 'FOLLOW_UP_VISIT', detail: 'Follow-up visit', dueDate: daysFromNow(-6), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-1) },
+  { id: 'w20', pid: SEED_PATIENT_IDS.p2, visitId: 'v20', name: 'Lakshmi Iyer', cat: 'FOLLOW_UP_CALL', detail: 'Check-in call', dueDate: daysFromNow(-14), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'DECLINED', declineReason: 'Patient no longer wants this follow-up' },
+  { id: 'w21', pid: SEED_PATIENT_IDS.p3, visitId: 'v21', name: 'Iqbal Khan', cat: 'SPECIALIST_REFERRAL', detail: '', dueDate: daysFromNow(-8), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'CANCELLED', reason: 'Entered in error' },
 ];
 
 /** Fixed instant used for every migrated seed Visit — no real capture time exists for legacy fixture data. */
@@ -72,12 +86,6 @@ export const SEED_VISITS: Visit[] = WORK.map((w) => ({
   createdBy: 'seed-admin',
   createdAt: SEED_VISIT_DATETIME,
 }));
-
-/** Steps completed earlier today, shown at the foot of the worklist. */
-export const DONE_BASE = [
-  { name: 'Rahul Verma', detail: 'Follow-up visit' },
-  { name: 'Prakash Nair', detail: 'Lab investigation' },
-];
 
 /** Summary-card metadata (value comes from live drill-down counts, computed in inMemoryEngine.ts). */
 export const CARD_DEFS: { key: DrillKey; label: string; color: string; soft: string; iconPath: string }[] = [

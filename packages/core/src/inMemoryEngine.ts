@@ -642,10 +642,9 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   }
 
   async doneRows(): Promise<DoneRow[]> {
-    const fromSteps = this.allSteps()
+    const result = this.allSteps()
       .filter((w) => w.status === 'COMPLETED')
       .map((w) => ({ name: w.name, detail: getCategoryLabel(w.cat, this.profile) }));
-    const result = [...this.seedClinic.doneBase, ...fromSteps];
     await delay(SIMULATED_LATENCY_MS);
     return result;
   }
