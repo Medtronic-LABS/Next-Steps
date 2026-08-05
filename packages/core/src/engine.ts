@@ -166,6 +166,12 @@ export interface ReferralResolutionSummary {
   private: number;
 }
 
+/** NS-14: an unread count on the worklist entry point and on each filter with new or newly-escalated items — cleared per filter, per context, by markFilterOpened. */
+export interface UnreadCounts {
+  total: number;
+  byFilter: Partial<Record<WorklistFilter, number>>;
+}
+
 // Coordination event outbox (PRD §10.5, §17, ITEM-5-TEST-CASES.md 5d). Every
 // accepted lifecycle transition writes exactly one CoordinationEvent; a
 // transition rejected by §11.2 writes none. DECLINED has no eventType of its
@@ -287,6 +293,23 @@ export interface CoordinationEngine {
   referralClosureSummary(context: RoleContext): Promise<ReferralClosureSummary>;
   /** NS-6: referral resolution as a total with the public/private split available separately. */
   referralResolutionSummary(context: RoleContext): Promise<ReferralResolutionSummary>;
+  /**
+   * NS-3 decision ("ANC scheduling is manual — each next step is entered by
+   * whoever decided it"): schedules an ANC visit due on `dueDate`. Populates
+   * the ANC_DUE filter (NS-11).
+   */
+  scheduleAncVisit(patientId: Id, dueDate: Date, context: RoleContext): Promise<WorklistRow>;
+  /**
+   * NS-10: attaches a patient to her village's fixed-calendar PMSMA session
+   * date — the 9th of the month — never an offset from the scheduling
+   * action. Several women scheduled in the same window land on the same
+   * date. Populates the PMSMA_DUE filter (NS-11).
+   */
+  schedulePmsma(patientId: Id, context: RoleContext): Promise<WorklistRow>;
+  /** NS-14: unread counts for this context — the worklist entry point total, and each of the eight filters that has new or newly-escalated items since this context last opened it. */
+  unreadCounts(context: RoleContext): Promise<UnreadCounts>;
+  /** NS-14: clears the unread count for exactly this filter, for exactly this context — never any other filter, and never any other role/scope. */
+  markFilterOpened(context: RoleContext, filter: WorklistFilter): Promise<void>;
 
   // --- device sync state ---
   isOffline(): boolean;

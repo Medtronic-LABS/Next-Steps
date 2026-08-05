@@ -53,6 +53,7 @@ import type {
   ReferralResolutionSummary,
   StepView,
   TimelineVisit,
+  UnreadCounts,
   VisitOptions,
   WorklistFilter,
   WorklistRow,
@@ -96,6 +97,17 @@ function resolveIsBackdated(visitDateTime: Date, now: Date): boolean {
     throw new Error('Backdating is limited to the past 30 days (BR-003).');
   }
   return daysBack > 0;
+}
+
+/** NS-10: PMSMA is a fixed-calendar village outreach session on the 9th of the month, never an offset from the scheduling action. */
+const PMSMA_DAY_OF_MONTH = 9;
+
+/** NS-10: the next occurring 9th on or after `now`'s calendar day — every woman scheduled before that date shares it. */
+function nextPmsmaSessionDate(now: Date): Date {
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+  const sessionMonth = now.getUTCDate() <= PMSMA_DAY_OF_MONTH ? month : month + 1;
+  return new Date(Date.UTC(year, sessionMonth, PMSMA_DAY_OF_MONTH));
 }
 
 /** §11.2: only these three statuses are terminal — CREATED/SCHEDULED are open. */
@@ -177,6 +189,7 @@ interface PrivateCareCommitment {
   patientId: Id;
   referralId: Id;
   dueDate: Date;
+  createdAt: Date;
 }
 
 /** NS-15: a discovery commitment — owned by ANM_CHO, resolvable by ASHA — created when private closure supplies no follow-up date, so the patient is never absent from every filter. */
@@ -185,6 +198,24 @@ interface DiscoveryCommitment {
   patientId: Id;
   referralId: Id;
   dueDate: Date;
+  createdAt: Date;
+}
+
+/** NS-3 decision ("ANC scheduling is manual"): a scheduled ANC visit, entered by whoever decided it — populates the ANC_DUE filter (NS-11). */
+interface AncVisitCommitment {
+  id: Id;
+  patientId: Id;
+  dueDate: Date;
+  createdAt: Date;
+}
+
+/** NS-10: a scheduled PMSMA attendance, attached to the village's next fixed-calendar session date (the 9th of the month) — never an offset from the scheduling action. */
+interface PmsmaCommitment {
+  id: Id;
+  patientId: Id;
+  villageName?: string;
+  sessionDate: Date;
+  createdAt: Date;
 }
 
 /** NS-8: an escalation notification, derived from escalationCount rather than logged — there is no notification channel yet (NS-14's in-app badge is the nearest existing one). */
@@ -209,6 +240,19 @@ interface Persisted {
   /** NS-15. */
   privateCareCommitments: PrivateCareCommitment[];
   discoveryCommitments: DiscoveryCommitment[];
+  /** NS-11 batch 8d. */
+  ancVisitCommitments: AncVisitCommitment[];
+  pmsmaCommitments: PmsmaCommitment[];
+  /**
+   * NS-14: per-context, per-filter "last opened" timestamp — the badge
+   * clears for exactly that (context, filter) pair, never any other.
+   * Keyed by contextKey().
+   */
+  filterOpenedAt: Record<string, Partial<Record<WorklistFilter, Date>>>;
+  /** NS-14: when a referral's escalationCount last changed — what makes AT_RISK_OF_DROP_OUT's badge "newly-escalated" rather than merely "still escalated". */
+  escalationBadgeAt: Record<Id, Date>;
+  /** NS-14: when a referral's lastTrackingOutcome was last recorded — what makes LOST_TO_FOLLOW's badge "new". */
+  trackingOutcomeBadgeAt: Record<Id, Date>;
 }
 
 function emptyState(): Persisted {
@@ -223,6 +267,11 @@ function emptyState(): Persisted {
     escalationClocks: {},
     privateCareCommitments: [],
     discoveryCommitments: [],
+    ancVisitCommitments: [],
+    pmsmaCommitments: [],
+    filterOpenedAt: {},
+    escalationBadgeAt: {},
+    trackingOutcomeBadgeAt: {},
   };
 }
 
@@ -308,13 +357,47 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
             parsed.privateCareCommitments = parsed.privateCareCommitments.map((c) => ({
               ...c,
               dueDate: new Date(c.dueDate),
+              createdAt: new Date(c.createdAt),
             }));
           }
           if (parsed.discoveryCommitments) {
             parsed.discoveryCommitments = parsed.discoveryCommitments.map((c) => ({
               ...c,
               dueDate: new Date(c.dueDate),
+              createdAt: new Date(c.createdAt),
             }));
+          }
+          if (parsed.ancVisitCommitments) {
+            parsed.ancVisitCommitments = parsed.ancVisitCommitments.map((c) => ({
+              ...c,
+              dueDate: new Date(c.dueDate),
+              createdAt: new Date(c.createdAt),
+            }));
+          }
+          if (parsed.pmsmaCommitments) {
+            parsed.pmsmaCommitments = parsed.pmsmaCommitments.map((c) => ({
+              ...c,
+              sessionDate: new Date(c.sessionDate),
+              createdAt: new Date(c.createdAt),
+            }));
+          }
+          if (parsed.filterOpenedAt) {
+            parsed.filterOpenedAt = Object.fromEntries(
+              Object.entries(parsed.filterOpenedAt).map(([key, byFilter]) => [
+                key,
+                Object.fromEntries(Object.entries(byFilter).map(([filter, at]) => [filter, new Date(at as unknown as string)])),
+              ]),
+            );
+          }
+          if (parsed.escalationBadgeAt) {
+            parsed.escalationBadgeAt = Object.fromEntries(
+              Object.entries(parsed.escalationBadgeAt).map(([id, at]) => [id, new Date(at)]),
+            );
+          }
+          if (parsed.trackingOutcomeBadgeAt) {
+            parsed.trackingOutcomeBadgeAt = Object.fromEntries(
+              Object.entries(parsed.trackingOutcomeBadgeAt).map(([id, at]) => [id, new Date(at)]),
+            );
           }
           return { ...emptyState(), ...parsed };
         } catch {
@@ -686,6 +769,8 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     if (elapsedWindows <= 0) return;
     referral.escalationCount += elapsedWindows;
     this.state.escalationClocks[referral.id] = new Date((anchorDayIndex + elapsedWindows * windowDays) * DAY_MS);
+    // NS-14: marks this escalation as "new" for the AT_RISK_OF_DROP_OUT badge, cleared independently per (context, filter) by markFilterOpened.
+    this.state.escalationBadgeAt[referral.id] = now;
   }
 
   /** Applied before every read or write that depends on escalation state, so escalationCount is always caught up to `now` — the "stored integer" NS-8 describes, materialized lazily rather than by a background job. */
@@ -716,8 +801,11 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     );
   }
 
-  /** NS-15: a patient's open ordinary private-follow-up / discovery commitments, scoped to patients in `context`. */
-  private commitmentRows(context: RoleContext, commitments: (PrivateCareCommitment | DiscoveryCommitment)[]): WorklistRow[] {
+  /** A patient's open commitments of any kind (referral-linked or not), scoped to patients in `context` — shared by every commitment-backed filter (NS-11, NS-15). */
+  private scopedCommitmentRows<T extends { patientId: Id; dueDate: Date; referralId?: Id }>(
+    context: RoleContext,
+    commitments: T[],
+  ): WorklistRow[] {
     const inScope = new Set(this.patientsInScope(context).map((p) => p.id));
     return commitments
       .filter((c) => inScope.has(c.patientId))
@@ -741,18 +829,27 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       case 'REFERRAL_PENDING':
         result = this.referralPendingRows(context);
         break;
+      case 'ANC_DUE':
+        result = this.scopedCommitmentRows(context, this.state.ancVisitCommitments);
+        break;
+      case 'PMSMA_DUE':
+        result = this.scopedCommitmentRows(
+          context,
+          this.state.pmsmaCommitments.map((c) => ({ id: c.id, patientId: c.patientId, dueDate: c.sessionDate })),
+        );
+        break;
       case 'PRIVATE_CARE_DUE':
         // NS-15: a discovery commitment is itself an undated private-care
         // follow-up — NS-11 permits filter overlap, and the ANM must see it
         // here even before a date is known (TC-TRK-002), alongside every
         // ordinary, dated private-follow-up commitment.
-        result = this.commitmentRows(context, [
+        result = this.scopedCommitmentRows(context, [
           ...this.state.privateCareCommitments,
           ...this.state.discoveryCommitments,
         ]);
         break;
       case 'TRACKING_NEEDED':
-        result = this.commitmentRows(context, this.state.discoveryCommitments);
+        result = this.scopedCommitmentRows(context, this.state.discoveryCommitments);
         break;
       case 'AT_RISK_OF_DROP_OUT':
         result = this.patientsInScope(context).filter((p) => this.isAtRiskOfDropOut(p.id));
@@ -760,11 +857,6 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       case 'LOST_TO_FOLLOW':
         result = this.patientsInScope(context).filter((p) => this.isLostToFollow(p.id));
         break;
-      default:
-        // NS-11: ANC_DUE, PMSMA_DUE depend on the ANC scheduling and PMSMA
-        // state introduced in batch 8d. Until then they truthfully answer
-        // "none yet" rather than widen past scope.
-        result = [];
     }
     await delay(SIMULATED_LATENCY_MS);
     return result;
@@ -891,14 +983,14 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     if (followUpDate) {
       this.state.privateCareCommitments = [
         ...this.state.privateCareCommitments,
-        { id: uid('pcc'), patientId: referral.patientId, referralId: referral.id, dueDate: followUpDate },
+        { id: uid('pcc'), patientId: referral.patientId, referralId: referral.id, dueDate: followUpDate, createdAt: now },
       ];
       return;
     }
     const dueDate = new Date(now.getTime() + getEscalationWindowDays(this.profile) * DAY_MS);
     this.state.discoveryCommitments = [
       ...this.state.discoveryCommitments,
-      { id: uid('disc'), patientId: referral.patientId, referralId: referral.id, dueDate },
+      { id: uid('disc'), patientId: referral.patientId, referralId: referral.id, dueDate, createdAt: now },
     ];
   }
 
@@ -923,6 +1015,8 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     if (!referral) throw new Error(`Unknown referral ${referralId}`);
 
     referral.lastTrackingOutcome = input.outcome;
+    // NS-14: marks this outcome as "new" for the LOST_TO_FOLLOW badge.
+    this.state.trackingOutcomeBadgeAt[referral.id] = now;
 
     const completionLocation = InMemoryCoordinationEngine.COMPLETED_OUTCOME_LOCATIONS[input.outcome];
     if (completionLocation) {
@@ -985,6 +1079,141 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     };
     await delay(SIMULATED_LATENCY_MS);
     return result;
+  }
+
+  /** NS-3 decision ("ANC scheduling is manual"): records an ANC visit due on `dueDate`, entered by whoever decided it. Populates ANC_DUE (NS-11). */
+  async scheduleAncVisit(patientId: Id, dueDate: Date, _context: RoleContext): Promise<WorklistRow> {
+    const now = new Date();
+    const commitment: AncVisitCommitment = { id: uid('anc'), patientId, dueDate, createdAt: now };
+    this.state.ancVisitCommitments = [...this.state.ancVisitCommitments, commitment];
+    this.bump();
+    this.commit();
+    await delay(SIMULATED_LATENCY_MS);
+    const patient = this.getPatientSync(patientId);
+    return patient ? { ...patient, dueDate } : ({ id: patientId, dueDate } as WorklistRow);
+  }
+
+  /** NS-10: attaches the patient to her village's next fixed-calendar PMSMA session date — the 9th of the month, not an offset from this call. Populates PMSMA_DUE (NS-11). */
+  async schedulePmsma(patientId: Id, _context: RoleContext): Promise<WorklistRow> {
+    const now = new Date();
+    const sessionDate = nextPmsmaSessionDate(now);
+    const patient = this.getPatientSync(patientId);
+    const commitment: PmsmaCommitment = {
+      id: uid('pmsma'),
+      patientId,
+      villageName: patient?.villageName,
+      sessionDate,
+      createdAt: now,
+    };
+    this.state.pmsmaCommitments = [...this.state.pmsmaCommitments, commitment];
+    this.bump();
+    this.commit();
+    await delay(SIMULATED_LATENCY_MS);
+    return patient ? { ...patient, dueDate: sessionDate } : ({ id: patientId, dueDate: sessionDate } as WorklistRow);
+  }
+
+  /** NS-14: a stable key identifying a role context's own worklist — distinct roles/scopes/facilities never share a badge state. */
+  private contextKey(context: RoleContext): string {
+    return `${context.role}:${context.scope ?? ''}:${context.facilityId ?? ''}`;
+  }
+
+  /** NS-14: this context's last-opened timestamp for `filter`, or epoch if it has never opened it — so every currently-relevant item counts as unread. */
+  private filterOpenedSince(context: RoleContext, filter: WorklistFilter): number {
+    return this.state.filterOpenedAt[this.contextKey(context)]?.[filter]?.getTime() ?? 0;
+  }
+
+  /**
+   * NS-14: the ids of items newly relevant to each filter since this context
+   * last opened it — referral ids for the referral-derived filters,
+   * commitment ids for the commitment-derived ones. ALL_REGISTERED has no
+   * "since" signal to derive from (Patient carries no creation timestamp)
+   * and is left out rather than guessed.
+   */
+  private unreadIdsByFilter(context: RoleContext): Partial<Record<WorklistFilter, Id[]>> {
+    const inScopeIds = new Set(this.patientsInScope(context).map((p) => p.id));
+
+    const referralPendingSince = this.filterOpenedSince(context, 'REFERRAL_PENDING');
+    const referralPending = this.state.referrals.filter(
+      (r) => r.status === 'PENDING' && this.referralInScope(r, context) && r.raisedAt.getTime() > referralPendingSince,
+    );
+
+    const atRiskSince = this.filterOpenedSince(context, 'AT_RISK_OF_DROP_OUT');
+    const atRisk = this.state.referrals.filter((r) => {
+      if (r.status !== 'PENDING' || r.escalationCount < 2 || !inScopeIds.has(r.patientId)) return false;
+      const badgeAt = this.state.escalationBadgeAt[r.id];
+      return !!badgeAt && badgeAt.getTime() > atRiskSince;
+    });
+
+    const lostSince = this.filterOpenedSince(context, 'LOST_TO_FOLLOW');
+    const lost = this.state.referrals.filter((r) => {
+      if (r.status !== 'PENDING' || !inScopeIds.has(r.patientId)) return false;
+      if (r.lastTrackingOutcome !== 'DOES_NOT_WANT_TO_GO' && r.lastTrackingOutcome !== 'COULD_NOT_BE_CONTACTED') return false;
+      const badgeAt = this.state.trackingOutcomeBadgeAt[r.id];
+      return !!badgeAt && badgeAt.getTime() > lostSince;
+    });
+
+    const trackingNeededSince = this.filterOpenedSince(context, 'TRACKING_NEEDED');
+    const trackingNeeded = this.state.discoveryCommitments.filter(
+      (c) => inScopeIds.has(c.patientId) && c.createdAt.getTime() > trackingNeededSince,
+    );
+
+    const privateCareDueSince = this.filterOpenedSince(context, 'PRIVATE_CARE_DUE');
+    const privateCareDue = [...this.state.privateCareCommitments, ...this.state.discoveryCommitments].filter(
+      (c) => inScopeIds.has(c.patientId) && c.createdAt.getTime() > privateCareDueSince,
+    );
+
+    const ancDueSince = this.filterOpenedSince(context, 'ANC_DUE');
+    const ancDue = this.state.ancVisitCommitments.filter(
+      (c) => inScopeIds.has(c.patientId) && c.createdAt.getTime() > ancDueSince,
+    );
+
+    const pmsmaDueSince = this.filterOpenedSince(context, 'PMSMA_DUE');
+    const pmsmaDue = this.state.pmsmaCommitments.filter(
+      (c) => inScopeIds.has(c.patientId) && c.createdAt.getTime() > pmsmaDueSince,
+    );
+
+    return {
+      REFERRAL_PENDING: referralPending.map((r) => r.id),
+      AT_RISK_OF_DROP_OUT: atRisk.map((r) => r.id),
+      LOST_TO_FOLLOW: lost.map((r) => r.id),
+      TRACKING_NEEDED: trackingNeeded.map((c) => c.id),
+      PRIVATE_CARE_DUE: privateCareDue.map((c) => c.id),
+      ANC_DUE: ancDue.map((c) => c.id),
+      PMSMA_DUE: pmsmaDue.map((c) => c.id),
+    };
+  }
+
+  /**
+   * NS-14: the worklist entry point total and each filter's own unread
+   * count. Total is the count of distinct underlying items across all
+   * filters, not a sum — an item newly relevant to two filters at once
+   * (e.g. a referral that is both REFERRAL_PENDING and newly
+   * AT_RISK_OF_DROP_OUT) is one unread thing, not two.
+   */
+  async unreadCounts(context: RoleContext): Promise<UnreadCounts> {
+    this.syncEscalation(new Date());
+    const byFilterIds = this.unreadIdsByFilter(context);
+    const byFilter: Partial<Record<WorklistFilter, number>> = {};
+    const allIds = new Set<Id>();
+    for (const [filter, ids] of Object.entries(byFilterIds) as [WorklistFilter, Id[]][]) {
+      byFilter[filter] = ids.length;
+      ids.forEach((id) => allIds.add(id));
+    }
+    const result: UnreadCounts = { total: allIds.size, byFilter };
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
+  }
+
+  /** NS-14: clears the unread count for exactly this (context, filter) pair — every other filter, and every other context's badges, are untouched. */
+  async markFilterOpened(context: RoleContext, filter: WorklistFilter): Promise<void> {
+    const now = new Date();
+    const key = this.contextKey(context);
+    this.state.filterOpenedAt = {
+      ...this.state.filterOpenedAt,
+      [key]: { ...this.state.filterOpenedAt[key], [filter]: now },
+    };
+    this.commit();
+    await delay(SIMULATED_LATENCY_MS);
   }
 
   // --- capture ------------------------------------------------------------
