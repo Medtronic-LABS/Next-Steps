@@ -44,8 +44,12 @@ function extractIntent(prompt: string): AiIntent {
   return rule ? rule.build(q) : { type: 'UNSUPPORTED' };
 }
 
+/** Words, never digits — periodDays is a query parameter, not a computed figure, so it must never surface as a numeral. */
 function periodPhrase(periodDays?: number): string {
-  return periodDays ? ` over the last ${periodDays} days` : '';
+  if (periodDays === 7) return ' over the last week';
+  if (periodDays === 30) return ' over the last month';
+  if (periodDays === 90) return ' over the last quarter';
+  return '';
 }
 
 function isRateResult(v: unknown): v is { numerator: number; denominator: number; rate: number } {
@@ -81,8 +85,8 @@ function narrate(payload: NarrationPayload): string {
     const b2 = buckets['8-30'] ?? 0;
     const b3 = buckets['31-90'] ?? 0;
     const b4 = buckets['90+'] ?? 0;
-    const total = b1 + b2 + b3 + b4;
-    return `${total} next steps are overdue: ${b1} for 1–7 days, ${b2} for 8–30 days, ${b3} for 31–90 days, and ${b4} beyond 90 days.`;
+    // No overall total is stated: it would be a sum computed here, not a figure present in the metrics.
+    return `Next steps overdue: ${b1} for 1–7 days, ${b2} for 8–30 days, ${b3} for 31–90 days, and ${b4} beyond 90 days.`;
   }
   if (metric === 'PATIENTS_NEEDING_ATTENTION' && typeof result === 'number') {
     return `${result} patients currently need attention — an overdue or unreachable next step.`;
@@ -93,7 +97,7 @@ function narrate(payload: NarrationPayload): string {
   if (metric === 'UPCOMING_LOAD') {
     const total = (result as { total?: number } | null)?.total;
     if (typeof total === 'number') {
-      return `${total} next steps are due over the next 14 days.`;
+      return `${total} next steps are due over the next two weeks.`;
     }
   }
   if (metric === 'REFERRAL_COMPLETION') {
