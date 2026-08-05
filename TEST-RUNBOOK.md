@@ -232,3 +232,44 @@ The remaining Tier 0 cases unlock as the build items land:
 | TC-METRIC-001 through 006 | Item 4 — live insights |
 
 Write each batch before the item, not after. That's the whole point.
+
+---
+
+## Malformed tests: the recurring failure
+
+Nine malformed tests across items 2 through 8. Every one asserted the code's
+current behaviour instead of the specification's requirement. Six variants:
+
+| Variant | Example |
+|---|---|
+| Vacuously true — nothing exists to violate it | "a rejected transition writes no event", when no transition writes any |
+| Too permissive | `rejects.toThrow()` with no argument — a crash satisfies it |
+| Reads stored state instead of deriving | asserting a stored `section` while claiming to test derivation |
+| Snapshot of current behaviour | `toBe('0 of 7')` — a literal from running broken code |
+| Requires what it should eliminate | importing `TODAY_LABEL` to assert it equals the derived value |
+| Setup violates the rule under test | using `cancelStep(id)` without a reason as setup, when a reason is mandatory |
+
+### Three checks, after every test-writing session
+
+**1. Did the passing count move?** It must not. Adding only failing tests
+cannot increase passing assertions. If it does, one is green against code that
+does not exist.
+
+**2. What would make each new assertion fail?** If the answer is "nothing", or
+"something unrelated to the case", it is malformed. This catches what check 1
+misses — a test can fail for the wrong reason.
+
+**3. Where did each expected value come from?** The spec, or from running the
+code? A hardcoded literal nobody wrote in a specification is a snapshot of
+current behaviour, not a requirement.
+
+### When Claude Code reports a "conflict"
+
+It has usually found a malformed test, not a contradiction in the spec. Before
+accepting any option it offers:
+
+- Ask to see the exact assertions. Do not let it resolve the conflict itself.
+- Check the case in the spec. Nine times out of nine so far, the spec was
+  right and the test was wrong.
+- Fix the test in its own session, committed separately, so no fix session
+  ever touched a test file.
