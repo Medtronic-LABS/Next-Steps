@@ -16,6 +16,7 @@ import type {
   WorkStep,
 } from './types';
 import type { CloudEvent, DecoratedStep, OverdueInfo } from './logic';
+import type { InsightsStep } from './insights';
 import type { ProgrammeProfile } from './profile';
 import type { ProfileKey } from './profiles';
 
@@ -174,6 +175,8 @@ export interface CoordinationEngine {
   heroAttn(): Promise<number>;
   drill(key: DrillKey): Promise<DrillView>;
   insights(periodDays: number): Promise<Insights>;
+  /** ITEM-7-AI-INSIGHTS.md AI-1, AI-4: coordination steps in the shape `answerQuestion` computes over — the app supplies the model client. */
+  insightsSteps(): Promise<InsightsStep[]>;
   /** FR-D-2.3, §11.4: a patient's visits, most recent first, each with its steps and their history. */
   patientTimeline(patientId: Id): Promise<TimelineVisit[]>;
 

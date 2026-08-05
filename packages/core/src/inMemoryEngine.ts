@@ -49,6 +49,7 @@ import type {
   VisitOptions,
   WorklistSections,
 } from './engine';
+import type { InsightsStep } from './insights';
 import type {
   Category,
   Clinic,
@@ -900,6 +901,22 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     };
     await delay(SIMULATED_LATENCY_MS);
     return result;
+  }
+
+  /** ITEM-7-AI-INSIGHTS.md AI-1, AI-4: every step in the shape `answerQuestion` executes §13 functions over — no patient fields, and `specialty` is left for the caller to fall back on `cat`. */
+  async insightsSteps(): Promise<InsightsStep[]> {
+    const steps = this.stepsWithVisitDate();
+    await delay(SIMULATED_LATENCY_MS);
+    return steps.map((s) => ({
+      id: s.id,
+      pid: s.pid,
+      cat: s.cat,
+      dueDate: s.dueDate,
+      visitDate: s.visitDate,
+      status: s.status,
+      completedDate: s.completedDate,
+      attempts: s.attempts,
+    }));
   }
 
   /** FR-D-2.3, §11.4: this patient's visits, most recent first, each with its steps and their history. */

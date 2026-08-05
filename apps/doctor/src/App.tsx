@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import {
+  answerQuestion,
   CLINIC_TIMEZONE,
   initials,
   trendPath,
+  type AiResponseGrounding,
+  type AnswerResult,
   type DecoratedStep,
   type DrillKey,
   type DrillView,
@@ -11,6 +14,7 @@ import {
   type TimelineVisit,
 } from '@next-steps/core';
 import { engine, useEngineData, useEngineSync } from './lib/engine';
+import { createStubModelClient } from './lib/stubModelClient';
 import { Icon, PATHS } from './components/icons';
 
 type Screen = 'dash' | 'drill' | 'timeline' | 'insights';
@@ -27,6 +31,17 @@ const TAB_ICONS = {
   grid: 'M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z',
   chart: 'M3 3v18h18M7 14l4-4 3 3 5-6',
 };
+
+// ITEM-7-AI-INSIGHTS.md AI-8: stubbed for now — a real provider adapter is a later batch.
+const aiModelClient = createStubModelClient();
+
+const AI_EXAMPLE_QUESTIONS = [
+  "What's our completion rate this month?",
+  'How many patients need attention?',
+  "What's our overdue backlog?",
+  'How are referrals doing?',
+  'How many patients are unreachable?',
+];
 
 export default function App() {
   useEngineSync();
@@ -250,6 +265,8 @@ function Insights({ period, setPeriod }: { period: number; setPeriod: (i: number
   const periods = ['7 days', '30 days', '90 days'];
   return (
     <div style={{ padding: '2px 18px 24px', animation: 'nsFade .2s ease' }}>
+      <AiInsightsCard />
+
       <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
         {periods.map((p, i) => {
           const on = i === period;
@@ -324,6 +341,100 @@ function FollowTile({ value, label, color, bg }: { value: string; label: string;
     <div style={{ background: bg, borderRadius: 12, padding: 12 }}>
       <div style={{ fontSize: 24, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
       <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.25 }}>{label}</div>
+    </div>
+  );
+}
+
+// ============================================================================
+// AI Insights — ITEM-7-AI-INSIGHTS.md
+// ============================================================================
+
+/** ITEM-7-AI-INSIGHTS.md AI-6: the grounding badges rendered under a successful answer. */
+function GroundingBadges({ grounding }: { grounding: AiResponseGrounding }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+      {grounding.periodDays !== undefined && <span className="badge" style={{ color: 'var(--ml-blue)', background: 'var(--surface-brand-soft)' }}>{grounding.periodDays} days</span>}
+      {grounding.numerator !== undefined && grounding.denominator !== undefined && (
+        <span className="badge" style={{ color: 'var(--ml-blue)', background: 'var(--surface-brand-soft)' }}>{grounding.numerator} of {grounding.denominator}</span>
+      )}
+      <span className="badge" style={{ color: S.muted, background: 'var(--surface-page)', border: '1px solid var(--border-subtle)' }}>{grounding.clause}</span>
+    </div>
+  );
+}
+
+function AiInsightsCard() {
+  const [question, setQuestion] = useState('');
+  const [pending, setPending] = useState(false);
+  const [answer, setAnswer] = useState<AnswerResult | null>(null);
+
+  async function ask(raw: string) {
+    const asked = raw.trim();
+    if (!asked || pending) return;
+    setQuestion(asked);
+    setPending(true);
+    setAnswer(null);
+    try {
+      const steps = await engine.insightsSteps();
+      setAnswer(await answerQuestion(aiModelClient, asked, steps));
+    } catch {
+      setAnswer({ failed: true, message: "Something went wrong answering that. The rest of Insights is unaffected — please try again." });
+    } finally {
+      setPending(false);
+    }
+  }
+
+  const declined = !!answer && !answer.failed && answer.grounding.metric === 'UNSUPPORTED';
+
+  return (
+    <div className="card" style={{ padding: 16, marginBottom: 13 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: S.strong, marginBottom: 3 }}>Ask about follow-through</div>
+      <div style={{ fontSize: 11.5, color: S.muted, marginBottom: 12, lineHeight: 1.4 }}>
+        Answers are computed only from next-step coordination data — never clinical records, and never a named person's performance.
+      </div>
+
+      <form onSubmit={(e) => { e.preventDefault(); ask(question); }} style={{ display: 'flex', gap: 8 }}>
+        <input
+          className="input"
+          style={{ flex: 1, height: 44 }}
+          placeholder="Ask about completion, backlog, referrals…"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+        />
+        <button className="btn btn--primary" style={{ height: 44, padding: '0 18px', fontSize: 13.5 }} type="submit" disabled={pending || !question.trim()}>
+          Ask
+        </button>
+      </form>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+        {AI_EXAMPLE_QUESTIONS.map((q) => (
+          <button key={q} type="button" className="chip chip--soft" onClick={() => ask(q)} disabled={pending}>
+            {q}
+          </button>
+        ))}
+      </div>
+
+      {pending && <div style={{ fontSize: 12.5, color: S.muted, marginTop: 14 }}>Working it out…</div>}
+
+      {!pending && answer && !answer.failed && !declined && (
+        <div style={{ marginTop: 14, padding: 12, borderRadius: 11, background: 'var(--surface-brand-soft)' }}>
+          <div style={{ fontSize: 13, color: S.strong, lineHeight: 1.45 }}>{answer.narration}</div>
+          <GroundingBadges grounding={answer.grounding} />
+        </div>
+      )}
+
+      {!pending && answer && !answer.failed && declined && (
+        <div style={{ marginTop: 14, padding: 12, borderRadius: 11, background: 'var(--surface-page)', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: S.muted, marginBottom: 4 }}>Can't answer that from coordination data</div>
+          <div style={{ fontSize: 12.5, color: S.body, lineHeight: 1.45 }}>{answer.narration}</div>
+        </div>
+      )}
+
+      {!pending && answer?.failed && (
+        <div style={{ marginTop: 14, padding: 12, borderRadius: 11, background: 'var(--status-warning-soft)', border: '1px solid var(--status-warning)' }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--status-warning)', marginBottom: 4 }}>Couldn't get an answer</div>
+          <div style={{ fontSize: 12.5, color: S.body, lineHeight: 1.45 }}>{answer.message}</div>
+        </div>
+      )}
     </div>
   );
 }
