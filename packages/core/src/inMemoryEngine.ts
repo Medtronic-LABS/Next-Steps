@@ -7,6 +7,7 @@
 // administrator captures, minus any that reached a terminal state.
 
 import { CATEGORY_ORDER, DUE, META } from './catalog';
+import { isValidReferralDestination } from './facilities';
 import { getCategoryDefaultDue, getCategoryLabel, type ProgrammeProfile } from './profile';
 import { CARD_DEFS } from './seed';
 import { getSeedClinic, resolveProfileKey, type ProfileKey, type SeedClinic } from './profiles';
@@ -32,6 +33,7 @@ import {
   type DecoratedStep,
 } from './logic';
 import type {
+  ArrivalRow,
   CaptureInput,
   CoordinationEngine,
   CoordinationEvent,
@@ -43,10 +45,13 @@ import type {
   EngineOptions,
   EventType,
   NewPatient,
+  RaiseReferralInput,
   RecordVisitResult,
   StepView,
   TimelineVisit,
   VisitOptions,
+  WorklistFilter,
+  WorklistRow,
   WorklistSections,
 } from './engine';
 import type { InsightsStep } from './insights';
@@ -57,8 +62,11 @@ import type {
   DueKey,
   HistoryEntry,
   Id,
+  Identifier,
   Insights,
   Patient,
+  Referral,
+  RoleContext,
   StepStatus,
   SummaryCard,
   Visit,
@@ -164,6 +172,8 @@ interface Persisted {
   pending: number;
   /** §10.5 CCE outbox — one CoordinationEvent per accepted lifecycle transition. */
   outbox: CoordinationEvent[];
+  /** ITEM-8 NS-4 — two-party referrals, raised via raiseReferral. */
+  referrals: Referral[];
 }
 
 function emptyState(): Persisted {
@@ -174,6 +184,7 @@ function emptyState(): Persisted {
     offline: false,
     pending: 0,
     outbox: [],
+    referrals: [],
   };
 }
 
@@ -241,6 +252,9 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
           }
           if (parsed.outbox) {
             parsed.outbox = parsed.outbox.map((e) => ({ ...e, createdAt: new Date(e.createdAt) }));
+          }
+          if (parsed.referrals) {
+            parsed.referrals = parsed.referrals.map((r) => ({ ...r, raisedAt: new Date(r.raisedAt) }));
           }
           return { ...emptyState(), ...parsed };
         } catch {
@@ -510,6 +524,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   async createPatient(input: NewPatient): Promise<Patient> {
     const id = crypto.randomUUID();
+    const identifier: Identifier[] = [{ system: LOCAL_IDENTIFIER_SYSTEM, value: id }, ...(input.identifiers ?? [])];
     const patient: Patient = {
       id,
       name: input.name,
@@ -521,13 +536,125 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       last: 'Today',
       open: 0,
       overdue: 0,
-      identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: id }],
+      identifier,
+      villageName: input.villageName,
+      ashaName: input.ashaName,
+      registeredAtFacilityId: input.registeredAtFacilityId,
     };
     this.state.createdPatients = [patient, ...this.state.createdPatients];
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);
     return patient;
+  }
+
+  // --- roles, scope, referrals (ITEM-8-HRP-NEWBORN.md NS-1, NS-2, NS-4, NS-11 — batch 8a) --
+
+  /**
+   * NS-1: scope is a precondition, resolved before any of the eight named
+   * filters — so no filter can widen a result beyond it. ASHA/ANM_CHO scope
+   * by a Patient field; PHC_SN/DH_SN have no patient roster of their own —
+   * theirs is every patient with a referral expected at their facility.
+   */
+  private patientsInScope(context: RoleContext): Patient[] {
+    const patients = this.allPatientsSync();
+    switch (context.role) {
+      case 'ASHA':
+        return patients.filter((p) => p.ashaName === context.scope);
+      case 'ANM_CHO':
+        return patients.filter((p) => p.registeredAtFacilityId === context.scope);
+      case 'PHC_SN':
+      case 'DH_SN': {
+        const patientIds = new Set(
+          this.state.referrals.filter((r) => r.expectedAtFacilityId === context.facilityId).map((r) => r.patientId),
+        );
+        return patients.filter((p) => patientIds.has(p.id));
+      }
+      default:
+        return [];
+    }
+  }
+
+  /**
+   * NS-11 REFERRAL_PENDING: for the raising ASHA/ANM, scoped by who raised
+   * it, not by the patient's own registration facility — a referral she
+   * raises is hers to track regardless of where the patient is registered.
+   * For the expecting facility, this is the same set arrivalWorklist reads.
+   */
+  private referralInScope(r: Referral, context: RoleContext): boolean {
+    switch (context.role) {
+      case 'ASHA':
+      case 'ANM_CHO':
+        return r.raisedByRole === context.role && r.raisedByScope === context.scope;
+      case 'PHC_SN':
+      case 'DH_SN':
+        return r.expectedAtFacilityId === context.facilityId;
+      default:
+        return false;
+    }
+  }
+
+  private referralPendingRows(context: RoleContext): WorklistRow[] {
+    return this.state.referrals
+      .filter((r) => this.referralInScope(r, context))
+      .map((r) => {
+        const patient = this.getPatientSync(r.patientId);
+        return patient ? { ...patient, referralId: r.id } : ({ id: r.patientId, referralId: r.id } as WorklistRow);
+      });
+  }
+
+  /** NS-1, NS-11: scope precedes filter for every one of the eight named filters — no filter widens past it. */
+  async worklist(context: RoleContext, filter: WorklistFilter): Promise<WorklistRow[]> {
+    let result: WorklistRow[];
+    switch (filter) {
+      case 'ALL_REGISTERED':
+        result = this.patientsInScope(context);
+        break;
+      case 'REFERRAL_PENDING':
+        result = this.referralPendingRows(context);
+        break;
+      default:
+        // NS-11: ANC_DUE, PMSMA_DUE, TRACKING_NEEDED, PRIVATE_CARE_DUE,
+        // AT_RISK_OF_DROP_OUT, LOST_TO_FOLLOW depend on the ANC scheduling,
+        // PMSMA, tracking and escalation state introduced in batches 8b-8d.
+        // Until then they truthfully answer "none yet" rather than widen
+        // past scope.
+        result = [];
+    }
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
+  }
+
+  /** NS-4: `expectedAtFacilityId` must resolve to a configured, referral-eligible facility (NS-2) — free text and unconfigured ids are rejected. */
+  async raiseReferral(patientId: Id, input: RaiseReferralInput, context: RoleContext): Promise<Referral> {
+    if (!isValidReferralDestination(input.expectedAtFacilityId)) {
+      throw new Error(
+        `NS-2: '${input.expectedAtFacilityId}' is not a configured referral destination.`,
+      );
+    }
+    const referral: Referral = {
+      id: uid('ref'),
+      patientId,
+      expectedAtFacilityId: input.expectedAtFacilityId,
+      direction: input.direction,
+      raisedByRole: context.role,
+      raisedByScope: context.scope ?? context.facilityId,
+      raisedAt: new Date(),
+    };
+    this.state.referrals = [referral, ...this.state.referrals];
+    this.bump();
+    this.commit();
+    await delay(SIMULATED_LATENCY_MS);
+    return referral;
+  }
+
+  /** NS-4: the facility's arrival worklist — referrals expected there. */
+  async arrivalWorklist(context: RoleContext): Promise<ArrivalRow[]> {
+    const result = this.state.referrals
+      .filter((r) => r.expectedAtFacilityId === context.facilityId)
+      .map((r) => ({ id: r.id, patientId: r.patientId, expectedAtFacilityId: r.expectedAtFacilityId, direction: r.direction }));
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
   }
 
   // --- capture ------------------------------------------------------------

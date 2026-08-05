@@ -80,6 +80,50 @@ export interface Patient {
   possibleDuplicate?: boolean;
   /** §17: at least a local identifier; a programme identifier (e.g. UPID/ABHA) is appended, never replacing it. */
   identifier: Identifier[];
+  /** ITEM-8 NS-3: retained for PMSMA session grouping/filtering — not what an ANM's scope resolves against. */
+  villageName?: string;
+  /** ITEM-8 NS-3, NS-8: the linked ASHA — an ASHA's worklist scope, and the escalation routing key. */
+  ashaName?: string;
+  /** ITEM-8 NS-3: the sub-centre the registering ANM belongs to, set implicitly at registration. What an ANM_CHO's scope resolves against — not the village. */
+  registeredAtFacilityId?: Id;
+}
+
+/** ITEM-8-HRP-NEWBORN.md NS-1: the four version-1 data-entry roles. PHC_MO is read-only and out of scope for this item. */
+export type Role = 'ANM_CHO' | 'PHC_SN' | 'DH_SN' | 'ASHA';
+
+/**
+ * NS-1, NS-13: a role's scope, supplied by the host (or the standalone
+ * picker) — never decided by the product. ASHA/ANM_CHO scope by `scope` (an
+ * ASHA link or sub-centre id, matched against Patient fields); PHC_SN/DH_SN
+ * scope by `facilityId` (referrals expected there).
+ */
+export interface RoleContext {
+  role: Role;
+  scope?: string;
+  facilityId?: Id;
+}
+
+/** NS-2: deployment configuration. Referral destinations resolve against this list only. */
+export interface Facility {
+  id: Id;
+  name: string;
+  tier: string;
+  isReferralDestination: boolean;
+}
+
+/** NS-4: a referral back to a sub-centre is DOWNWARD; anything else raised is UPWARD. */
+export type ReferralDirection = 'UPWARD' | 'DOWNWARD';
+
+/** NS-4: a referral is a two-party commitment — an explicit destination and direction, distinct from an ordinary next step. */
+export interface Referral {
+  id: Id;
+  patientId: Id;
+  expectedAtFacilityId: Id;
+  direction: ReferralDirection;
+  /** Who raised it. The raising ASHA/ANM's own pending-referral view is scoped by this pair, not by the patient's registration facility (NS-1, NS-11). */
+  raisedByRole: Role;
+  raisedByScope?: string;
+  raisedAt: Date;
 }
 
 /**

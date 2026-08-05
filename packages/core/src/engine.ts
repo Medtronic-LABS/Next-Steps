@@ -9,8 +9,12 @@ import type {
   DueKey,
   Gender,
   Id,
+  Identifier,
   Insights,
   Patient,
+  Referral,
+  ReferralDirection,
+  RoleContext,
   SummaryCard,
   Visit,
   WorkStep,
@@ -30,6 +34,12 @@ export interface NewPatient {
   age: number;
   cid: string;
   consent: boolean;
+  /** ITEM-8 NS-3 registration additions. `registeredAtFacilityId` is set implicitly from the registering role's facility. */
+  villageName?: string;
+  ashaName?: string;
+  registeredAtFacilityId?: Id;
+  /** §17, item 5a: an ABHA/RCH identifier, appended alongside the local system identifier — never replacing it. */
+  identifiers?: Identifier[];
 }
 
 export interface CaptureInput {
@@ -91,6 +101,37 @@ export interface TimelineVisit {
   visitId: Id;
   visitDateTime: Date;
   steps: DecoratedStep[];
+}
+
+// --- roles, scope, referrals (ITEM-8-HRP-NEWBORN.md NS-1, NS-2, NS-4, NS-11 — batch 8a) ---
+
+/** NS-11: the one worklist's eight named filters, applied after scope, never before (NS-1). */
+export type WorklistFilter =
+  | 'ALL_REGISTERED'
+  | 'REFERRAL_PENDING'
+  | 'ANC_DUE'
+  | 'PMSMA_DUE'
+  | 'TRACKING_NEEDED'
+  | 'PRIVATE_CARE_DUE'
+  | 'AT_RISK_OF_DROP_OUT'
+  | 'LOST_TO_FOLLOW';
+
+/** A worklist row is patient-centric; `referralId` is set on rows a referral-related filter surfaced. */
+export interface WorklistRow extends Patient {
+  referralId?: Id;
+}
+
+/** NS-4: a row on a facility's arrival worklist — the referral itself, as seen by the expecting party. */
+export interface ArrivalRow {
+  id: Id;
+  patientId: Id;
+  expectedAtFacilityId: Id;
+  direction: ReferralDirection;
+}
+
+export interface RaiseReferralInput {
+  expectedAtFacilityId: Id;
+  direction: ReferralDirection;
 }
 
 // Coordination event outbox (PRD §10.5, §17, ITEM-5-TEST-CASES.md 5d). Every
@@ -183,6 +224,14 @@ export interface CoordinationEngine {
   // --- coordination event outbox (read-only, admin) ---
   /** §10.5: every CoordinationEvent written so far, oldest first. */
   outbox(): Promise<CoordinationEvent[]>;
+
+  // --- roles, scope, referrals (ITEM-8-HRP-NEWBORN.md NS-1, NS-2, NS-4, NS-11 — batch 8a) ---
+  /** NS-1, NS-11: scope is a precondition applied before any of the eight named filters — never a filter itself. New method; no existing call site needs updating. */
+  worklist(context: RoleContext, filter: WorklistFilter): Promise<WorklistRow[]>;
+  /** NS-4: raises a two-party referral. `expectedAtFacilityId` must resolve to a configured, referral-eligible facility (NS-2); free text and unconfigured ids are rejected. */
+  raiseReferral(patientId: Id, input: RaiseReferralInput, context: RoleContext): Promise<Referral>;
+  /** NS-4: the facility's arrival worklist — referrals expected there, until resolved. */
+  arrivalWorklist(context: RoleContext): Promise<ArrivalRow[]>;
 
   // --- device sync state ---
   isOffline(): boolean;
