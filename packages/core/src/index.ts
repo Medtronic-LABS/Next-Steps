@@ -2,6 +2,7 @@ export * from './types';
 export * from './catalog';
 export * from './logic';
 export * from './engine';
+export * from './insights';
 export { AVATARS } from './seed';
 
 import type { CoordinationEngine } from './engine';
