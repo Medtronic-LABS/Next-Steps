@@ -91,10 +91,54 @@ function normalizeIntent(intent: AiIntent | null | undefined): AiIntent {
   return intent;
 }
 
+// ITEM-7-AI-INSIGHTS.md AI-3, BR-017 (batch 7c — guardrails).
+//
+// The prompt above instructs the model to self-classify clinical and
+// patient-level questions as UNSUPPORTED, but AI-3 requires the *engine* to
+// decline them. A model that ignores or misreads its instructions must never
+// carry a wrong answer through, so this check runs before the model is
+// called at all — no model response can override it.
+
+const CLINICAL_KEYWORDS = [
+  'pre-eclampsia',
+  'preeclampsia',
+  'eclampsia',
+  'prescribe',
+  'prescription',
+  'anaemia',
+  'anemia',
+  'diagnos',
+  'symptom',
+  'treatment',
+  'medication',
+  'dosage',
+  'lab result',
+  'vitals',
+  'blood pressure',
+  'hemoglobin',
+  'haemoglobin',
+  'disease',
+  'illness',
+  'clinical',
+  'pregnan',
+  'infection',
+];
+
+/** Two consecutive capitalised words read as a named individual (e.g. "Sunita Rao") — AI-3 answers at aggregate level only. */
+const NAMED_INDIVIDUAL_PATTERN = /\b[A-Z][a-z]+\s[A-Z][a-z]+\b/;
+
+/** ITEM-7-AI-INSIGHTS.md AI-3 — clinical and patient-level questions are declined before the model is ever consulted. */
+function isRefusedQuestion(question: string): boolean {
+  const lower = question.toLowerCase();
+  if (CLINICAL_KEYWORDS.some((keyword) => lower.includes(keyword))) return true;
+  return NAMED_INDIVIDUAL_PATTERN.test(question);
+}
+
 /** ITEM-7-AI-INSIGHTS.md AI-8 — engine built from an injectable model client. */
 export function createInsightsEngine(client: ModelClient): InsightsEngine {
   return {
     async extractIntent(question: string): Promise<AiIntent> {
+      if (isRefusedQuestion(question)) return { type: 'UNSUPPORTED' };
       const prompt = buildIntentExtractionPrompt(question);
       const intent = await client.extractIntent(prompt);
       return normalizeIntent(intent);
@@ -233,4 +277,199 @@ export function validateNarration(narration: string, computedNumerals: number[])
   const numerals = found.map(Number);
   const invalidNumerals = [...new Set(numerals.filter((n) => !allowed.has(n)))];
   return { valid: invalidNumerals.length === 0, invalidNumerals };
+}
+
+// ITEM-7-AI-INSIGHTS.md AI-5, §3.3 (batch 7c — guardrails).
+
+/** ITEM-7-AI-INSIGHTS.md AI-5 — the verdict on whether a narration frames a metric as a person's performance. */
+export interface FramingValidation {
+  valid: boolean;
+  violations?: string[];
+}
+
+const PERFORMANCE_LANGUAGE = /\b(worklist|performance|workload|caseload)\b/i;
+const POSSESSIVE_PRONOUNS = /\b(her|his|their)\b/i;
+
+/** Common words a care-journey sentence opens on ("38 next steps...", "Overall completion...") — anything else capitalised is likely a name. */
+const COMMON_SENTENCE_STARTS = new Set([
+  'the', 'a', 'an', 'this', 'that', 'these', 'those', 'it', 'there',
+  'overall', 'in', 'on', 'at', 'no', 'only', 'both', 'all', 'most', 'some',
+  'total', 'care', 'next', 'patients', 'patient', 'across', 'over', 'among',
+  'of', 'more', 'fewer', 'current', 'currently', 'completion', 'as',
+  'since', 'with', 'out', 'number', 'is', 'was', 'up', 'down',
+]);
+
+function opensOnNamedSubject(sentence: string): boolean {
+  const first = sentence.trim().split(/\s+/)[0]?.replace(/[^a-zA-Z]/g, '');
+  if (!first || !/^[A-Z][a-z]+$/.test(first)) return false;
+  return !COMMON_SENTENCE_STARTS.has(first.toLowerCase());
+}
+
+/**
+ * ITEM-7-AI-INSIGHTS.md AI-5 — rejects narration that attributes a metric to
+ * a named individual as personal performance. Per §3.3 the subject of every
+ * metric is the patient's care, never a person's performance.
+ */
+export function validateFraming(narration: string): FramingValidation {
+  const violations: string[] = [];
+  for (const sentence of narration.split(/(?<=[.!?])\s+/)) {
+    if (!sentence.trim()) continue;
+    const performanceFraming = PERFORMANCE_LANGUAGE.test(sentence) || POSSESSIVE_PRONOUNS.test(sentence);
+    if (opensOnNamedSubject(sentence) && performanceFraming) {
+      violations.push(`attributes a metric to a named individual: "${sentence.trim()}"`);
+    }
+  }
+  return violations.length === 0 ? { valid: true } : { valid: false, violations };
+}
+
+// ITEM-7-AI-INSIGHTS.md AI-3 (batch 7c — guardrails).
+
+/**
+ * ITEM-7-AI-INSIGHTS.md AI-3 — the plain-language message for an UNSUPPORTED
+ * intent: states the question cannot be answered and what is available,
+ * with no figures, so a leader is not left with nothing.
+ */
+export function unsupportedNarration(): string {
+  return (
+    'This question cannot be answered from the data available today. ' +
+    'Next Steps can answer questions about completion rate, on-time completion, ' +
+    'median days to completion, overdue backlog, patients needing attention, ' +
+    'unreachable patients, upcoming load, and referral completion by specialty.'
+  );
+}
+
+// ITEM-7-AI-INSIGHTS.md AI-4, AI-7 (batch 7c — guardrails).
+//
+// This is the pipeline's remaining stage: question -> intent -> execute ->
+// narrate, wired together. AI-4 is enforced here, at the point the payload
+// to `narrate` is constructed, not left to convention: only the summarized
+// §13 result and the intent's own scoping fields are ever included, never a
+// step or patient row. AI-7 wraps every model call in a timeout and never
+// lets a rejected, hung or unparseable call propagate or fabricate a figure.
+
+/** ITEM-7-AI-INSIGHTS.md AI-7 — a clear, structured failure. Never a fabricated answer. */
+export interface AnswerFailure {
+  failed: true;
+  message: string;
+}
+
+export interface AnswerSuccess {
+  failed: false;
+  narration: string;
+  grounding: AiResponseGrounding;
+}
+
+export type AnswerResult = AnswerFailure | AnswerSuccess;
+
+/** Placeholder budget for a prototype model call; a deployed proxy would tune this against real provider latency. */
+const MODEL_CALL_TIMEOUT_MS = 2000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err instanceof Error ? err : new Error(String(err)));
+      },
+    );
+  });
+}
+
+function isPlausibleIntentShape(value: unknown): value is AiIntent {
+  return typeof value === 'object' && value !== null && typeof (value as { type?: unknown }).type === 'string';
+}
+
+function isOverdueBuckets(value: ExecutedMetric): value is OverdueBuckets {
+  return typeof value === 'object' && value !== null && '1-7' in value && '8-30' in value && '31-90' in value && '90+' in value;
+}
+
+/** ITEM-7-AI-INSIGHTS.md AI-4 — collapses raw §13 step-id buckets to counts; only aggregate figures ever reach a payload. */
+function summarizeForNarration(executed: ExecutedMetric): unknown {
+  if (isOverdueBuckets(executed)) {
+    return {
+      '1-7': executed['1-7'].length,
+      '8-30': executed['8-30'].length,
+      '31-90': executed['31-90'].length,
+      '90+': executed['90+'].length,
+    };
+  }
+  return executed;
+}
+
+function collectNumerals(value: unknown): number[] {
+  const numerals: number[] = [];
+  const visit = (v: unknown) => {
+    if (typeof v === 'number') numerals.push(v);
+    else if (Array.isArray(v)) v.forEach(visit);
+    else if (v && typeof v === 'object') Object.values(v).forEach(visit);
+  };
+  visit(value);
+  return numerals;
+}
+
+/**
+ * ITEM-7-AI-INSIGHTS.md AI-1, AI-3, AI-4, AI-7 — the whole pipeline: refuse,
+ * extract, execute, narrate, validate. `patientsOrNow` accepts either the
+ * clinic's patient list (accepted but never read — patients never factor
+ * into a §13 computation or a model payload, only steps do) followed by
+ * `now`, or `now` directly, so callers may omit the patient list entirely.
+ */
+export async function answerQuestion(
+  client: ModelClient,
+  question: string,
+  steps: InsightsStep[],
+  patientsOrNow?: unknown[] | Date,
+  maybeNow?: Date,
+): Promise<AnswerResult> {
+  const now = patientsOrNow instanceof Date ? patientsOrNow : (maybeNow ?? new Date());
+
+  if (isRefusedQuestion(question)) {
+    return { failed: false, narration: unsupportedNarration(), grounding: assembleResponse({ type: 'UNSUPPORTED' }, null) };
+  }
+
+  let rawIntent: unknown;
+  try {
+    rawIntent = await withTimeout(
+      client.extractIntent(buildIntentExtractionPrompt(question)),
+      MODEL_CALL_TIMEOUT_MS,
+      'intent extraction',
+    );
+  } catch {
+    return { failed: true, message: 'The model could not be reached. Please try again.' };
+  }
+
+  if (!isPlausibleIntentShape(rawIntent)) {
+    return { failed: true, message: 'The model returned a response that could not be parsed.' };
+  }
+
+  const intent = normalizeIntent(rawIntent);
+
+  if (intent.type === 'UNSUPPORTED') {
+    return { failed: false, narration: unsupportedNarration(), grounding: assembleResponse(intent, null) };
+  }
+
+  const executed = executeIntent(intent, steps, now);
+  const summarized = summarizeForNarration(executed);
+  const payload = { metric: intent.type, periodDays: intent.periodDays, category: intent.category, result: summarized };
+
+  let narration: string;
+  try {
+    narration = await withTimeout(client.narrate(question, payload), MODEL_CALL_TIMEOUT_MS, 'narration');
+  } catch {
+    return { failed: true, message: 'The model could not be reached. Please try again.' };
+  }
+
+  const numeralCheck = validateNarration(narration, collectNumerals(summarized));
+  const framingCheck = validateFraming(narration);
+
+  if (!numeralCheck.valid || !framingCheck.valid) {
+    return { failed: true, message: 'The model response could not be validated and was discarded.' };
+  }
+
+  return { failed: false, narration, grounding: assembleResponse(intent, executed) };
 }
