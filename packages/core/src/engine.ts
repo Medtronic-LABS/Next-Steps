@@ -221,6 +221,8 @@ export interface CoordinationEngine {
   categoryDefaultDue(cat: Category): DueKey;
   /** The active deployment's seed clinic identity (FR-A-5.2) — display only. */
   clinic(): Clinic;
+  /** ITEM-8-HRP-NEWBORN.md NS-1, NS-13: whether this deployment declares the four version-1 roles — gates the standalone role picker and role-scoped UI. Deployment configuration, like categoryLabel/categoryDefaultDue. */
+  rolesEnabled(): boolean;
 
   // --- patients ---
   allPatients(): Promise<Patient[]>;

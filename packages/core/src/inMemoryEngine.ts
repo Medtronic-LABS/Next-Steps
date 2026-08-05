@@ -8,7 +8,7 @@
 
 import { CATEGORY_ORDER, DUE, META } from './catalog';
 import { isValidReferralDestination } from './facilities';
-import { getCategoryDefaultDue, getCategoryLabel, getEscalationWindowDays, type ProgrammeProfile } from './profile';
+import { getCategoryDefaultDue, getCategoryLabel, getEscalationWindowDays, getRolesEnabled, type ProgrammeProfile } from './profile';
 import { CARD_DEFS } from './seed';
 import { getSeedClinic, resolveProfileKey, type ProfileKey, type SeedClinic } from './profiles';
 import {
@@ -439,6 +439,10 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   clinic(): Clinic {
     return this.seedClinic.clinic;
+  }
+
+  rolesEnabled(): boolean {
+    return getRolesEnabled(this.profile);
   }
 
   private bump(): void {

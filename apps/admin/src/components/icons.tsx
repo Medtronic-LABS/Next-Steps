@@ -68,4 +68,9 @@ export const PATHS = {
   calendar: 'M8 2v4M16 2v4M3 9h18M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z',
   capture: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM12 8v8M8 12h8',
   activity: 'M22 12h-4l-3 9L9 3l-3 9H2',
+  chevUp: 'm6 15 6-6 6 6',
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0',
+  home: 'M3 10.5 12 3l9 7.5M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5',
+  hospital: 'M4 21V7a1 1 0 0 1 1-1h4V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2h4a1 1 0 0 1 1 1v14M4 21h16M12 8v3M10.5 9.5h3',
+  arrowUpRight: 'M7 17 17 7M7 7h10v10',
 };

@@ -26,15 +26,25 @@ const SEED_PATIENT_IDS = {
   p8: 'b1a2c3d4-8888-4a5b-8c9d-0e1f2a3b4c08',
 } as const;
 
+// ITEM-8-HRP-NEWBORN.md NS-3: registration additions. All eight sit in one
+// sub-centre catchment (SHC-RAMPUR, ~5,000 — the ANM/CHO's scope) and one
+// PMSMA village (Rampur); split across two ASHAs (~1,000 each) so the
+// standalone role picker's ASHA option — and NS-1's scope isolation — has
+// something real to show.
+const ASHA_WARD_3 = 'Radha Kumari';
+const ASHA_WARD_5 = 'Kiran Mehta';
+const SHC_RAMPUR = 'SHC-RAMPUR';
+const VILLAGE_RAMPUR = 'Rampur';
+
 export const MATERNAL_PATIENTS: Patient[] = [
-  { id: SEED_PATIENT_IDS.p1, name: 'Rekha Pawar', mobile: '98220 11201', gender: 'Female', age: 27, cid: '3101', open: 2, overdue: 1, last: '28 Jun', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p1 }] },
-  { id: SEED_PATIENT_IDS.p2, name: 'Sunita Devi', mobile: '97400 22312', gender: 'Female', age: 24, cid: '3102', open: 1, overdue: 1, last: '30 Jun', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p2 }] },
-  { id: SEED_PATIENT_IDS.p3, name: 'Kavita Sharma', mobile: '90080 33423', gender: 'Female', age: 30, cid: '3103', open: 2, overdue: 0, last: '6 Jul', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p3 }] },
-  { id: SEED_PATIENT_IDS.p4, name: 'Meena Kumari', mobile: '98800 44534', gender: 'Female', age: 22, cid: '3104', open: 1, overdue: 0, last: '5 Jul', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p4 }] },
-  { id: SEED_PATIENT_IDS.p5, name: 'Asha Devi', mobile: '99001 55645', gender: 'Female', age: 29, cid: '3105', open: 1, overdue: 0, last: '3 Jul', consent: false, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p5 }] },
-  { id: SEED_PATIENT_IDS.p6, name: 'Priyanka Yadav', mobile: '98450 66756', gender: 'Female', age: 33, cid: '3106', open: 1, overdue: 1, last: '1 Jul', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p6 }] },
-  { id: SEED_PATIENT_IDS.p7, name: 'Geeta Ram', mobile: '97390 77867', gender: 'Female', age: 26, cid: '3107', open: 1, overdue: 1, last: '2 Jul', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p7 }] },
-  { id: SEED_PATIENT_IDS.p8, name: 'Fatima Ansari', mobile: '90192 88978', gender: 'Female', age: 31, cid: '3108', open: 0, overdue: 0, last: '4 Jul', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p8 }] },
+  { id: SEED_PATIENT_IDS.p1, name: 'Rekha Pawar', mobile: '98220 11201', gender: 'Female', age: 27, cid: '3101', open: 2, overdue: 1, last: '28 Jun', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p1 }], villageName: VILLAGE_RAMPUR, ashaName: ASHA_WARD_3, registeredAtFacilityId: SHC_RAMPUR },
+  { id: SEED_PATIENT_IDS.p2, name: 'Sunita Devi', mobile: '97400 22312', gender: 'Female', age: 24, cid: '3102', open: 1, overdue: 1, last: '30 Jun', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p2 }], villageName: VILLAGE_RAMPUR, ashaName: ASHA_WARD_3, registeredAtFacilityId: SHC_RAMPUR },
+  { id: SEED_PATIENT_IDS.p3, name: 'Kavita Sharma', mobile: '90080 33423', gender: 'Female', age: 30, cid: '3103', open: 2, overdue: 0, last: '6 Jul', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p3 }], villageName: VILLAGE_RAMPUR, ashaName: ASHA_WARD_3, registeredAtFacilityId: SHC_RAMPUR },
+  { id: SEED_PATIENT_IDS.p4, name: 'Meena Kumari', mobile: '98800 44534', gender: 'Female', age: 22, cid: '3104', open: 1, overdue: 0, last: '5 Jul', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p4 }], villageName: VILLAGE_RAMPUR, ashaName: ASHA_WARD_3, registeredAtFacilityId: SHC_RAMPUR },
+  { id: SEED_PATIENT_IDS.p5, name: 'Asha Devi', mobile: '99001 55645', gender: 'Female', age: 29, cid: '3105', open: 1, overdue: 0, last: '3 Jul', consent: false, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p5 }], villageName: VILLAGE_RAMPUR, ashaName: ASHA_WARD_3, registeredAtFacilityId: SHC_RAMPUR },
+  { id: SEED_PATIENT_IDS.p6, name: 'Priyanka Yadav', mobile: '98450 66756', gender: 'Female', age: 33, cid: '3106', open: 1, overdue: 1, last: '1 Jul', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p6 }], villageName: VILLAGE_RAMPUR, ashaName: ASHA_WARD_5, registeredAtFacilityId: SHC_RAMPUR },
+  { id: SEED_PATIENT_IDS.p7, name: 'Geeta Ram', mobile: '97390 77867', gender: 'Female', age: 26, cid: '3107', open: 1, overdue: 1, last: '2 Jul', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p7 }], villageName: VILLAGE_RAMPUR, ashaName: ASHA_WARD_5, registeredAtFacilityId: SHC_RAMPUR },
+  { id: SEED_PATIENT_IDS.p8, name: 'Fatima Ansari', mobile: '90192 88978', gender: 'Female', age: 31, cid: '3108', open: 0, overdue: 0, last: '4 Jul', consent: true, identifier: [{ system: LOCAL_IDENTIFIER_SYSTEM, value: SEED_PATIENT_IDS.p8 }], villageName: VILLAGE_RAMPUR, ashaName: ASHA_WARD_5, registeredAtFacilityId: SHC_RAMPUR },
 ];
 
 const SEED_DAY_MS = 24 * 60 * 60 * 1000;

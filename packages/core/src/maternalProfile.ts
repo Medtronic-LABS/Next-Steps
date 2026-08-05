@@ -28,4 +28,8 @@ export const MATERNAL_PROFILE: ProgrammeProfile = {
     FOLLOW_UP_CALL: '3d',
     OTHER: '1w',
   },
+  // ITEM-8-HRP-NEWBORN.md NS-1, NS-13: this deployment declares the four
+  // version-1 roles — the diabetes deployment does not, and its experience
+  // is unchanged.
+  rolesEnabled: true,
 };

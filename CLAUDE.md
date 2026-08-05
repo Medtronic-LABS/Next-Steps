@@ -53,6 +53,18 @@ This build uses `inMemoryEngine.ts` — an in-memory store persisted to
 localStorage — in place of a real CCE. Known simplifications are listed in
 PRD Section 22.1. The CCE adapter may run in stub mode (Section 17).
 
+`apps/admin` now hosts two experiences, selected by `engine.rolesEnabled()`
+— itself deployment configuration on the active `ProgrammeProfile`, the same
+mechanism as a category label or due-date interval (FR-A-5.2). A deployment
+that declares no roles (the original profile) renders exactly the
+capture/search/worklist experience it always has, unchanged, from `App.tsx`.
+A deployment that declares the four ITEM-8-HRP-NEWBORN.md roles (`ANM_CHO`,
+`PHC_SN`, `DH_SN`, `ASHA` — NS-1) renders `RoleApp.tsx` instead: the
+standalone role picker or an embedded role/scope entry (NS-13), the
+role-scoped worklist and its eight filters with NS-14 unread badges (NS-11),
+the arrivals view for facility-scoped roles (NS-4), and the shared patient
+detail screen with actions filtered by role.
+
 ## Working agreement
 
 - Do one task at a time. Do not bundle unrelated changes.

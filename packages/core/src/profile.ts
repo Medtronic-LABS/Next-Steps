@@ -28,6 +28,14 @@ export interface ProgrammeProfile {
   lostToFollowUpDays?: number;
   /** ITEM-8-HRP-NEWBORN.md NS-8: days a referral may be pending before it escalates. HRP: 2. Sick newborn: 1. Same clock code, only the value differs. */
   escalationWindowDays?: number;
+  /**
+   * ITEM-8-HRP-NEWBORN.md NS-1, NS-13: whether this deployment declares the
+   * four version-1 data-entry roles. Gates the standalone role picker and
+   * the role-scoped worklist/arrivals UI — deployment configuration, the
+   * same as a category label or a due-date interval. Absent/false: no role
+   * UI is shown (e.g. the diabetes deployment behaves exactly as before).
+   */
+  rolesEnabled?: boolean;
 }
 
 /** TC-CFG-002: a category's label under `profile`, falling back to catalog.ts's default. */
@@ -53,6 +61,11 @@ export function getLostToFollowUpDays(profile?: ProgrammeProfile): number {
 /** NS-8: the escalation window (days) under `profile`, falling back to the documented default of 2 (HRP). No branch on use case — a newborn deployment simply configures 1. */
 export function getEscalationWindowDays(profile?: ProgrammeProfile): number {
   return profile?.escalationWindowDays ?? DEFAULT_ESCALATION_WINDOW_DAYS;
+}
+
+/** NS-1, NS-13: whether `profile` declares the four version-1 roles, falling back to the documented default of false (no role UI). */
+export function getRolesEnabled(profile?: ProgrammeProfile): boolean {
+  return profile?.rolesEnabled ?? false;
 }
 
 /**
