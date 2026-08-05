@@ -8,7 +8,7 @@
 
 import { CATEGORY_ORDER, DUE, META } from './catalog';
 import { isValidReferralDestination } from './facilities';
-import { getCategoryDefaultDue, getCategoryLabel, type ProgrammeProfile } from './profile';
+import { getCategoryDefaultDue, getCategoryLabel, getEscalationWindowDays, type ProgrammeProfile } from './profile';
 import { CARD_DEFS } from './seed';
 import { getSeedClinic, resolveProfileKey, type ProfileKey, type SeedClinic } from './profiles';
 import {
@@ -47,6 +47,7 @@ import type {
   EventType,
   NewPatient,
   RaiseReferralInput,
+  RecordTrackingOutcomeInput,
   RecordVisitResult,
   ReferralClosureSummary,
   ReferralResolutionSummary,
@@ -61,6 +62,7 @@ import type { InsightsStep } from './insights';
 import type {
   Category,
   Clinic,
+  CompletionLocation,
   DrillKey,
   DueKey,
   HistoryEntry,
@@ -69,9 +71,11 @@ import type {
   Insights,
   Patient,
   Referral,
+  Role,
   RoleContext,
   StepStatus,
   SummaryCard,
+  TrackingOutcome,
   Visit,
   WorklistSection,
   WorkStep,
@@ -167,6 +171,29 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** NS-15: an ordinary follow-up commitment created when private closure supplies a follow-up date. */
+interface PrivateCareCommitment {
+  id: Id;
+  patientId: Id;
+  referralId: Id;
+  dueDate: Date;
+}
+
+/** NS-15: a discovery commitment — owned by ANM_CHO, resolvable by ASHA — created when private closure supplies no follow-up date, so the patient is never absent from every filter. */
+interface DiscoveryCommitment {
+  id: Id;
+  patientId: Id;
+  referralId: Id;
+  dueDate: Date;
+}
+
+/** NS-8: an escalation notification, derived from escalationCount rather than logged — there is no notification channel yet (NS-14's in-app badge is the nearest existing one). */
+interface EscalationAlert {
+  referralId: Id;
+  recipientRole: Role;
+  ashaName?: string;
+}
+
 interface Persisted {
   createdPatients: Patient[];
   createdSteps: WorkStep[];
@@ -177,6 +204,11 @@ interface Persisted {
   outbox: CoordinationEvent[];
   /** ITEM-8 NS-4 — two-party referrals, raised via raiseReferral. */
   referrals: Referral[];
+  /** NS-8: per-referral escalation-clock anchor — the point from which the next escalation window is measured. Reset by "plan to go later"; escalationCount itself lives on the referral and is never reset. */
+  escalationClocks: Record<Id, Date>;
+  /** NS-15. */
+  privateCareCommitments: PrivateCareCommitment[];
+  discoveryCommitments: DiscoveryCommitment[];
 }
 
 function emptyState(): Persisted {
@@ -188,6 +220,9 @@ function emptyState(): Persisted {
     pending: 0,
     outbox: [],
     referrals: [],
+    escalationClocks: {},
+    privateCareCommitments: [],
+    discoveryCommitments: [],
   };
 }
 
@@ -261,6 +296,24 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
               ...r,
               raisedAt: new Date(r.raisedAt),
               closedAt: r.closedAt ? new Date(r.closedAt) : r.closedAt,
+              escalationCount: r.escalationCount ?? 0,
+            }));
+          }
+          if (parsed.escalationClocks) {
+            parsed.escalationClocks = Object.fromEntries(
+              Object.entries(parsed.escalationClocks).map(([id, at]) => [id, new Date(at)]),
+            );
+          }
+          if (parsed.privateCareCommitments) {
+            parsed.privateCareCommitments = parsed.privateCareCommitments.map((c) => ({
+              ...c,
+              dueDate: new Date(c.dueDate),
+            }));
+          }
+          if (parsed.discoveryCommitments) {
+            parsed.discoveryCommitments = parsed.discoveryCommitments.map((c) => ({
+              ...c,
+              dueDate: new Date(c.dueDate),
             }));
           }
           return { ...emptyState(), ...parsed };
@@ -610,8 +663,76 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       });
   }
 
+  /**
+   * NS-8: catches up one referral's escalationCount to `now`, from whichever
+   * point its clock last ran from — raisedAt, or the last "plan to go later"
+   * reset. Only ever applied to a PENDING referral; a resolved one has
+   * nothing left to escalate. Escalation never routes higher on repeat —
+   * every elapsed window just increments the same stored count, and it is
+   * the count's value (>= 2), not a distinct escalation "level", that later
+   * makes AT_RISK_OF_DROP_OUT true (NS-9).
+   */
+  private materializeEscalation(referral: Referral, now: Date): void {
+    if (referral.status !== 'PENDING') return;
+    const windowDays = getEscalationWindowDays(this.profile);
+    const anchor = this.state.escalationClocks[referral.id] ?? referral.raisedAt;
+    // Whole-day granularity, like arrivalStatus's clinicDayIndex use (§11.1's
+    // precedent) — a millisecond comparison would be fragile to the few ms
+    // of drift vitest's fake timers introduce across awaits when
+    // {shouldAdvanceTime: true} is set (house convention, tc-ref-002.test.ts).
+    const anchorDayIndex = clinicDayIndex(anchor);
+    const elapsedDays = clinicDayIndex(now) - anchorDayIndex;
+    const elapsedWindows = Math.floor(elapsedDays / windowDays);
+    if (elapsedWindows <= 0) return;
+    referral.escalationCount += elapsedWindows;
+    this.state.escalationClocks[referral.id] = new Date((anchorDayIndex + elapsedWindows * windowDays) * DAY_MS);
+  }
+
+  /** Applied before every read or write that depends on escalation state, so escalationCount is always caught up to `now` — the "stored integer" NS-8 describes, materialized lazily rather than by a background job. */
+  private syncEscalation(now: Date): void {
+    let changed = false;
+    for (const r of this.state.referrals) {
+      const before = r.escalationCount;
+      this.materializeEscalation(r, now);
+      if (r.escalationCount !== before) changed = true;
+    }
+    if (changed) this.commit();
+  }
+
+  /** NS-9: an open referral with escalationCount >= 2, for a patient in `context`'s scope — derived on read, never stored. */
+  private isAtRiskOfDropOut(patientId: Id): boolean {
+    return this.state.referrals.some(
+      (r) => r.patientId === patientId && r.status === 'PENDING' && r.escalationCount >= 2,
+    );
+  }
+
+  /** NS-9: an open referral whose latest tracking outcome is "does not want to go" or "could not be contacted" — derived on read, never stored. */
+  private isLostToFollow(patientId: Id): boolean {
+    return this.state.referrals.some(
+      (r) =>
+        r.patientId === patientId &&
+        r.status === 'PENDING' &&
+        (r.lastTrackingOutcome === 'DOES_NOT_WANT_TO_GO' || r.lastTrackingOutcome === 'COULD_NOT_BE_CONTACTED'),
+    );
+  }
+
+  /** NS-15: a patient's open ordinary private-follow-up / discovery commitments, scoped to patients in `context`. */
+  private commitmentRows(context: RoleContext, commitments: (PrivateCareCommitment | DiscoveryCommitment)[]): WorklistRow[] {
+    const inScope = new Set(this.patientsInScope(context).map((p) => p.id));
+    return commitments
+      .filter((c) => inScope.has(c.patientId))
+      .map((c) => {
+        const patient = this.getPatientSync(c.patientId);
+        return patient
+          ? { ...patient, referralId: c.referralId, dueDate: c.dueDate }
+          : ({ id: c.patientId, referralId: c.referralId, dueDate: c.dueDate } as WorklistRow);
+      });
+  }
+
   /** NS-1, NS-11: scope precedes filter for every one of the eight named filters — no filter widens past it. */
   async worklist(context: RoleContext, filter: WorklistFilter): Promise<WorklistRow[]> {
+    const now = new Date();
+    this.syncEscalation(now);
     let result: WorklistRow[];
     switch (filter) {
       case 'ALL_REGISTERED':
@@ -620,12 +741,29 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       case 'REFERRAL_PENDING':
         result = this.referralPendingRows(context);
         break;
+      case 'PRIVATE_CARE_DUE':
+        // NS-15: a discovery commitment is itself an undated private-care
+        // follow-up — NS-11 permits filter overlap, and the ANM must see it
+        // here even before a date is known (TC-TRK-002), alongside every
+        // ordinary, dated private-follow-up commitment.
+        result = this.commitmentRows(context, [
+          ...this.state.privateCareCommitments,
+          ...this.state.discoveryCommitments,
+        ]);
+        break;
+      case 'TRACKING_NEEDED':
+        result = this.commitmentRows(context, this.state.discoveryCommitments);
+        break;
+      case 'AT_RISK_OF_DROP_OUT':
+        result = this.patientsInScope(context).filter((p) => this.isAtRiskOfDropOut(p.id));
+        break;
+      case 'LOST_TO_FOLLOW':
+        result = this.patientsInScope(context).filter((p) => this.isLostToFollow(p.id));
+        break;
       default:
-        // NS-11: ANC_DUE, PMSMA_DUE, TRACKING_NEEDED, PRIVATE_CARE_DUE,
-        // AT_RISK_OF_DROP_OUT, LOST_TO_FOLLOW depend on the ANC scheduling,
-        // PMSMA, tracking and escalation state introduced in batches 8b-8d.
-        // Until then they truthfully answer "none yet" rather than widen
-        // past scope.
+        // NS-11: ANC_DUE, PMSMA_DUE depend on the ANC scheduling and PMSMA
+        // state introduced in batch 8d. Until then they truthfully answer
+        // "none yet" rather than widen past scope.
         result = [];
     }
     await delay(SIMULATED_LATENCY_MS);
@@ -649,6 +787,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       raisedByScope: context.scope ?? context.facilityId,
       raisedAt: new Date(),
       status: 'PENDING',
+      escalationCount: 0,
     };
     this.state.referrals = [referral, ...this.state.referrals];
     this.bump();
@@ -671,6 +810,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   /** NS-4: the facility's arrival worklist — open referrals expected there, until resolved. */
   async arrivalWorklist(context: RoleContext): Promise<ArrivalRow[]> {
     const now = new Date();
+    this.syncEscalation(now);
     const result = this.state.referrals
       .filter((r) => r.expectedAtFacilityId === context.facilityId && r.status === 'PENDING')
       .map((r) => ({
@@ -686,6 +826,7 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
 
   /** A single referral, read back by id — e.g. to confirm a closed referral was not mutated into an onward one (NS-4). */
   async getReferral(referralId: Id): Promise<Referral | undefined> {
+    this.syncEscalation(new Date());
     const result = this.state.referrals.find((r) => r.id === referralId);
     await delay(SIMULATED_LATENCY_MS);
     return result;
@@ -705,20 +846,121 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
   /**
    * NS-5, NS-6: resolves a referral in place — it is the same record,
    * transitioned to COMPLETED, never mutated into an onward one. An onward
-   * referral is always a fresh `raiseReferral` call (TC-REF-005).
+   * referral is always a fresh `raiseReferral` call (TC-REF-005). Shared by
+   * closeReferral and recordTrackingOutcome's three "completed" leaves.
    */
-  async closeReferral(referralId: Id, context: RoleContext, input?: CloseReferralInput): Promise<Referral> {
-    const referral = this.state.referrals.find((r) => r.id === referralId);
-    if (!referral) throw new Error(`Unknown referral ${referralId}`);
+  private resolveReferral(
+    referral: Referral,
+    context: RoleContext,
+    completionLocation: CompletionLocation,
+    now: Date,
+  ): void {
     referral.status = 'COMPLETED';
     referral.closedByRole = context.role;
     referral.attribution = this.referralAttribution(referral, context);
-    referral.completionLocation = input?.completionLocation ?? 'REFERRED_PUBLIC_FACILITY';
-    referral.closedAt = new Date();
+    referral.completionLocation = completionLocation;
+    referral.closedAt = now;
+  }
+
+  async closeReferral(referralId: Id, context: RoleContext, input?: CloseReferralInput): Promise<Referral> {
+    const referral = this.state.referrals.find((r) => r.id === referralId);
+    if (!referral) throw new Error(`Unknown referral ${referralId}`);
+    this.resolveReferral(referral, context, input?.completionLocation ?? 'REFERRED_PUBLIC_FACILITY', new Date());
     this.bump();
     this.commit();
     await delay(SIMULATED_LATENCY_MS);
     return referral;
+  }
+
+  /** NS-7: maps each "completed" tracking-outcome leaf to NS-6's CompletionLocation vocabulary — the three resolve, sharing resolveReferral with closeReferral. */
+  private static readonly COMPLETED_OUTCOME_LOCATIONS: Partial<Record<TrackingOutcome, CompletionLocation>> = {
+    COMPLETED_REFERRED_PUBLIC_FACILITY: 'REFERRED_PUBLIC_FACILITY',
+    COMPLETED_OTHER_PUBLIC_FACILITY: 'OTHER_PUBLIC_FACILITY',
+    COMPLETED_PRIVATE_FACILITY: 'PRIVATE_FACILITY',
+  };
+
+  /**
+   * NS-15: private closure with a supplied follow-up date creates one
+   * ordinary follow-up commitment, due on that date. With no date, it
+   * creates a discovery commitment instead — owned by ANM_CHO, resolvable by
+   * ASHA, due within the profile's escalation window — so the patient is
+   * never absent from every worklist filter (the failure NS-15 exists to
+   * prevent).
+   */
+  private applyPrivateClosure(referral: Referral, followUpDate: Date | undefined, now: Date): void {
+    if (followUpDate) {
+      this.state.privateCareCommitments = [
+        ...this.state.privateCareCommitments,
+        { id: uid('pcc'), patientId: referral.patientId, referralId: referral.id, dueDate: followUpDate },
+      ];
+      return;
+    }
+    const dueDate = new Date(now.getTime() + getEscalationWindowDays(this.profile) * DAY_MS);
+    this.state.discoveryCommitments = [
+      ...this.state.discoveryCommitments,
+      { id: uid('disc'), patientId: referral.patientId, referralId: referral.id, dueDate },
+    ];
+  }
+
+  /**
+   * NS-7: records one of the six tracking-outcome leaves. The three
+   * "completed" leaves resolve the referral (NS-6); COMPLETED_PRIVATE_FACILITY
+   * additionally applies NS-15. PLAN_TO_GO_LATER resets the escalation clock
+   * without touching escalationCount (NS-8) — the referral's escalation is
+   * first caught up to `now` under the old clock, then the clock alone
+   * resets. DOES_NOT_WANT_TO_GO and COULD_NOT_BE_CONTACTED record the
+   * outcome (feeding NS-9's LOST_TO_FOLLOW) and otherwise leave the referral
+   * exactly as it was — neither resolves it nor resets its clock.
+   */
+  async recordTrackingOutcome(
+    referralId: Id,
+    input: RecordTrackingOutcomeInput,
+    context: RoleContext,
+  ): Promise<Referral> {
+    const now = new Date();
+    this.syncEscalation(now);
+    const referral = this.state.referrals.find((r) => r.id === referralId);
+    if (!referral) throw new Error(`Unknown referral ${referralId}`);
+
+    referral.lastTrackingOutcome = input.outcome;
+
+    const completionLocation = InMemoryCoordinationEngine.COMPLETED_OUTCOME_LOCATIONS[input.outcome];
+    if (completionLocation) {
+      this.resolveReferral(referral, context, completionLocation, now);
+      if (input.outcome === 'COMPLETED_PRIVATE_FACILITY') {
+        this.applyPrivateClosure(referral, input.privateFollowUpDate, now);
+      }
+    } else if (input.outcome === 'PLAN_TO_GO_LATER') {
+      this.state.escalationClocks[referral.id] = now;
+    }
+
+    this.bump();
+    this.commit();
+    await delay(SIMULATED_LATENCY_MS);
+    return referral;
+  }
+
+  /** NS-8: who escalation would alert — the linked ASHA by name, and the ANM/CHO — derived from escalationCount rather than a persisted notification log. */
+  async escalationAlerts(referralId: Id): Promise<EscalationAlert[]> {
+    this.syncEscalation(new Date());
+    const referral = this.state.referrals.find((r) => r.id === referralId);
+    if (!referral || referral.escalationCount < 1) return [];
+    const patient = this.getPatientSync(referral.patientId);
+    const alerts: EscalationAlert[] = [{ referralId, recipientRole: 'ANM_CHO' }];
+    if (patient?.ashaName) {
+      alerts.push({ referralId, recipientRole: 'ASHA', ashaName: patient.ashaName });
+    }
+    await delay(SIMULATED_LATENCY_MS);
+    return alerts;
+  }
+
+  /** NS-8: a reminder to the patient/family accompanies every escalation. */
+  async patientReminderScheduled(referralId: Id): Promise<boolean> {
+    this.syncEscalation(new Date());
+    const referral = this.state.referrals.find((r) => r.id === referralId);
+    const result = !!referral && referral.escalationCount >= 1;
+    await delay(SIMULATED_LATENCY_MS);
+    return result;
   }
 
   /** NS-5: FACILITY_CONFIRMED and REPORTED closures for referrals in scope of `context`, counted separately — never merged. */

@@ -14,6 +14,9 @@ import type { Category, DueKey } from './types';
 /** §10.5 documented default lost-to-follow-up window, absent a profile override. */
 export const DEFAULT_LOST_TO_FOLLOW_UP_DAYS = 30;
 
+/** ITEM-8-HRP-NEWBORN.md NS-8 documented default escalation window (HRP's 2 days), absent a profile override. */
+export const DEFAULT_ESCALATION_WINDOW_DAYS = 2;
+
 /**
  * Per-deployment configuration (FR-A-5.2, §10.5). Every field is optional;
  * an absent field falls back to its documented default (TC-CFG-005).
@@ -23,6 +26,8 @@ export interface ProgrammeProfile {
   categoryDefaultDue?: Partial<Record<Category, DueKey>>;
   unreachableThreshold?: number;
   lostToFollowUpDays?: number;
+  /** ITEM-8-HRP-NEWBORN.md NS-8: days a referral may be pending before it escalates. HRP: 2. Sick newborn: 1. Same clock code, only the value differs. */
+  escalationWindowDays?: number;
 }
 
 /** TC-CFG-002: a category's label under `profile`, falling back to catalog.ts's default. */
@@ -43,6 +48,11 @@ export function getUnreachableThreshold(profile?: ProgrammeProfile): number {
 /** TC-CFG-003, TC-CFG-005: the lost-to-follow-up window (days) under `profile`, falling back to the documented default of 30. */
 export function getLostToFollowUpDays(profile?: ProgrammeProfile): number {
   return profile?.lostToFollowUpDays ?? DEFAULT_LOST_TO_FOLLOW_UP_DAYS;
+}
+
+/** NS-8: the escalation window (days) under `profile`, falling back to the documented default of 2 (HRP). No branch on use case — a newborn deployment simply configures 1. */
+export function getEscalationWindowDays(profile?: ProgrammeProfile): number {
+  return profile?.escalationWindowDays ?? DEFAULT_ESCALATION_WINDOW_DAYS;
 }
 
 /**

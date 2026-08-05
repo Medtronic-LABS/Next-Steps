@@ -123,6 +123,19 @@ export type ReferralAttribution = 'FACILITY_CONFIRMED' | 'REPORTED';
 /** NS-6: where care happened. Private is a resolution, not a failure. */
 export type CompletionLocation = 'REFERRED_PUBLIC_FACILITY' | 'OTHER_PUBLIC_FACILITY' | 'PRIVATE_FACILITY';
 
+/**
+ * NS-7: exactly six tracking-outcome leaves, recorded via home visit or
+ * phone call. No outcome carries a clinical reason or danger-sign detail
+ * (BR-017) — the taxonomy is closed, not a free-text field.
+ */
+export type TrackingOutcome =
+  | 'COMPLETED_REFERRED_PUBLIC_FACILITY'
+  | 'COMPLETED_OTHER_PUBLIC_FACILITY'
+  | 'COMPLETED_PRIVATE_FACILITY'
+  | 'PLAN_TO_GO_LATER'
+  | 'DOES_NOT_WANT_TO_GO'
+  | 'COULD_NOT_BE_CONTACTED';
+
 /** NS-4: a referral is a two-party commitment — an explicit destination and direction, distinct from an ordinary next step. */
 export interface Referral {
   id: Id;
@@ -142,6 +155,10 @@ export interface Referral {
   /** NS-6: set on closure — where care happened. */
   completionLocation?: CompletionLocation;
   closedAt?: Date;
+  /** NS-8: stored integer, incremented per escalation window elapsed; never reset by "plan to go later" (only the clock resets). */
+  escalationCount: number;
+  /** NS-7, NS-9: the most recent tracking outcome recorded against this referral — LOST_TO_FOLLOW derives from this. */
+  lastTrackingOutcome?: TrackingOutcome;
 }
 
 /**

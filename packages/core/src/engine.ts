@@ -17,6 +17,7 @@ import type {
   ReferralDirection,
   RoleContext,
   SummaryCard,
+  TrackingOutcome,
   Visit,
   WorkStep,
 } from './types';
@@ -120,6 +121,8 @@ export type WorklistFilter =
 /** A worklist row is patient-centric; `referralId` is set on rows a referral-related filter surfaced. */
 export interface WorklistRow extends Patient {
   referralId?: Id;
+  /** NS-15: set on PRIVATE_CARE_DUE/TRACKING_NEEDED rows — when the underlying commitment is due. */
+  dueDate?: Date;
 }
 
 /** NS-4: an open referral's arrival status — pending until the escalation-adjacent overdue threshold, derived on read, never stored. */
@@ -142,6 +145,12 @@ export interface RaiseReferralInput {
 /** NS-6: completionLocation is optional on close — a facility confirming arrival may not yet know it; defaults to REFERRED_PUBLIC_FACILITY (NS-5/NS-6 close together). */
 export interface CloseReferralInput {
   completionLocation?: CompletionLocation;
+}
+
+/** NS-7: input to recordTrackingOutcome. `privateFollowUpDate` is only meaningful alongside COMPLETED_PRIVATE_FACILITY (NS-15). */
+export interface RecordTrackingOutcomeInput {
+  outcome: TrackingOutcome;
+  privateFollowUpDate?: Date;
 }
 
 /** NS-5: closure attribution counted separately, never merged. */
@@ -265,6 +274,15 @@ export interface CoordinationEngine {
    * `raiseReferral` call (NS-4).
    */
   closeReferral(referralId: Id, context: RoleContext, input?: CloseReferralInput): Promise<Referral>;
+  /**
+   * NS-7: records one of the six tracking-outcome leaves against a referral.
+   * The three "completed" leaves resolve it, reusing NS-6's CompletionLocation
+   * vocabulary. NS-8: PLAN_TO_GO_LATER resets the escalation clock without
+   * touching escalationCount. NS-15: COMPLETED_PRIVATE_FACILITY with no
+   * privateFollowUpDate raises a discovery commitment so the patient is never
+   * absent from every worklist filter.
+   */
+  recordTrackingOutcome(referralId: Id, input: RecordTrackingOutcomeInput, context: RoleContext): Promise<Referral>;
   /** NS-5: FACILITY_CONFIRMED and REPORTED closures, counted separately — never merged. */
   referralClosureSummary(context: RoleContext): Promise<ReferralClosureSummary>;
   /** NS-6: referral resolution as a total with the public/private split available separately. */
