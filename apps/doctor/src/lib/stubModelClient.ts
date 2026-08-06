@@ -85,8 +85,11 @@ function narrate(payload: NarrationPayload): string {
     const b2 = buckets['8-30'] ?? 0;
     const b3 = buckets['31-90'] ?? 0;
     const b4 = buckets['90+'] ?? 0;
-    // No overall total is stated: it would be a sum computed here, not a figure present in the metrics.
-    return `Next steps overdue: ${b1} for 1–7 days, ${b2} for 8–30 days, ${b3} for 31–90 days, and ${b4} beyond 90 days.`;
+    // Bucket boundaries are named in words, never digits — "1-7"/"8-30"/etc. are
+    // range labels, not computed figures, and must never surface as a numeral.
+    // No overall total is stated either: it would be a sum computed here, not a
+    // figure present in the metrics.
+    return `Next steps overdue: ${b1} for a week or less, ${b2} for more than a week and up to a month, ${b3} for more than a month and up to three months, and ${b4} for more than three months.`;
   }
   if (metric === 'PATIENTS_NEEDING_ATTENTION' && typeof result === 'number') {
     return `${result} patients currently need attention — an overdue or unreachable next step.`;
