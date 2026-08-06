@@ -273,3 +273,8 @@ accepting any option it offers:
   right and the test was wrong.
 - Fix the test in its own session, committed separately, so no fix session
   ever touched a test file.
+
+**Seventh variant: hardcoded absolute dates.** A date literal that was valid
+when written drifts as real time passes. `tc-nb-002` hardcoded a discharge date
+that fell outside BR-003's 30-day backdating window 33 days later. Pin the
+clock with `vi.setSystemTime` and express dates relative to it.

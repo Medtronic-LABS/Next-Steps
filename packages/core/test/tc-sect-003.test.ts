@@ -45,7 +45,7 @@ describe('TC-SECT-003 — FR-A-6.1 unreachable takes precedence over overdue (PR
     const dueDate = new Date(NOW.getTime() - 10 * DAY_MS);
     const fixture = step(dueDate, 4);
 
-    const section = deriveSection(fixture, 3);
+    const section = deriveSection(fixture, 3, NOW);
 
     // PROVISIONAL: Unreachable wins over Overdue (see comment above).
     expect(section, 'should derive to unreach, not overdue').toBe('unreach');
