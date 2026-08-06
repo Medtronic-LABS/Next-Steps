@@ -10,12 +10,14 @@
   "scripts": {
     "dev:admin": "npm run dev -w @next-steps/admin",
     "dev:doctor": "npm run dev -w @next-steps/doctor",
+    "dev:maternal": "npm run dev -w @next-steps/maternal",
     "build": "npm run build -w @next-steps/admin && npm run build -w @next-steps/doctor",
     "build:admin": "npm run build -w @next-steps/admin",
     "build:doctor": "npm run build -w @next-steps/doctor",
-    "build:hosting": "npm run build -w @next-steps/admin && npm run build -w @next-steps/doctor -- --base=/doctor/ && node scripts/assemble-hosting.mjs",
+    "build:maternal": "npm run build -w @next-steps/maternal",
+    "build:hosting": "npm run build -w @next-steps/admin && npm run build -w @next-steps/doctor -- --base=/doctor/ && npm run build -w @next-steps/maternal -- --base=/maternal/ && node scripts/assemble-hosting.mjs",
     "deploy": "bash scripts/deploy.sh",
-    "typecheck": "npm run typecheck -w @next-steps/core && npm run typecheck -w @next-steps/admin && npm run typecheck -w @next-steps/doctor"
+    "typecheck": "npm run typecheck -w @next-steps/core && npm run typecheck -w @next-steps/admin && npm run typecheck -w @next-steps/doctor && npm run typecheck -w @next-steps/maternal"
   },
   "engines": {
     "node": ">=20"

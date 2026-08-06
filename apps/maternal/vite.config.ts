@@ -14,8 +14,8 @@ export default defineConfig({
       // Precache the app shell + design-system assets so the app opens with no network.
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        // The service worker itself must never be cached (see firebase.json headers).
-        navigateFallback: '/index.html',
+        // navigateFallback is left to the plugin so it follows Vite's `base`
+        // (served under /maternal/ in the monorepo, / when run standalone).
         runtimeCaching: [
           {
             // Runtime-cache fonts / static assets served from the same origin.
@@ -38,8 +38,10 @@ export default defineConfig({
         background_color: '#FCFBF9',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
-        scope: '/',
+        // Relative so the PWA scope follows the build `base` — '/maternal/' in the
+        // monorepo (vite build --base=/maternal/), '/' when run standalone.
+        start_url: './',
+        scope: './',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },

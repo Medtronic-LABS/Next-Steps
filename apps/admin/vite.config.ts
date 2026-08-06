@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       // Admin is served at '/'; don't let its service worker capture the
-      // Doctor app that shares the origin under '/doctor/'.
-      workbox: { navigateFallbackDenylist: [/^\/doctor\//] },
+      // Doctor and Maternal apps that share the origin under '/doctor/' and '/maternal/'.
+      workbox: { navigateFallbackDenylist: [/^\/doctor\//, /^\/maternal\//] },
       manifest: {
         name: 'Next Steps — Admin',
         short_name: 'NS Admin',
