@@ -92,10 +92,21 @@ export interface Patient {
   motherRchId?: string;
   /** ITEM-8 NS-3 (batch 8e): the newborn's delivery date — an event date anchoring follow-up scheduling, never a clinical measurement (BR-017). */
   deliveryDate?: Date;
+  /** NS-12, NS-17: a single-select routing label, maternal profile only — no reason, threshold or danger-sign detail. */
+  pregnancyStatus?: PregnancyStatus;
 }
 
 /** ITEM-8-HRP-NEWBORN.md NS-1: the four version-1 data-entry roles. PHC_MO is read-only and out of scope for this item. */
 export type Role = 'ANM_CHO' | 'PHC_SN' | 'DH_SN' | 'ASHA';
+
+/**
+ * NS-12, NS-17: a routing label only — no reason, threshold or danger-sign
+ * detail accompanies it anywhere. Maternal profile only.
+ */
+export type PregnancyStatus = 'NORMAL' | 'HIGH_RISK';
+
+/** NS-17: the optional/conditional registration fields a programme profile may configure — see profile.ts's `registrationFields`. */
+export type RegistrationField = 'age' | 'gender' | 'villageName' | 'ashaName' | 'pregnancyStatus' | 'registeredAtFacilityId';
 
 /**
  * NS-1, NS-13: a role's scope, supplied by the host (or the standalone

@@ -13,8 +13,10 @@ import type {
   Identifier,
   Insights,
   Patient,
+  PregnancyStatus,
   Referral,
   ReferralDirection,
+  RegistrationField,
   RoleContext,
   SummaryCard,
   TrackingOutcome,
@@ -48,6 +50,8 @@ export interface NewPatient {
   deliveryDate?: Date;
   /** §17, item 5a: an ABHA/RCH identifier, appended alongside the local system identifier — never replacing it. */
   identifiers?: Identifier[];
+  /** NS-12, NS-17: a single-select routing label, maternal profile only. */
+  pregnancyStatus?: PregnancyStatus;
 }
 
 export interface CaptureInput {
@@ -229,6 +233,8 @@ export interface CoordinationEngine {
   clinic(): Clinic;
   /** ITEM-8-HRP-NEWBORN.md NS-1, NS-13: whether this deployment declares the four version-1 roles — gates the standalone role picker and role-scoped UI. Deployment configuration, like categoryLabel/categoryDefaultDue. */
   rolesEnabled(): boolean;
+  /** NS-17: which optional/conditional registration fields this deployment's profile collects — deployment configuration, like categoryLabel/rolesEnabled. */
+  registrationFields(): RegistrationField[];
 
   // --- patients ---
   allPatients(): Promise<Patient[]>;

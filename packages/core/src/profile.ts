@@ -9,13 +9,16 @@
 
 import { META } from './catalog';
 import { DEFAULT_UNREACHABLE_THRESHOLD, TASK_CODE_BY_CATEGORY } from './logic';
-import type { Category, DueKey } from './types';
+import type { Category, DueKey, RegistrationField } from './types';
 
 /** §10.5 documented default lost-to-follow-up window, absent a profile override. */
 export const DEFAULT_LOST_TO_FOLLOW_UP_DAYS = 30;
 
 /** ITEM-8-HRP-NEWBORN.md NS-8 documented default escalation window (HRP's 2 days), absent a profile override. */
 export const DEFAULT_ESCALATION_WINDOW_DAYS = 2;
+
+/** NS-17 documented default registration fields — the existing diabetes deployment's form, unchanged. */
+export const DEFAULT_REGISTRATION_FIELDS: RegistrationField[] = ['age', 'gender'];
 
 /**
  * Per-deployment configuration (FR-A-5.2, §10.5). Every field is optional;
@@ -36,6 +39,13 @@ export interface ProgrammeProfile {
    * UI is shown (e.g. the diabetes deployment behaves exactly as before).
    */
   rolesEnabled?: boolean;
+  /**
+   * ITEM-8-HRP-NEWBORN.md NS-17: which optional/conditional registration
+   * fields this deployment collects — deployment configuration, the same as
+   * a category label or `rolesEnabled`. Absent falls back to the documented
+   * default (age + gender), the diabetes deployment's existing form.
+   */
+  registrationFields?: RegistrationField[];
 }
 
 /** TC-CFG-002: a category's label under `profile`, falling back to catalog.ts's default. */
@@ -66,6 +76,11 @@ export function getEscalationWindowDays(profile?: ProgrammeProfile): number {
 /** NS-1, NS-13: whether `profile` declares the four version-1 roles, falling back to the documented default of false (no role UI). */
 export function getRolesEnabled(profile?: ProgrammeProfile): boolean {
   return profile?.rolesEnabled ?? false;
+}
+
+/** NS-17: the registration fields `profile` collects, falling back to the documented default (age + gender). */
+export function getRegistrationFields(profile?: ProgrammeProfile): RegistrationField[] {
+  return profile?.registrationFields ?? DEFAULT_REGISTRATION_FIELDS;
 }
 
 /**

@@ -32,4 +32,8 @@ export const MATERNAL_PROFILE: ProgrammeProfile = {
   // version-1 roles — the diabetes deployment does not, and its experience
   // is unchanged.
   rolesEnabled: true,
+  // NS-17: the maternal profile collects no age or gender; village, the
+  // village-linked ASHA, and pregnancy status replace them. registeredAtFacilityId
+  // is collected implicitly (NS-3), not through a form field.
+  registrationFields: ['villageName', 'ashaName', 'pregnancyStatus', 'registeredAtFacilityId'],
 };

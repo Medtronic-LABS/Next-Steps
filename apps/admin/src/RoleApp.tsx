@@ -13,18 +13,22 @@ import { useEffect, useRef, useState } from 'react';
 import {
   FACILITIES,
   ROLE_OPTIONS,
+  VILLAGES,
   formatDueLabel,
   initials,
   loadPersistedEntry,
   maskMobile,
   persistEntryChoice,
+  resolveAshaForVillage,
   resolveEntry,
   type CompletionLocation,
   type Facility,
   type Gender,
   type Id,
+  type PregnancyStatus,
   type Referral,
   type ReferralDirection,
+  type RegistrationField,
   type Role,
   type RoleContext,
   type TrackingOutcome,
@@ -449,14 +453,23 @@ function WorklistPatientRow({ row, hint, onOpen }: { row: WorklistRow; hint: str
 // ============================================================================
 interface CaptureForm {
   name: string; mobile: string; gender: Gender; age: string; cid: string;
-  villageName: string; ashaName: string; abhaOrRch: string; consent: boolean;
+  villageName: string; abhaOrRch: string; consent: boolean; pregnancyStatus: PregnancyStatus;
 }
-const EMPTY_CAPTURE_FORM: CaptureForm = { name: '', mobile: '', gender: 'Female', age: '', cid: '', villageName: '', ashaName: '', abhaOrRch: '', consent: true };
+const EMPTY_CAPTURE_FORM: CaptureForm = {
+  name: '', mobile: '', gender: 'Female', age: '', cid: '', villageName: '', abhaOrRch: '', consent: true, pregnancyStatus: 'NORMAL',
+};
+
+/** NS-17: which of the profile-configured registration fields are collected under this deployment. */
+function useRegistrationFields(): Set<RegistrationField> {
+  return new Set(engine.registrationFields());
+}
 
 function CaptureScreen({ context, onBack, onSaved }: { context: RoleContext; onBack: () => void; onSaved: (pid: Id) => void }) {
   const [form, setForm] = useState<CaptureForm>(EMPTY_CAPTURE_FORM);
+  const fields = useRegistrationFields();
   const set = (patch: Partial<CaptureForm>) => setForm((f) => ({ ...f, ...patch }));
   const canSave = form.name.trim().length > 0 && form.mobile.replace(/\D/g, '').length === 10;
+  const linkedAsha = resolveAshaForVillage(form.villageName);
 
   const save = async () => {
     if (!canSave) return;
@@ -469,10 +482,10 @@ function CaptureScreen({ context, onBack, onSaved }: { context: RoleContext; onB
       age: /^\d+$/.test(form.age) ? Number(form.age) : 0,
       cid: form.cid.trim() || form.name.trim(),
       consent: form.consent,
-      villageName: form.villageName.trim() || undefined,
-      ashaName: form.ashaName.trim() || undefined,
+      villageName: fields.has('villageName') ? form.villageName || undefined : undefined,
       registeredAtFacilityId: context.scope,
       identifiers: form.abhaOrRch.trim() ? [{ system: 'urn:next-steps:abha-or-rch', value: form.abhaOrRch.trim() }] : undefined,
+      pregnancyStatus: fields.has('pregnancyStatus') ? form.pregnancyStatus : undefined,
     });
     setForm(EMPTY_CAPTURE_FORM);
     onSaved(patient.id);
@@ -487,18 +500,47 @@ function CaptureScreen({ context, onBack, onSaved }: { context: RoleContext; onB
       <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
         <Field label="Full name" value={form.name} onChange={(v) => set({ name: v })} placeholder="Patient's full name" />
         <Field label="Mobile number" value={form.mobile} onChange={(v) => set({ mobile: v })} placeholder="10-digit mobile" prefix="+91" numeric maxLen={10} />
-        <div style={{ display: 'flex', gap: 11 }}>
-          <div style={{ flex: 1 }}><Field label="Age" value={form.age} onChange={(v) => set({ age: v })} placeholder="e.g. 27" numeric maxLen={3} /></div>
-          <div style={{ flex: 1 }}>
-            <div className="field-label">Gender</div>
-            <select value={form.gender} onChange={(e) => set({ gender: e.target.value as Gender })} className="input" style={{ fontWeight: 600, cursor: 'pointer' }}>
-              <option>Female</option><option>Male</option><option>Other</option><option>Prefer not to say</option>
+        {(fields.has('age') || fields.has('gender')) && (
+          <div style={{ display: 'flex', gap: 11 }}>
+            {fields.has('age') && (
+              <div style={{ flex: 1 }}><Field label="Age" value={form.age} onChange={(v) => set({ age: v })} placeholder="e.g. 27" numeric maxLen={3} /></div>
+            )}
+            {fields.has('gender') && (
+              <div style={{ flex: 1 }}>
+                <div className="field-label">Gender</div>
+                <select value={form.gender} onChange={(e) => set({ gender: e.target.value as Gender })} className="input" style={{ fontWeight: 600, cursor: 'pointer' }}>
+                  <option>Female</option><option>Male</option><option>Other</option><option>Prefer not to say</option>
+                </select>
+              </div>
+            )}
+          </div>
+        )}
+        {fields.has('villageName') && (
+          <div>
+            <div className="field-label">Village</div>
+            <select value={form.villageName} onChange={(e) => set({ villageName: e.target.value })} className="input" style={{ fontWeight: 600, cursor: 'pointer' }}>
+              <option value="" disabled>Select village</option>
+              {VILLAGES.map((v) => <option key={v.name} value={v.name}>{v.name}</option>)}
             </select>
           </div>
-        </div>
-        <Field label="Village" value={form.villageName} onChange={(v) => set({ villageName: v })} placeholder="e.g. Rampur" optional />
-        <Field label="Linked ASHA" value={form.ashaName} onChange={(v) => set({ ashaName: v })} placeholder="ASHA's name" optional />
+        )}
+        {fields.has('ashaName') && linkedAsha && (
+          <div>
+            <div className="field-label">Linked ASHA</div>
+            <div style={{ height: 48, borderRadius: 13, border: '1.5px solid var(--border-subtle)', background: 'var(--surface-page)', display: 'flex', alignItems: 'center', padding: '0 14px', fontSize: 15, fontWeight: 600, color: S.body }}>{linkedAsha}</div>
+          </div>
+        )}
         <Field label="ABHA / RCH ID" value={form.abhaOrRch} onChange={(v) => set({ abhaOrRch: v })} placeholder="—" optional />
+
+        {fields.has('pregnancyStatus') && (
+          <div style={{ border: '1.5px solid var(--border-subtle)', borderRadius: 15, padding: 14, background: '#fff' }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: S.strong, marginBottom: 11 }}>Pregnancy status</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => set({ pregnancyStatus: 'NORMAL' })} style={{ flex: 1, height: 42, borderRadius: 11, cursor: 'pointer', fontSize: 14, fontWeight: form.pregnancyStatus === 'NORMAL' ? 700 : 600, border: form.pregnancyStatus === 'NORMAL' ? '1.5px solid var(--status-success)' : '1.5px solid var(--border-default)', background: form.pregnancyStatus === 'NORMAL' ? 'var(--status-success-soft)' : '#fff', color: form.pregnancyStatus === 'NORMAL' ? 'var(--status-success)' : S.muted }}>{form.pregnancyStatus === 'NORMAL' ? '✓ Normal' : 'Normal'}</button>
+              <button onClick={() => set({ pregnancyStatus: 'HIGH_RISK' })} style={{ flex: 1, height: 42, borderRadius: 11, cursor: 'pointer', fontSize: 14, fontWeight: form.pregnancyStatus === 'HIGH_RISK' ? 700 : 600, border: form.pregnancyStatus === 'HIGH_RISK' ? '1.5px solid var(--status-danger)' : '1.5px solid var(--border-default)', background: form.pregnancyStatus === 'HIGH_RISK' ? 'var(--status-danger-soft)' : '#fff', color: form.pregnancyStatus === 'HIGH_RISK' ? 'var(--status-danger)' : S.muted }}>{form.pregnancyStatus === 'HIGH_RISK' ? '✓ High risk' : 'High risk'}</button>
+            </div>
+          </div>
+        )}
 
         <div style={{ border: '1.5px solid var(--border-subtle)', borderRadius: 15, padding: 14, background: '#fff' }}>
           <div style={{ fontSize: 13.5, fontWeight: 700, color: S.strong, marginBottom: 11 }}>WhatsApp reminders</div>

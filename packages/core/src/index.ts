@@ -4,6 +4,7 @@ export * from './logic';
 export * from './engine';
 export * from './insights';
 export * from './facilities';
+export * from './villages';
 export * from './roles';
 export { AVATARS } from './seed';
 

@@ -8,7 +8,15 @@
 
 import { CATEGORY_ORDER, DUE, META } from './catalog';
 import { isValidReferralDestination } from './facilities';
-import { getCategoryDefaultDue, getCategoryLabel, getEscalationWindowDays, getRolesEnabled, type ProgrammeProfile } from './profile';
+import { resolveAshaForVillage } from './villages';
+import {
+  getCategoryDefaultDue,
+  getCategoryLabel,
+  getEscalationWindowDays,
+  getRegistrationFields,
+  getRolesEnabled,
+  type ProgrammeProfile,
+} from './profile';
 import { CARD_DEFS } from './seed';
 import { getSeedClinic, resolveProfileKey, type ProfileKey, type SeedClinic } from './profiles';
 import {
@@ -72,6 +80,7 @@ import type {
   Insights,
   Patient,
   Referral,
+  RegistrationField,
   Role,
   RoleContext,
   StepStatus,
@@ -445,6 +454,10 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     return getRolesEnabled(this.profile);
   }
 
+  registrationFields(): RegistrationField[] {
+    return getRegistrationFields(this.profile);
+  }
+
   private bump(): void {
     if (this.state.offline) this.state.pending += 1;
   }
@@ -696,11 +709,15 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       overdue: 0,
       identifier,
       villageName: input.villageName,
-      ashaName: input.ashaName,
+      // NS-17: a configured village's linked ASHA always wins over a typed
+      // value; falls back to input.ashaName when villageName resolves to no
+      // configured village (e.g. a deployment with no village list).
+      ashaName: resolveAshaForVillage(input.villageName) ?? input.ashaName,
       registeredAtFacilityId: input.registeredAtFacilityId,
       childRchId: input.childRchId,
       motherRchId: input.motherRchId,
       deliveryDate: input.deliveryDate,
+      pregnancyStatus: input.pregnancyStatus,
     };
     this.state.createdPatients = [patient, ...this.state.createdPatients];
     this.bump();
