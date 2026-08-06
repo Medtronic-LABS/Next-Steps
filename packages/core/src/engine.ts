@@ -40,6 +40,12 @@ export interface NewPatient {
   villageName?: string;
   ashaName?: string;
   registeredAtFacilityId?: Id;
+  /** ITEM-8 NS-3 (batch 8e): newborn identity — the child's own RCH ID, linked to the mother's. */
+  childRchId?: string;
+  /** ITEM-8 NS-3 (batch 8e): the mother's RCH ID, carried on the newborn record. */
+  motherRchId?: string;
+  /** ITEM-8 NS-3 (batch 8e): event date anchoring follow-up scheduling — not a clinical measurement (BR-017). */
+  deliveryDate?: Date;
   /** §17, item 5a: an ABHA/RCH identifier, appended alongside the local system identifier — never replacing it. */
   identifiers?: Identifier[];
 }

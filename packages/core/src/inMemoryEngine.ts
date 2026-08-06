@@ -649,15 +649,26 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     return result;
   }
 
+  private matchesQuery(p: Patient, q: string): boolean {
+    const digits = q.replace(/\D/g, '');
+    if (/\d/.test(q)) return digits.length >= 4 && p.mobile.replace(/\D/g, '').startsWith(digits);
+    return p.name.toLowerCase().split(' ').some((t) => t.startsWith(q)) || p.name.toLowerCase().startsWith(q);
+  }
+
   async searchPatients(query: string): Promise<Patient[]> {
     const q = query.trim().toLowerCase();
     const all = this.allPatientsSync();
     const result = !q
       ? all.slice(0, 6)
       : all.filter((p) => {
-          const digits = q.replace(/\D/g, '');
-          if (/\d/.test(q)) return digits.length >= 4 && p.mobile.replace(/\D/g, '').startsWith(digits);
-          return p.name.toLowerCase().split(' ').some((t) => t.startsWith(q)) || p.name.toLowerCase().startsWith(q);
+          if (this.matchesQuery(p, q)) return true;
+          // NS-3 (batch 8e): a newborn may be found by searching the mother —
+          // resolve the link via `motherRchId` rather than the newborn's own name.
+          if (p.motherRchId) {
+            const mother = all.find((m) => m.identifier.some((i) => i.value === p.motherRchId));
+            if (mother && this.matchesQuery(mother, q)) return true;
+          }
+          return false;
         });
     await delay(SIMULATED_LATENCY_MS);
     return result;
@@ -687,6 +698,9 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
       villageName: input.villageName,
       ashaName: input.ashaName,
       registeredAtFacilityId: input.registeredAtFacilityId,
+      childRchId: input.childRchId,
+      motherRchId: input.motherRchId,
+      deliveryDate: input.deliveryDate,
     };
     this.state.createdPatients = [patient, ...this.state.createdPatients];
     this.bump();

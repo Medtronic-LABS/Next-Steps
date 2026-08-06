@@ -86,6 +86,12 @@ export interface Patient {
   ashaName?: string;
   /** ITEM-8 NS-3: the sub-centre the registering ANM belongs to, set implicitly at registration. What an ANM_CHO's scope resolves against — not the village. */
   registeredAtFacilityId?: Id;
+  /** ITEM-8 NS-3 (batch 8e): a newborn's own RCH ID, linked to `motherRchId`. Resolvable in both directions via the identifiers each carries. */
+  childRchId?: string;
+  /** ITEM-8 NS-3 (batch 8e): the mother's RCH ID, carried on the newborn record so the link resolves without a separate lookup table. */
+  motherRchId?: string;
+  /** ITEM-8 NS-3 (batch 8e): the newborn's delivery date — an event date anchoring follow-up scheduling, never a clinical measurement (BR-017). */
+  deliveryDate?: Date;
 }
 
 /** ITEM-8-HRP-NEWBORN.md NS-1: the four version-1 data-entry roles. PHC_MO is read-only and out of scope for this item. */
