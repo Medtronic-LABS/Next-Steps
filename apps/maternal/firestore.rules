@@ -1,0 +1,75 @@
+rules_version = '2';
+
+// Next Steps for Maternal Care — Firestore security rules.
+// Coordination data only. Access follows the facility catchment chain; step
+// writes are limited to a user's own level or steps she created; config is
+// read-only to the app; step-closure fields are append-only (first close stands).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- helpers ----
+    function signedIn() { return request.auth != null; }
+    function claims() { return request.auth.token; }
+    function myRole() { return claims().role; }        // e.g. "phc_sn"
+    function myLevel() { return claims().level; }       // SUBCENTRE | PHC | CHC | DH | TERTIARY
+    function myFacility() { return claims().facilityId; }
+    // The set of sub-centres in this user's catchment chain, set as a custom claim.
+    function myCatchment() { return claims().catchment; } // list of subcentre ids
+
+    // Deployment config — read-only to the app; written out-of-band (console/CI).
+    match /config/{deploymentId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Women — readable within the user's catchment chain.
+    match /women/{womanId} {
+      function inMyCatchment() {
+        return resource.data.homeSubcentreId in myCatchment()
+            || resource.data.homeSubcentreId == myFacility();
+      }
+      allow read: if signedIn() && inMyCatchment();
+      allow create: if signedIn()
+                    && request.resource.data.createdBy == request.auth.uid;
+      // Coordination fields may be updated; last-write-wins per field (app-enforced).
+      allow update: if signedIn() && inMyCatchment();
+      allow delete: if false;
+
+      // Steps — writable at the user's own level or if she created the step.
+      match /steps/{stepId} {
+        function mineToWrite() {
+          return request.resource.data.level == myLevel()
+              || request.resource.data.ownerRole == myRole()
+              || request.resource.data.createdBy == request.auth.uid;
+        }
+        // Closure is append-only: once closedAt is set it can never be rewritten.
+        function closureImmutable() {
+          return !( 'closedAt' in resource.data && resource.data.closedAt != null )
+              || ( request.resource.data.closedAt == resource.data.closedAt
+                && request.resource.data.closedBy == resource.data.closedBy
+                && request.resource.data.closedSource == resource.data.closedSource );
+        }
+        allow read: if signedIn();
+        allow create: if signedIn() && mineToWrite();
+        allow update: if signedIn() && mineToWrite() && closureImmutable();
+        allow delete: if false;
+      }
+    }
+
+    // Alerts — read within catchment; only ack/resolve fields are user-writable.
+    match /alerts/{alertId} {
+      allow read: if signedIn() && resource.data.facilityId == myFacility();
+      allow create: if false; // raised by Cloud Functions only
+      allow update: if signedIn()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['ackBy', 'ackAt', 'resolvedAt']);
+      allow delete: if false;
+    }
+
+    // Reminders — managed entirely by Cloud Functions.
+    match /reminders/{reminderId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+  }
+}

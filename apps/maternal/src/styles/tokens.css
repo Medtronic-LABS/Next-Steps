@@ -1,0 +1,247 @@
+/* Medtronic LABS — Design System
+   Ported verbatim from the "Next Steps for Maternal Care" prototype.
+   Source: Medtronic LABS Brand Guide (Colors, Typography, Text Hierarchy).
+   Order: tokens -> base layer -> app layout. */
+
+/* ---- Color tokens ------------------------------------------------------- */
+:root {
+  /* Primary */
+  --ml-blue: #1E14BE;            /* MEDIUM BLUE — RGB(30,20,190). Core brand. */
+  --ml-blue-60: #2514BE;
+  --ml-periwinkle: #6165DE;
+  --ml-seafoam: #54CC90;
+  --ml-terracotta: #EB956A;
+  --ml-burnt-orange: #C35721;
+
+  /* Secondary */
+  --ml-blue-30: #BCB5F7;
+  --ml-peppermint: #98EFC4;
+  --ml-peach: #FFBD9B;
+  --ml-pink: #E98B8B;
+  --ml-merlot: #994242;
+  --ml-maroon: #751A1A;
+
+  /* Logomark tints */
+  --ml-mark-periwinkle: #655AD0;
+  --ml-mark-peach: #F1B495;
+  --ml-mark-seafoam: #88DBB1;
+
+  /* Neutrals */
+  --ml-white: #FFFFFF;
+  --ml-offwhite: #FCFBF9;
+  --ml-grey: #DEDDD8;
+  --ml-black: #000000;
+
+  /* Ink ramp */
+  --ml-ink-900: #010101;
+  --ml-ink-800: #2A2826;
+  --ml-ink-600: #595959;
+  --ml-ink-500: #70706E;
+  --ml-ink-400: #909090;
+
+  /* Gradients */
+  --ml-gradient-image: linear-gradient(135deg, #994242 0%, rgba(188,181,247,0.30) 100%);
+  --ml-gradient-duotone: linear-gradient(150deg, rgba(117,26,26,0.55) 0%, rgba(97,101,222,0.55) 100%);
+
+  /* Semantic aliases — brand / accent */
+  --ml-brand: var(--ml-blue);
+  --ml-brand-hover: #1A11A6;
+  --ml-brand-active: #150E8C;
+  --ml-accent: var(--ml-seafoam);
+
+  /* Surfaces */
+  --surface-page: var(--ml-offwhite);
+  --surface-card: var(--ml-white);
+  --surface-sunken: var(--ml-offwhite);
+  --surface-brand: var(--ml-blue);
+  --surface-brand-soft: #EFEDFF;
+  --surface-muted: var(--ml-grey);
+
+  /* Text */
+  --text-strong: var(--ml-ink-900);
+  --text-body: var(--ml-ink-800);
+  --text-muted: var(--ml-ink-500);
+  --text-subtle: var(--ml-ink-400);
+  --text-on-brand: var(--ml-white);
+  --text-brand: var(--ml-blue);
+  --text-link: var(--ml-blue);
+
+  /* Borders */
+  --border-subtle: var(--ml-grey);
+  --border-default: #CFCEC8;
+  --border-strong: var(--ml-ink-800);
+  --border-brand: var(--ml-blue);
+
+  /* Feedback / status */
+  --status-success: #2E9E6B;
+  --status-success-soft: var(--ml-peppermint);
+  --status-warning: var(--ml-burnt-orange);
+  --status-warning-soft: var(--ml-peach);
+  --status-danger: var(--ml-merlot);
+  --status-danger-soft: var(--ml-pink);
+  --status-info: var(--ml-periwinkle);
+  --status-info-soft: var(--ml-blue-30);
+
+  --focus-ring: var(--ml-periwinkle);
+
+  /* ---- Typography ------------------------------------------------------- */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, "Courier New", monospace;
+
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  --fs-display: 84px;
+  --fs-h1: 48px;
+  --fs-h2: 36px;
+  --fs-h3: 24px;
+  --fs-h4: 20px;
+  --fs-subtitle: 18px;
+  --fs-body-lg: 18px;
+  --fs-body: 16px;
+  --fs-button: 14px;
+  --fs-caption: 12px;
+  --fs-micro: 10px;
+
+  --lh-display: 1.04;
+  --lh-heading: 1.12;
+  --lh-snug: 1.25;
+  --lh-base: 1.4;
+  --lh-relaxed: 1.6;
+
+  --ls-display: -0.018em;
+  --ls-tight: -0.01em;
+  --ls-normal: 0;
+  --ls-body: 0.01em;
+  --ls-caps: 0.08em;
+
+  /* ---- Spacing / radius / shadow / motion ------------------------------- */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+  --space-9: 64px;
+  --space-10: 80px;
+  --space-11: 96px;
+  --space-12: 128px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-pill: 999px;
+  --radius-image: 20px;
+
+  --border-thin: 1px;
+  --border-medium: 1.5px;
+  --border-thick: 2px;
+
+  --shadow-xs: 0 1px 2px rgba(30, 20, 190, 0.06);
+  --shadow-sm: 0 2px 8px rgba(30, 20, 190, 0.08);
+  --shadow-md: 0 8px 24px rgba(30, 20, 190, 0.10);
+  --shadow-lg: 0 16px 48px rgba(30, 20, 190, 0.14);
+  --shadow-focus: 0 0 0 3px rgba(97, 101, 222, 0.40);
+
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-base: 24px;
+  --icon-lg: 32px;
+  --icon-stroke: 1.75;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+}
+
+/* ---- Base layer --------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-base);
+  letter-spacing: var(--ls-body);
+  color: var(--text-body);
+  background: #E8E6E0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: var(--fw-medium);
+  color: var(--text-strong);
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-tight);
+  text-wrap: balance;
+}
+
+p { margin: 0; text-wrap: pretty; }
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+a:hover { color: var(--ml-brand-hover); }
+
+strong, b { font-weight: var(--fw-bold); }
+small { font-size: var(--fs-caption); }
+code, kbd, samp, pre { font-family: var(--font-mono); }
+
+::selection { background: var(--ml-blue-30); color: var(--ml-ink-900); }
+::-webkit-scrollbar { width: 0; height: 0; }
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+}
+
+img { max-width: 100%; display: block; }
+
+button { font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+
+/* ---- App layout — full-viewport mobile, centered column on desktop ------ */
+#root {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  background: radial-gradient(120% 120% at 50% 0%, #F3F1EC 0%, #E4E1DB 70%);
+}
+
+.ns-app {
+  position: relative;
+  width: 100%;
+  max-width: 448px;
+  min-height: 100dvh;
+  background: var(--surface-page);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px -24px rgba(30, 20, 190, 0.28);
+}
+
+/* Animations carried from the prototype */
+@keyframes nsSheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes nsFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes nsToast {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
