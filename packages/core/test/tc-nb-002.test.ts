@@ -36,12 +36,27 @@ type NewbornPatientWithClinicalAttempt = NewNewbornPatient & {
   condition?: string;
 };
 
+// "Today" is pinned with vi.setSystemTime — see TC-VISIT-004 — so BR-003's
+// 30-day backdating limit is checked against a fixed clock rather than the
+// real wall-clock date, which would otherwise carry dischargeDate further
+// into the past every day until recordVisit started rejecting it.
+const NB002_TODAY = new Date('2026-07-20T00:00:00Z');
+
 describe('TC-NB-002 — delivery date anchors follow-up (EXPECTED FAIL)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(NB002_TODAY);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('stores delivery date as an event date, with no clinical field alongside it, anchoring a 7-day follow-up', async () => {
     const engine = new InMemoryCoordinationEngine();
 
-    const deliveryDate = new Date('2026-07-01T00:00:00Z');
-    const dischargeDate = new Date('2026-07-04T00:00:00Z');
+    const dischargeDate = new Date(NB002_TODAY.getTime() - 3 * DAY_MS);
+    const deliveryDate = new Date(dischargeDate.getTime() - 3 * DAY_MS);
     const followUpDue = new Date(dischargeDate.getTime() + 7 * DAY_MS);
 
     const input: NewbornPatientWithClinicalAttempt = {
