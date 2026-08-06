@@ -89,7 +89,15 @@ export type Screen =
 
 export type TabKey = 'lookup' | 'worklist' | 'alerts';
 
-export type DialogType = 'referral' | 'anc' | 'pmsma' | 'close' | 'sms' | 'scan';
+export type DialogType =
+  | 'referral'
+  | 'anc'
+  | 'pmsma'
+  | 'stepmenu'   // the per-step action menu (Mark complete / nudge / call / …)
+  | 'complete'   // "Where did care happen?" confirm — the FR-F-7 closure
+  | 'reschedule' // change a step's due date
+  | 'sms'
+  | 'scan';
 
 export interface DialogState {
   type: DialogType;
@@ -116,7 +124,7 @@ export interface DeploymentConfig {
 /** Offline write queued for replay to Firestore (idempotent by client id). */
 export interface OutboxEntry {
   id: string;                // client-generated id → idempotent replay
-  op: 'register' | 'addSteps' | 'closeStep' | 'ackAlert';
+  op: 'register' | 'addSteps' | 'closeStep' | 'ackAlert' | 'updateStep';
   payload: unknown;
   createdAt: number;
   synced: boolean;

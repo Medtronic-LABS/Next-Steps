@@ -3,7 +3,7 @@
 // outbox entry so offline writes replay to Firestore idempotently on reconnect.
 import { create } from 'zustand';
 import type {
-  Category, CloseOutcome, CloseSource, DeploymentConfig, DialogState,
+  Category, DeploymentConfig, DialogState,
   OutboxEntry, RoleKey, Screen, StagedStep, Step, TabKey, Woman,
 } from '../domain/types';
 import { ROLES, TODAY_ISO } from '../domain/constants';
@@ -75,8 +75,16 @@ interface AppState {
   confirmReferral: () => void;
   confirmDated: () => void;
   confirmPmsma: () => void;
-  openClose: (stepId: string) => void;
-  confirmClose: () => void;
+  // step action menu
+  openStepMenu: (stepId: string) => void;
+  openComplete: (stepId: string) => void;
+  confirmComplete: () => void;
+  openReschedule: (stepId: string) => void;
+  confirmReschedule: () => void;
+  logContactAttempt: (stepId: string) => void;
+  cancelStep: (stepId: string) => void;
+  declineStep: (stepId: string) => void;
+  callPatient: (stepId: string) => void;
   openSms: (stepId: string) => void;
   openScan: () => void;
   confirmScan: () => void;
@@ -237,38 +245,60 @@ export const useApp = create<AppState>((set, get) => ({
     set({ dialog: null });
     get().showToast('Added to PMSMA session · ' + shortFmt(date));
   },
-  openClose(stepId) {
-    set({ dialog: { type: 'close', stepId, outcome: null, src: null } });
+  // ----- step action menu -----
+  openStepMenu(stepId) {
+    set({ dialog: { type: 'stepmenu', stepId } });
   },
-  confirmClose() {
+  openComplete(stepId) {
+    set({ dialog: { type: 'complete', stepId, src: null } });
+  },
+  confirmComplete() {
     const dl = get().dialog;
     const role = get().role;
-    if (!dl || !role || dl.type !== 'close' || !dl.stepId) return;
-    const ready = dl.outcome === 'NO_CONTACT' || (dl.outcome && dl.src);
-    if (!ready) return;
+    if (!dl || !role || dl.type !== 'complete' || !dl.stepId || !dl.src) return; // needs a care source (FR-F-7)
     const r = ROLES[role];
-    const done = dl.outcome === 'COMPLETED';
-    const csrc: CloseSource | CloseOutcome = (dl.src || dl.outcome) as CloseSource | CloseOutcome;
-    const cby = r.short + ' · ' + r.facility;
-    let touched: Woman | undefined;
-    const women = get().women.map((w) => {
-      if (!w.steps.some((s) => s.id === dl.stepId)) return w;
-      const nw = {
-        ...w,
-        steps: w.steps.map((s) =>
-          s.id !== dl.stepId ? s
-            : { ...s, status: done ? 'DONE' as const : 'OPEN' as const, outcome: dl.outcome ?? null, cdate: done ? TODAY_ISO : null, csrc, cby }),
-      };
-      touched = nw;
-      return nw;
-    });
-    if (touched) void persistWoman(touched);
-    void enqueue(outbox('closeStep', {
-      womanId: touched?.id, stepId: dl.stepId, status: done ? 'DONE' : 'OPEN',
-      outcome: dl.outcome, cdate: done ? TODAY_ISO : null, csrc, cby,
-    }));
-    set({ women, dialog: null });
-    get().showToast(done ? 'Step closed · visible to every level' : 'Outcome recorded · step stays open');
+    patchStep(get, set, dl.stepId, {
+      status: 'DONE', outcome: 'COMPLETED', cdate: TODAY_ISO, csrc: dl.src, cby: r.short + ' · ' + r.facility,
+    }, 'closeStep');
+    set({ dialog: null });
+    get().showToast('Step completed · visible to every level');
+  },
+  openReschedule(stepId) {
+    const step = findStep(get().women, stepId);
+    const def = step?.due || isoOf(new Date(Date.parse(TODAY_ISO + 'T00:00:00') + 7 * 86_400_000));
+    set({ dialog: { type: 'reschedule', stepId, date: def } });
+  },
+  confirmReschedule() {
+    const dl = get().dialog;
+    if (!dl || dl.type !== 'reschedule' || !dl.stepId || !dl.date) return;
+    patchStep(get, set, dl.stepId, { due: dl.date, rem: null }); // clear reminder → regenerate
+    set({ dialog: null });
+    get().showToast('Due date rescheduled · reminders regenerated');
+  },
+  logContactAttempt(stepId) {
+    const step = findStep(get().women, stepId);
+    patchStep(get, set, stepId, { rem: 'failed', unreach: (step?.unreach ?? 0) + 1 });
+    set({ dialog: null });
+    get().showToast('Contact attempt logged · marked unreachable');
+  },
+  cancelStep(stepId) {
+    patchStep(get, set, stepId, { status: 'CANCELLED', cdate: TODAY_ISO });
+    set({ dialog: null });
+    get().showToast('Step cancelled');
+  },
+  declineStep(stepId) {
+    const role = get().role;
+    const r = role ? ROLES[role] : null;
+    patchStep(get, set, stepId, {
+      status: 'CANCELLED', outcome: 'NOT_COMPLETED', csrc: 'DECLINED', cdate: TODAY_ISO,
+      cby: r ? r.short + ' · ' + r.facility : null,
+    }, 'closeStep');
+    set({ dialog: null });
+    get().showToast('Marked — she declined');
+  },
+  callPatient(stepId) {
+    const w = get().women.find((x) => x.steps.some((s) => s.id === stepId));
+    get().showToast('Dialling ' + (w ? w.name : 'her') + '…');
   },
   openSms(stepId) { set({ dialog: { type: 'sms', stepId } }); },
   openScan() { set({ dialog: { type: 'scan' } }); },
@@ -293,6 +323,30 @@ function addStaged(get: GetFn, set: SetFn, st: Omit<StagedStep, 'sid'>) {
   const cap = get().cap;
   if (!cap) return;
   set({ cap: { ...cap, steps: [...cap.steps, { sid: uid('st'), ...st }] } });
+}
+
+/** Find a step across all women (used by the step action menu). */
+function findStep(women: Woman[], stepId?: string): Step | undefined {
+  if (!stepId) return undefined;
+  for (const w of women) {
+    const s = w.steps.find((x) => x.id === stepId);
+    if (s) return s;
+  }
+  return undefined;
+}
+
+/** Apply a patch to one step: update memory, persist to Dexie, enqueue outbox. */
+function patchStep(get: GetFn, set: SetFn, stepId: string, patch: Partial<Step>, op: OutboxEntry['op'] = 'updateStep') {
+  let touched: Woman | undefined;
+  const women = get().women.map((w) => {
+    if (!w.steps.some((s) => s.id === stepId)) return w;
+    const nw = { ...w, steps: w.steps.map((s) => (s.id !== stepId ? s : { ...s, ...patch })) };
+    touched = nw;
+    return nw;
+  });
+  if (touched) void persistWoman(touched);
+  void enqueue(outbox(op, { womanId: touched?.id, stepId, ...patch }));
+  set({ women });
 }
 
 function shortFmt(iso: string): string {

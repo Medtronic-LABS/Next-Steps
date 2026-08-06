@@ -1,11 +1,11 @@
-// All six bottom-sheet dialogs (referral / ANC / PMSMA / close / SMS / scan),
-// branched off the active dialog type. Mirrors the prototype's dialog block.
+// Bottom-sheet dialogs (referral / ANC / PMSMA / step action menu / complete /
+// reschedule / SMS / scan), branched off the active dialog type.
 import { BottomSheet } from './BottomSheet';
 import { Icon } from './Icon';
 import { useApp } from '../data/store';
 import { CAT, LVL, ROLES, TODAY_ISO } from '../domain/constants';
-import { clampPmsmaDay, fmt, fmtLong, nextPmsma, ord, stepVM } from '../domain/logic';
-import type { CloseOutcome, CloseSource, Level, Step, Woman } from '../domain/types';
+import { clampPmsmaDay, fmt, fmtLong, isoOf, nextPmsma, ord, stepVM } from '../domain/logic';
+import type { CloseSource, Level, Step, Woman } from '../domain/types';
 
 const primaryBtn: React.CSSProperties = {
   width: '100%', padding: 15, border: 'none', borderRadius: 14, background: 'var(--ml-blue)',
@@ -26,7 +26,12 @@ function Radio({ on }: { on: boolean }) {
 }
 
 export function Dialogs() {
-  const { dialog, role, config, women, cap, dismissDialog, setDialog, confirmReferral, confirmDated, confirmPmsma, confirmClose, confirmScan, showToast } = useApp();
+  const {
+    dialog, role, config, women, cap, dismissDialog, setDialog,
+    confirmReferral, confirmDated, confirmPmsma, confirmScan, showToast,
+    openComplete, confirmComplete, openReschedule, confirmReschedule,
+    logContactAttempt, cancelStep, declineStep, callPatient, openSms,
+  } = useApp();
   if (!dialog || !role) return null;
   const r = ROLES[role];
 
@@ -108,79 +113,100 @@ export function Dialogs() {
         );
       })()}
 
-      {dialog.type === 'close' && (() => {
+      {dialog.type === 'stepmenu' && (() => {
         const found = findStep(women, dialog.stepId);
         if (!found) return null;
-        const vm = stepVM(found.s, found.w);
-        const OUTS: { k: CloseOutcome; l: string; h: string }[] = [
-          { k: 'COMPLETED', l: 'Completed', h: 'The step was carried out' },
-          { k: 'NOT_COMPLETED', l: 'Not completed', h: 'She did not receive the service' },
-          { k: 'NO_CONTACT', l: 'Could not be contacted', h: 'No response after repeated attempts' },
+        const { s, w } = found;
+        const vm = stepVM(s, w);
+        const id = s.id;
+        return (
+          <>
+            <button onClick={dismissDialog} style={{ display: 'flex', alignItems: 'center', gap: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12.5, fontWeight: 700, padding: 0, marginBottom: 10 }}>
+              <Icon path="M15 6l-6 6 6 6" size={15} stroke="var(--text-muted)" strokeWidth={2.4} />All steps for {w.name}
+            </button>
+            <div style={{ display: 'flex', gap: 11, alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid var(--border-subtle)', marginBottom: 8 }}>
+              <span style={{ flex: 'none', width: 40, height: 40, borderRadius: 10, background: vm.lsoft, display: 'flex', alignItems: 'center', justifyContent: 'center', color: vm.lc }}>
+                <Icon path={CAT[s.cat].icon} size={20} stroke="currentColor" strokeWidth={1.9} />
+              </span>
+              <div><div style={{ fontSize: 15.5, fontWeight: 700, color: 'var(--text-strong)' }}>{vm.title}</div><div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{vm.dueLabel}</div></div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <ActionRow bg="#E9FBF0" iconColor="#128C4A" icon="M20 6L9 17l-5-5" label="Mark complete" onClick={() => openComplete(id)} />
+              <ActionRow bg="#E7FBEF" iconColor="#1EA952" icon="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l2.1-5.3A8.5 8.5 0 1 1 21 11.5z" label="Send WhatsApp nudge" onClick={() => (w.consent ? openSms(id) : showToast('No reminder consent — opening dialler…'))} />
+              <ActionRow bg="#FBEDE4" iconColor="#C35721" icon="M4 5c0 8 7 15 15 15l2.5-2.5-4-4-2.5 1.5a11 11 0 0 1-5-5L11 6.5 7 2.5 4 5z" label="Call her" onClick={() => callPatient(id)} />
+              <ActionRow bg="#F0EFEC" iconColor="#595959" icon="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7.5V12l3 1.8" label="Log contact attempt" onClick={() => logContactAttempt(id)} />
+              <ActionRow bg="#EFEDFF" iconColor="#1E14BE" icon={CAT.PMSMA_VISIT.icon} label="Reschedule due date" onClick={() => openReschedule(id)} />
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button onClick={() => cancelStep(id)} style={{ flex: 1, border: '1.5px solid var(--border-default)', background: '#fff', cursor: 'pointer', padding: 12, borderRadius: 12, fontSize: 13.5, fontWeight: 700, color: 'var(--text-muted)' }}>Cancel step</button>
+                <button onClick={() => declineStep(id)} style={{ flex: 1, border: '1.5px solid var(--status-warning)', background: 'var(--status-warning-soft)', cursor: 'pointer', padding: 12, borderRadius: 12, fontSize: 13.5, fontWeight: 700, color: '#C35721' }}>She declined</button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
+
+      {dialog.type === 'complete' && (() => {
+        const found = findStep(women, dialog.stepId);
+        if (!found) return null;
+        const { s, w } = found;
+        const vm = stepVM(s, w);
+        const sources: { k: CloseSource; l: string; h: string }[] = [
+          { k: 'AT_REFERRED_FACILITY', l: 'At the referred facility', h: 'Service delivered at the facility she was sent to' },
+          { k: 'OTHER_PUBLIC_FACILITY', l: 'At another public facility', h: 'A different government facility' },
+          { k: 'PRIVATE_PROVIDER', l: 'At a private provider', h: 'She used private care' },
         ];
-        const SUB: Partial<Record<CloseOutcome, { heading: string; items: { k: CloseSource; l: string; h: string }[] }>> = {
-          COMPLETED: {
-            heading: 'Where did care actually happen?',
-            items: [
-              { k: 'AT_REFERRED_FACILITY', l: 'At the referred facility', h: 'Service delivered at the facility she was sent to' },
-              { k: 'OTHER_PUBLIC_FACILITY', l: 'At another public facility', h: 'A different government facility' },
-              { k: 'PRIVATE_PROVIDER', l: 'At a private provider', h: 'She used private care' },
-            ],
-          },
-          NOT_COMPLETED: {
-            heading: 'Why was it not completed?',
-            items: [
-              { k: 'PLANS_LATER', l: 'Plans to visit later', h: 'She intends to go — keep the step open' },
-              { k: 'DECLINED', l: 'Declined', h: 'She chose not to go' },
-            ],
-          },
-        };
-        const sub = dialog.outcome ? SUB[dialog.outcome] : undefined;
-        const ready = dialog.outcome === 'NO_CONTACT' ? true : !!(dialog.outcome && dialog.src);
-        const confirmLabel = dialog.outcome === 'COMPLETED' ? 'Mark completed' : dialog.outcome ? 'Save outcome' : 'Choose an outcome';
-        const confirmBg = dialog.outcome === 'COMPLETED' || !dialog.outcome ? 'var(--status-success)' : 'var(--ml-blue)';
         return (
           <>
             <div style={{ display: 'flex', gap: 11, alignItems: 'center', marginBottom: 16 }}>
-              <span style={{ flex: 'none', width: 44, height: 44, borderRadius: 12, background: vm.lsoft, display: 'flex', alignItems: 'center', justifyContent: 'center', color: vm.lc }}>
-                <Icon path={CAT[found.s.cat].icon} size={22} stroke="currentColor" strokeWidth={1.8} />
+              <span style={{ flex: 'none', width: 44, height: 44, borderRadius: 12, background: 'var(--ml-peppermint)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#128C4A' }}>
+                <Icon path="M20 6L9 17l-5-5" size={22} stroke="currentColor" strokeWidth={2.4} />
               </span>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-strong)' }}>Close step</div>
-                <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{vm.title} · {found.w.name}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-strong)' }}>Mark complete</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{vm.title} · {w.name}</div>
               </div>
             </div>
-            <SectionLabel>What was the outcome?</SectionLabel>
+            <SectionLabel>Where did care actually happen?</SectionLabel>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-              {OUTS.map((x) => {
-                const on = dialog.outcome === x.k;
+              {sources.map((x) => {
+                const on = dialog.src === x.k;
                 return (
-                  <button key={x.k} onClick={() => setDialog({ ...dialog, outcome: x.k, src: null })} style={radioRow(on)}>
+                  <button key={x.k} onClick={() => setDialog({ ...dialog, src: x.k })} style={radioRow(on)}>
                     <Radio on={on} />
                     <span><span style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: 'var(--text-strong)' }}>{x.l}</span><span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-muted)' }}>{x.h}</span></span>
                   </button>
                 );
               })}
             </div>
-            {sub && (
-              <>
-                <SectionLabel>{sub.heading}</SectionLabel>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
-                  {sub.items.map((x) => {
-                    const on = dialog.src === x.k;
-                    return (
-                      <button key={x.k} onClick={() => setDialog({ ...dialog, src: x.k })} style={radioRow(on)}>
-                        <Radio on={on} />
-                        <span><span style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: 'var(--text-strong)' }}>{x.l}</span><span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-muted)' }}>{x.h}</span></span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
             <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5 }}>
-              Records <strong>who</strong> closed it, <strong>where</strong>, and the outcome — visible to every level in her chain (FR-F-7).
+              Records <strong>who</strong> completed it, <strong>where</strong>, and the outcome — visible to every level in her chain (FR-F-7).
             </div>
-            <button onClick={confirmClose} style={{ ...primaryBtn, background: confirmBg, borderRadius: 14, padding: 14, opacity: ready ? 1 : 0.5 }}>{confirmLabel}</button>
+            <button onClick={confirmComplete} style={{ ...primaryBtn, background: 'var(--status-success)', opacity: dialog.src ? 1 : 0.5 }}>Confirm complete</button>
+          </>
+        );
+      })()}
+
+      {dialog.type === 'reschedule' && (() => {
+        const found = findStep(women, dialog.stepId);
+        if (!found) return null;
+        const { s, w } = found;
+        const vm = stepVM(s, w);
+        const quick = [7, 14, 28].map((d) => {
+          const val = isoOf(new Date(Date.parse(TODAY_ISO + 'T00:00:00') + d * 86_400_000));
+          return { label: d === 7 ? 'In 1 week' : d === 14 ? 'In 2 weeks' : 'In 4 weeks', val, on: dialog.date === val };
+        });
+        return (
+          <>
+            <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 3 }}>Reschedule due date</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginBottom: 16 }}>{vm.title} · {w.name}. Reminders regenerate from the new date.</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+              {quick.map((q) => (
+                <button key={q.label} onClick={() => setDialog({ ...dialog, date: q.val })} style={{ padding: '8px 13px', borderRadius: 999, border: '1.5px solid', borderColor: q.on ? r.accent : '#DEDDD8', background: q.on ? r.accent : '#fff', color: q.on ? '#fff' : '#2A2826', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>{q.label}</button>
+              ))}
+            </div>
+            <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 7 }}>New due date</label>
+            <input type="date" value={dialog.date} min={TODAY_ISO} onChange={(e) => setDialog({ ...dialog, date: e.target.value })} style={{ width: '100%', padding: 14, border: '1.5px solid var(--border-default)', borderRadius: 14, background: 'var(--surface-page)', fontSize: 16, color: 'var(--text-strong)', marginBottom: 14 }} />
+            <button onClick={confirmReschedule} style={{ ...primaryBtn, opacity: dialog.date ? 1 : 0.5 }}>Reschedule</button>
           </>
         );
       })()}
@@ -227,6 +253,24 @@ export function Dialogs() {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.03em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 9 }}>{children}</div>;
+}
+
+/** A tappable action in the step menu — soft icon tile + label + chevron. */
+function ActionRow({ bg, iconColor, icon, label, onClick }: {
+  bg: string; iconColor: string; icon: string; label: string; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ display: 'flex', alignItems: 'center', gap: 13, width: '100%', textAlign: 'left', border: 'none', background: 'transparent', cursor: 'pointer', padding: '10px 2px' }}
+    >
+      <span style={{ flex: 'none', width: 40, height: 40, borderRadius: 11, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon path={icon} size={19} stroke={iconColor} strokeWidth={2} />
+      </span>
+      <span style={{ flex: 1, fontSize: 15.5, fontWeight: 600, color: 'var(--text-strong)' }}>{label}</span>
+      <Icon path="M9 6l6 6-6 6" size={18} stroke="var(--border-default)" strokeWidth={2.4} />
+    </button>
+  );
 }
 
 function findStep(women: Woman[], stepId?: string): { s: Step; w: Woman } | null {

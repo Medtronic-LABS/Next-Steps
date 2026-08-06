@@ -3,7 +3,7 @@ import { useApp } from '../data/store';
 import { edd, fmt, gestText, initials, mask, stepVM } from '../domain/logic';
 
 export function Journey() {
-  const { women, selId, openCapture, openClose } = useApp();
+  const { women, selId, openCapture, openStepMenu } = useApp();
   const w = women.find((x) => x.id === selId);
   if (!w) return null;
 
@@ -70,7 +70,7 @@ export function Journey() {
         {open.map((s) => {
           const vm = stepVM(s, w);
           return (
-            <button key={s.id} onClick={() => openClose(s.id)} style={{ textAlign: 'left', width: '100%', padding: 14, background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeft: `4px solid ${vm.lc}`, borderRadius: 16, boxShadow: 'var(--shadow-xs)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 13 }}>
+            <button key={s.id} onClick={() => openStepMenu(s.id)} style={{ textAlign: 'left', width: '100%', padding: 14, background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeft: `4px solid ${vm.lc}`, borderRadius: 16, boxShadow: 'var(--shadow-xs)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 13 }}>
               <span style={{ flex: 'none', width: 44, height: 44, borderRadius: 12, background: vm.lsoft, display: 'flex', alignItems: 'center', justifyContent: 'center', color: vm.lc }}>
                 <Icon path={vm.icon} size={22} stroke="currentColor" strokeWidth={1.8} />
               </span>

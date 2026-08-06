@@ -72,5 +72,11 @@ async function pushEntry(fs: unknown, entry: OutboxEntry): Promise<void> {
     case 'ackAlert':
       await setDoc(doc(store, 'alerts', p.stepId as string), { ackAt: p.at, ackBy: p.by }, { merge: true } as never);
       break;
+    case 'updateStep': {
+      // Reschedule / log-attempt / cancel / decline — merge the patched fields.
+      const { womanId, stepId, ...patch } = p as { womanId: string; stepId: string };
+      await updateDoc(doc(store, 'women', womanId, 'steps', stepId), patch as Record<string, unknown>);
+      break;
+    }
   }
 }

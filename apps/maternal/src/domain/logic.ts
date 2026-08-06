@@ -169,6 +169,7 @@ export function worklistVM(
 
   const b: Record<string, Pair[]> = { overdue: [], today: [], incoming: [], pending: [], soon: [], unreach: [], closed: [] };
   mine.forEach(({ s, w }) => {
+    if (s.status === 'CANCELLED') return; // cancelled / declined — off the worklist
     if (s.status === 'DONE') { if (s.cdate === TODAY_ISO) b.closed.push({ s, w }); return; }
     if (s.cat === 'REFERRAL') { b.incoming.push({ s, w }); return; }
     if (!s.due) { b.pending.push({ s, w }); return; }
