@@ -246,9 +246,10 @@ function Timeline({ patientId, onBack }: { patientId: Id | null; onBack: () => v
 const EMPTY_INSIGHTS: InsightsData = {
   completionRate: 0,
   completionOf: '',
-  prevRate: 0,
-  deltaPts: 0,
+  prevRate: null,
+  deltaPts: null,
   trend: [],
+  trendHasEnoughData: false,
   catBars: [],
   backlogBars: [],
   referral: { rate: 0, ofLabel: '', medianDays: 0 },
@@ -277,18 +278,37 @@ function Insights({ period, setPeriod }: { period: number; setPeriod: (i: number
       <div className="card" style={{ padding: 16, marginBottom: 13 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: S.muted }}>Completion rate</span>
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--status-success)', background: '#E4F7EE', padding: '2px 8px', borderRadius: 999 }}>▲ {ins.deltaPts} pts</span>
+          {ins.deltaPts !== null && (
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--status-success)', background: 'var(--status-success-soft)', padding: '2px 8px', borderRadius: 999 }}>▲ {ins.deltaPts} pts</span>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 9, marginTop: 4 }}>
           <span style={{ fontSize: 40, fontWeight: 800, color: S.strong, letterSpacing: '-.02em', lineHeight: 0.9 }}>{ins.completionRate}%</span>
-          <span style={{ fontSize: 13, color: S.muted, paddingBottom: 6 }}>{ins.completionOf} · prev {ins.prevRate}%</span>
+          <span style={{ fontSize: 13, color: S.muted, paddingBottom: 6 }}>{ins.completionOf}{ins.prevRate !== null ? ` · prev ${ins.prevRate}%` : ''}</span>
         </div>
-        <svg viewBox="0 0 288 96" style={{ width: '100%', height: 84, marginTop: 10, overflow: 'visible' }}>
-          <polyline points={t.line} fill="none" stroke="#1E14BE" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-          <polygon points={t.area} fill="#1E14BE" opacity={0.07} />
-          {t.dots.map((d, i) => <circle key={i} cx={d.x} cy={d.y} r={3.5} fill="#fff" stroke="#1E14BE" strokeWidth={2.2} />)}
-        </svg>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: S.subtle, marginTop: 2 }}><span>5 wks ago</span><span>this week</span></div>
+        {ins.trendHasEnoughData ? (
+          <>
+            <svg viewBox="0 0 288 96" style={{ width: '100%', height: 84, marginTop: 10, overflow: 'hidden' }}>
+              <defs>
+                <clipPath id="trend-clip">
+                  <rect x="0" y="0" width="288" height="96" />
+                </clipPath>
+              </defs>
+              <g clipPath="url(#trend-clip)">
+                {t.segments.map((seg, i) => (
+                  <g key={i}>
+                    <polygon points={seg.area} fill="var(--ml-blue)" opacity={0.07} />
+                    <polyline points={seg.line} fill="none" stroke="var(--ml-blue)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+                  </g>
+                ))}
+                {t.dots.map((d, i) => <circle key={i} cx={d.x} cy={d.y} r={3.5} fill="var(--surface-card)" stroke="var(--ml-blue)" strokeWidth={2.2} />)}
+              </g>
+            </svg>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: S.subtle, marginTop: 2 }}><span>5 wks ago</span><span>this week</span></div>
+          </>
+        ) : (
+          <div style={{ fontSize: 12, color: S.muted, marginTop: 16, marginBottom: 8, textAlign: 'center' }}>Not enough data yet to show a trend</div>
+        )}
       </div>
 
       <div className="card" style={{ padding: 16, marginBottom: 13 }}>

@@ -244,9 +244,14 @@ export type DrillKey = Category | 'overdue' | 'unreach' | 'lost';
 export interface Insights {
   completionRate: number;
   completionOf: string;
-  prevRate: number;
-  deltaPts: number;
-  trend: number[];
+  /** null when the previous period had no eligible steps — no baseline to compare against (FR-D-3.1). */
+  prevRate: number | null;
+  /** null when `prevRate` is null; a delta against no baseline is not meaningful. */
+  deltaPts: number | null;
+  /** null entries mark periods with no eligible steps — omitted from the chart, not plotted as 0 (FR-D-3.1). */
+  trend: (number | null)[];
+  /** Whether enough trend periods have data for the trend line to be worth rendering at all. */
+  trendHasEnoughData: boolean;
   catBars: { label: string; pctLabel: string; width: string; color: string }[];
   backlogBars: { label: string; value: number; height: string; color: string }[];
   referral: { rate: number; ofLabel: string; medianDays: number };

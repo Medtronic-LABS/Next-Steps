@@ -1530,13 +1530,19 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     const overall = completionRate(steps, periodDays, now);
     const prevNow = new Date(now.getTime() - periodDays * DAY_MS);
     const prevOverall = completionRate(steps, periodDays, prevNow);
+    // FR-D-3.1: a delta needs a comparable prior period — no eligible steps
+    // then means no baseline, not a 0% baseline.
+    const prevHasData = prevOverall.denominator > 0;
 
     const TREND_POINTS = 5;
+    const MIN_TREND_POINTS_FOR_DISPLAY = 3;
     const trendStepDays = Math.max(1, Math.round(periodDays / (TREND_POINTS - 1)));
     const trend = Array.from({ length: TREND_POINTS }, (_, i) => {
       const anchor = new Date(now.getTime() - (TREND_POINTS - 1 - i) * trendStepDays * DAY_MS);
-      return completionRate(steps, periodDays, anchor).rate;
+      const r = completionRate(steps, periodDays, anchor);
+      return r.denominator === 0 ? null : r.rate;
     });
+    const trendHasEnoughData = trend.filter((v) => v !== null).length >= MIN_TREND_POINTS_FOR_DISPLAY;
 
     const catBars = INSIGHTS_CATEGORIES.map((cat) => {
       const r = completionRate(
@@ -1582,9 +1588,10 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     const result: Insights = {
       completionRate: overall.rate,
       completionOf: `${overall.numerator} of ${overall.denominator}`,
-      prevRate: prevOverall.rate,
-      deltaPts: overall.rate - prevOverall.rate,
+      prevRate: prevHasData ? prevOverall.rate : null,
+      deltaPts: prevHasData ? overall.rate - prevOverall.rate : null,
       trend,
+      trendHasEnoughData,
       catBars,
       backlogBars: backlog,
       referral: {

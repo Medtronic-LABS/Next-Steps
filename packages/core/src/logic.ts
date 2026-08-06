@@ -424,10 +424,16 @@ export function decorate(w: WorkStep, now: Date = new Date(), profile?: Programm
   };
 }
 
-/** Build the SVG polyline/area/dots for a small completion trend. */
-export function trendPath(values: number[]): {
-  line: string;
-  area: string;
+/**
+ * Build the SVG polyline/area/dots for a small completion trend. A `null`
+ * entry marks a period that couldn't be computed (FR-D-3.1) — e.g. no steps
+ * were eligible in that window — and is omitted rather than plotted as 0.
+ * Points on either side of a gap become separate line/area segments so no
+ * line is drawn across a period with no data. `y` is clamped to the chart's
+ * own box so an out-of-band value can never render outside its card.
+ */
+export function trendPath(values: (number | null)[]): {
+  segments: { line: string; area: string }[];
   dots: { x: number; y: number }[];
 } {
   const W = 288;
@@ -436,13 +442,33 @@ export function trendPath(values: number[]): {
   const min = 58;
   const max = 84;
   const n = values.length;
-  const sx = (W - 2 * pad) / (n - 1);
+  const sx = n > 1 ? (W - 2 * pad) / (n - 1) : 0;
   const x = (i: number) => pad + i * sx;
-  const y = (v: number) => 6 + ((max - v) / (max - min)) * (H - 6);
-  const dots = values.map((v, i) => ({ x: +x(i).toFixed(1), y: +y(v).toFixed(1) }));
-  const line = dots.map((d) => d.x + ',' + d.y).join(' ');
-  const area = pad + ',' + H + ' ' + line + ' ' + x(n - 1).toFixed(1) + ',' + H;
-  return { line, area, dots };
+  const y = (v: number) => Math.min(H, Math.max(0, 6 + ((max - v) / (max - min)) * (H - 6)));
+
+  const dots: { x: number; y: number }[] = [];
+  const segments: { line: string; area: string }[] = [];
+  let run: { x: number; y: number }[] = [];
+  const flushRun = () => {
+    if (run.length === 0) return;
+    const line = run.map((d) => d.x + ',' + d.y).join(' ');
+    const area = run[0].x + ',' + H + ' ' + line + ' ' + run[run.length - 1].x + ',' + H;
+    segments.push({ line, area });
+    run = [];
+  };
+
+  values.forEach((v, i) => {
+    if (v === null) {
+      flushRun();
+      return;
+    }
+    const point = { x: +x(i).toFixed(1), y: +y(v).toFixed(1) };
+    dots.push(point);
+    run.push(point);
+  });
+  flushRun();
+
+  return { segments, dots };
 }
 
 /**
