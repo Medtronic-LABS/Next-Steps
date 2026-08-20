@@ -54,26 +54,52 @@ function daysFromNow(offset: number): Date {
   return new Date(Date.now() + offset * SEED_DAY_MS);
 }
 
+// Enriched so the demo reads as a populated clinic: completions spread
+// across all five §13 trend anchors (no gaps), a ~65% overall completion
+// rate, ~80% referral completion, and at least one open step aged into
+// each of the four overdue buckets — believable, nothing pinned at 100%.
 export const MATERNAL_WORK: WorkStep[] = [
-  { id: 'm1', pid: SEED_PATIENT_IDS.p1, visitId: 'mv1', name: 'Rekha Pawar', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-6), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'SCHEDULED' },
-  { id: 'm2', pid: SEED_PATIENT_IDS.p2, visitId: 'mv2', name: 'Sunita Devi', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-3), priority: 'HIGH', delivery: 'Read', attempts: 0, status: 'SCHEDULED' },
-  { id: 'm3', pid: SEED_PATIENT_IDS.p3, visitId: 'mv3', name: 'Kavita Sharma', cat: 'LAB_INVESTIGATION', detail: 'Anemia screening', dueDate: daysFromNow(0), priority: 'HIGH', delivery: 'Sent', attempts: 0, status: 'SCHEDULED' },
-  { id: 'm4', pid: SEED_PATIENT_IDS.p4, visitId: 'mv4', name: 'Meena Kumari', cat: 'LAB_INVESTIGATION', detail: 'Anemia screening', dueDate: daysFromNow(4), priority: 'NORMAL', delivery: '—', attempts: 0, status: 'SCHEDULED' },
-  { id: 'm5', pid: SEED_PATIENT_IDS.p5, visitId: 'mv5', name: 'Asha Devi', cat: 'SPECIALIST_REFERRAL', detail: 'High-risk pregnancy referral', dueDate: daysFromNow(5), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'SCHEDULED' },
-  { id: 'm6', pid: SEED_PATIENT_IDS.p6, visitId: 'mv6', name: 'Priyanka Yadav', cat: 'SPECIALIST_REFERRAL', detail: 'High-risk pregnancy referral', dueDate: daysFromNow(-2), priority: 'NORMAL', delivery: 'Failed', attempts: 1, status: 'SCHEDULED' },
-  { id: 'm7', pid: SEED_PATIENT_IDS.p7, visitId: 'mv7', name: 'Geeta Ram', cat: 'FOLLOW_UP_CALL', detail: 'IFA adherence call', dueDate: daysFromNow(-4), priority: 'NORMAL', delivery: '—', attempts: 4, status: 'SCHEDULED' },
-  { id: 'm8', pid: SEED_PATIENT_IDS.p3, visitId: 'mv8', name: 'Kavita Sharma', cat: 'FOLLOW_UP_CALL', detail: 'IFA adherence call', dueDate: daysFromNow(2), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'SCHEDULED' },
-  { id: 'm9', pid: SEED_PATIENT_IDS.p8, visitId: 'mv9', name: 'Fatima Ansari', cat: 'OTHER', detail: 'Immunisation reminder', dueDate: daysFromNow(-10), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(0) },
-  { id: 'm10', pid: SEED_PATIENT_IDS.p1, visitId: 'mv10', name: 'Rekha Pawar', cat: 'OTHER', detail: 'Immunisation reminder', dueDate: daysFromNow(20), priority: 'NORMAL', delivery: '—', attempts: 0, status: 'SCHEDULED' },
-  // Closed steps (TC-SEED-002 treatment applied to the maternal profile):
-  // real completions spread across the last 30 days, so the same §13
-  // figures are derived from actual coordination state under this profile too.
-  { id: 'm11', pid: SEED_PATIENT_IDS.p2, visitId: 'mv11', name: 'Sunita Devi', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-12), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-13) },
-  { id: 'm12', pid: SEED_PATIENT_IDS.p4, visitId: 'mv12', name: 'Meena Kumari', cat: 'LAB_INVESTIGATION', detail: 'Anemia screening', dueDate: daysFromNow(-18), priority: 'NORMAL', delivery: 'Read', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-19) },
-  { id: 'm13', pid: SEED_PATIENT_IDS.p6, visitId: 'mv13', name: 'Priyanka Yadav', cat: 'SPECIALIST_REFERRAL', detail: 'High-risk pregnancy referral', dueDate: daysFromNow(-20), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-5) },
-  { id: 'm14', pid: SEED_PATIENT_IDS.p7, visitId: 'mv14', name: 'Geeta Ram', cat: 'FOLLOW_UP_CALL', detail: 'IFA adherence call', dueDate: daysFromNow(-9), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-1) },
-  { id: 'm15', pid: SEED_PATIENT_IDS.p1, visitId: 'mv15', name: 'Rekha Pawar', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-7), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'DECLINED', declineReason: 'Patient no longer wants this follow-up' },
-  { id: 'm16', pid: SEED_PATIENT_IDS.p3, visitId: 'mv16', name: 'Kavita Sharma', cat: 'LAB_INVESTIGATION', detail: 'Anemia screening', dueDate: daysFromNow(-5), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'CANCELLED', reason: 'Entered in error' },
+  // FOLLOW_UP_VISIT — "ANC visit"
+  { id: 'm1', pid: SEED_PATIENT_IDS.p1, visitId: 'mv1', name: 'Rekha Pawar', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-6), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-5) },
+  { id: 'm2', pid: SEED_PATIENT_IDS.p2, visitId: 'mv2', name: 'Sunita Devi', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-3), priority: 'HIGH', delivery: 'Read', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-2) },
+  { id: 'm3', pid: SEED_PATIENT_IDS.p6, visitId: 'mv3', name: 'Priyanka Yadav', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-25), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'DECLINED', declineReason: 'Patient no longer wants this follow-up' },
+  { id: 'm4', pid: SEED_PATIENT_IDS.p1, visitId: 'mv4', name: 'Rekha Pawar', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-15), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-16) },
+  { id: 'm5', pid: SEED_PATIENT_IDS.p4, visitId: 'mv5', name: 'Meena Kumari', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(10), priority: 'NORMAL', delivery: '—', attempts: 0, status: 'SCHEDULED' },
+  { id: 'm6', pid: SEED_PATIENT_IDS.p1, visitId: 'mv6', name: 'Rekha Pawar', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-40), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-41) },
+  { id: 'm7', pid: SEED_PATIENT_IDS.p6, visitId: 'mv7', name: 'Priyanka Yadav', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-2), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-1) },
+  { id: 'm8', pid: SEED_PATIENT_IDS.p3, visitId: 'mv8', name: 'Kavita Sharma', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-98), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-99) },
+  { id: 'm32', pid: SEED_PATIENT_IDS.p4, visitId: 'mv32', name: 'Meena Kumari', cat: 'FOLLOW_UP_VISIT', detail: 'ANC visit', dueDate: daysFromNow(-1), priority: 'NORMAL', delivery: '—', attempts: 0, status: 'SCHEDULED' },
+
+  // LAB_INVESTIGATION — "Lab investigation"
+  { id: 'm9', pid: SEED_PATIENT_IDS.p3, visitId: 'mv9', name: 'Kavita Sharma', cat: 'LAB_INVESTIGATION', detail: 'Anemia test', dueDate: daysFromNow(0), priority: 'HIGH', delivery: 'Sent', attempts: 0, status: 'SCHEDULED' },
+  { id: 'm10', pid: SEED_PATIENT_IDS.p4, visitId: 'mv10', name: 'Meena Kumari', cat: 'LAB_INVESTIGATION', detail: 'Lab investigation', dueDate: daysFromNow(4), priority: 'NORMAL', delivery: '—', attempts: 0, status: 'SCHEDULED' },
+  { id: 'm11', pid: SEED_PATIENT_IDS.p4, visitId: 'mv11', name: 'Meena Kumari', cat: 'LAB_INVESTIGATION', detail: 'Lab investigation', dueDate: daysFromNow(-18), priority: 'NORMAL', delivery: 'Read', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-19) },
+  { id: 'm12', pid: SEED_PATIENT_IDS.p3, visitId: 'mv12', name: 'Kavita Sharma', cat: 'LAB_INVESTIGATION', detail: 'Lab investigation', dueDate: daysFromNow(-5), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'CANCELLED', reason: 'Entered in error' },
+  { id: 'm13', pid: SEED_PATIENT_IDS.p3, visitId: 'mv13', name: 'Kavita Sharma', cat: 'LAB_INVESTIGATION', detail: 'Lab investigation', dueDate: daysFromNow(-34), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'SCHEDULED' },
+  { id: 'm14', pid: SEED_PATIENT_IDS.p4, visitId: 'mv14', name: 'Meena Kumari', cat: 'LAB_INVESTIGATION', detail: 'Lab investigation', dueDate: daysFromNow(-20), priority: 'NORMAL', delivery: 'Read', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-21) },
+
+  // SPECIALIST_REFERRAL — "Referral"
+  { id: 'm15', pid: SEED_PATIENT_IDS.p5, visitId: 'mv15', name: 'Asha Devi', cat: 'SPECIALIST_REFERRAL', detail: 'High-risk pregnancy referral', dueDate: daysFromNow(-20), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-5) },
+  { id: 'm16', pid: SEED_PATIENT_IDS.p6, visitId: 'mv16', name: 'Priyanka Yadav', cat: 'SPECIALIST_REFERRAL', detail: 'High-risk pregnancy referral', dueDate: daysFromNow(-2), priority: 'NORMAL', delivery: 'Failed', attempts: 1, status: 'SCHEDULED' },
+  { id: 'm17', pid: SEED_PATIENT_IDS.p6, visitId: 'mv17', name: 'Priyanka Yadav', cat: 'SPECIALIST_REFERRAL', detail: 'High-risk pregnancy referral', dueDate: daysFromNow(-12), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-13) },
+  { id: 'm18', pid: SEED_PATIENT_IDS.p5, visitId: 'mv18', name: 'Asha Devi', cat: 'SPECIALIST_REFERRAL', detail: 'High-risk pregnancy referral', dueDate: daysFromNow(-9), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-1) },
+  { id: 'm19', pid: SEED_PATIENT_IDS.p6, visitId: 'mv19', name: 'Priyanka Yadav', cat: 'SPECIALIST_REFERRAL', detail: 'High-risk pregnancy referral', dueDate: daysFromNow(5), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'SCHEDULED' },
+  { id: 'm20', pid: SEED_PATIENT_IDS.p5, visitId: 'mv20', name: 'Asha Devi', cat: 'SPECIALIST_REFERRAL', detail: 'High-risk pregnancy referral', dueDate: daysFromNow(-1), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(0) },
+
+  // FOLLOW_UP_CALL — "Follow-up call"
+  { id: 'm21', pid: SEED_PATIENT_IDS.p7, visitId: 'mv21', name: 'Geeta Ram', cat: 'FOLLOW_UP_CALL', detail: 'IFA counselling call', dueDate: daysFromNow(-4), priority: 'NORMAL', delivery: '—', attempts: 4, status: 'SCHEDULED' },
+  { id: 'm22', pid: SEED_PATIENT_IDS.p3, visitId: 'mv22', name: 'Kavita Sharma', cat: 'FOLLOW_UP_CALL', detail: 'Follow-up call', dueDate: daysFromNow(2), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'SCHEDULED' },
+  { id: 'm23', pid: SEED_PATIENT_IDS.p7, visitId: 'mv23', name: 'Geeta Ram', cat: 'FOLLOW_UP_CALL', detail: 'Follow-up call', dueDate: daysFromNow(-9), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-1) },
+  { id: 'm24', pid: SEED_PATIENT_IDS.p2, visitId: 'mv24', name: 'Sunita Devi', cat: 'FOLLOW_UP_CALL', detail: 'Follow-up call', dueDate: daysFromNow(-45), priority: 'NORMAL', delivery: 'Failed', attempts: 1, status: 'SCHEDULED' },
+  { id: 'm25', pid: SEED_PATIENT_IDS.p8, visitId: 'mv25', name: 'Fatima Ansari', cat: 'FOLLOW_UP_CALL', detail: 'Follow-up call', dueDate: daysFromNow(-95), priority: 'NORMAL', delivery: '—', attempts: 0, status: 'SCHEDULED' },
+  { id: 'm26', pid: SEED_PATIENT_IDS.p7, visitId: 'mv26', name: 'Geeta Ram', cat: 'FOLLOW_UP_CALL', detail: 'Follow-up call', dueDate: daysFromNow(-15), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'SCHEDULED' },
+
+  // OTHER — "PMSMA visit"
+  { id: 'm27', pid: SEED_PATIENT_IDS.p8, visitId: 'mv27', name: 'Fatima Ansari', cat: 'OTHER', detail: 'Immunisation reminder', dueDate: daysFromNow(-10), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(0) },
+  { id: 'm28', pid: SEED_PATIENT_IDS.p1, visitId: 'mv28', name: 'Rekha Pawar', cat: 'OTHER', detail: 'PMSMA visit', dueDate: daysFromNow(20), priority: 'NORMAL', delivery: '—', attempts: 0, status: 'SCHEDULED' },
+  { id: 'm29', pid: SEED_PATIENT_IDS.p8, visitId: 'mv29', name: 'Fatima Ansari', cat: 'OTHER', detail: 'Immunisation reminder', dueDate: daysFromNow(-7), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'DECLINED', declineReason: 'Patient unavailable' },
+  { id: 'm30', pid: SEED_PATIENT_IDS.p2, visitId: 'mv30', name: 'Sunita Devi', cat: 'OTHER', detail: 'PMSMA visit', dueDate: daysFromNow(-3), priority: 'NORMAL', delivery: 'Delivered', attempts: 0, status: 'COMPLETED', completedDate: daysFromNow(-2) },
+  { id: 'm31', pid: SEED_PATIENT_IDS.p1, visitId: 'mv31', name: 'Rekha Pawar', cat: 'OTHER', detail: 'PMSMA visit', dueDate: daysFromNow(-11), priority: 'NORMAL', delivery: 'Sent', attempts: 0, status: 'DECLINED', declineReason: 'Patient unavailable' },
 ];
 
 /** Fixed instant used for every seed Visit — no real capture time exists for fixture data. */

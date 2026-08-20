@@ -16,10 +16,10 @@ import type { ProgrammeProfile } from './profile';
 export const MATERNAL_PROFILE: ProgrammeProfile = {
   categoryLabels: {
     FOLLOW_UP_VISIT: 'ANC visit',
-    LAB_INVESTIGATION: 'Anaemia screening',
-    SPECIALIST_REFERRAL: 'Specialist referral',
-    FOLLOW_UP_CALL: 'IFA adherence call',
-    OTHER: 'Other action',
+    LAB_INVESTIGATION: 'Lab investigation',
+    SPECIALIST_REFERRAL: 'Referral',
+    FOLLOW_UP_CALL: 'Follow-up call',
+    OTHER: 'PMSMA visit',
   },
   categoryDefaultDue: {
     FOLLOW_UP_VISIT: '2w',

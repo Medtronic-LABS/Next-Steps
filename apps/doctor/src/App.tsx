@@ -264,9 +264,13 @@ function Insights({ period, setPeriod }: { period: number; setPeriod: (i: number
   const t = trendPath(ins.trend);
   const backlogTotal = ins.backlogBars.reduce((a, b) => a + b.value, 0);
   const periods = ['7 days', '30 days', '90 days'];
+  // NS-1: the maternal deployment's roles are the only signal available here for
+  // which programme profile is active — same discriminator apps/admin uses.
+  const maternal = engine.rolesEnabled();
+  const askCard = <AiInsightsCard />;
   return (
     <div style={{ padding: '2px 18px 24px', animation: 'nsFade .2s ease' }}>
-      <AiInsightsCard />
+      {!maternal && askCard}
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
         {periods.map((p, i) => {
@@ -344,8 +348,8 @@ function Insights({ period, setPeriod }: { period: number; setPeriod: (i: number
         <div style={{ height: 8, borderRadius: 5, background: '#EEEDF0', overflow: 'hidden', marginTop: 12 }}><div style={{ height: '100%', width: `${ins.referral.rate}%`, background: '#6165DE', borderRadius: 5 }} /></div>
       </div>
 
-      <div className="card" style={{ padding: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: S.strong, marginBottom: 13 }}>Clinic follow-through</div>
+      <div className="card" style={{ padding: 16, marginBottom: maternal ? 13 : 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: S.strong, marginBottom: 13 }}>{maternal ? 'FLW follow-through' : 'Clinic follow-through'}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
           {ins.followThrough.map((t) => (
             <FollowTile key={t.label} value={t.value} label={t.label} color={t.color} bg={t.bg} />
@@ -353,6 +357,8 @@ function Insights({ period, setPeriod }: { period: number; setPeriod: (i: number
         </div>
         <div style={{ fontSize: 11.5, color: S.muted, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>{ins.followThroughNote}</div>
       </div>
+
+      {maternal && askCard}
     </div>
   );
 }
