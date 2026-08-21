@@ -53,6 +53,8 @@ import type {
   DrillView,
   EngineOptions,
   EventType,
+  HrpDashboardInsights,
+  HrpDashboardViews,
   NewPatient,
   RaiseReferralInput,
   RecordTrackingOutcomeInput,
@@ -1114,6 +1116,130 @@ export class InMemoryCoordinationEngine implements CoordinationEngine {
     };
     await delay(SIMULATED_LATENCY_MS);
     return result;
+  }
+
+  /** NS-18(vi): a distinct, dashboard-scoped "lost to follow" — "does not want to go" ONLY. Never touches NS-9's own `isLostToFollow` (which also treats "could not be contacted" as lost, for LOST_TO_FOLLOW and elsewhere). */
+  private isLostToFollowUpDashboard(patientId: Id): boolean {
+    return this.state.referrals.some(
+      (r) => r.patientId === patientId && r.status === 'PENDING' && r.lastTrackingOutcome === 'DOES_NOT_WANT_TO_GO',
+    );
+  }
+
+  /** NS-18: six HRP-scoped dashboard figures, derived on read (§11.1 precedent) — never stored. */
+  async dashboardViews(): Promise<HrpDashboardViews> {
+    const now = new Date();
+    this.syncEscalation(now);
+
+    // NS-12/NS-17: only a maternal-profile registration ever sets
+    // pregnancyStatus, so "registered pregnant women" is exactly the
+    // patients that field is set on — this is what keeps a deployment's
+    // other seeded/unrelated patients (no pregnancyStatus at all) out of
+    // both this denominator and every other figure below.
+    const registered = this.allPatientsSync().filter((p) => p.pregnancyStatus !== undefined);
+    const hrp = registered.filter((p) => p.pregnancyStatus === 'HIGH_RISK');
+    const totalRegistered = registered.length;
+    const hrpCount = hrp.length;
+
+    const referralsPending = hrp.filter((p) =>
+      this.state.referrals.some((r) => r.patientId === p.id && r.status === 'PENDING'),
+    ).length;
+
+    const steps = this.allSteps();
+    const ancOverdueCount = hrp.filter((p) =>
+      steps.some(
+        (s) => s.pid === p.id && s.cat === 'FOLLOW_UP_VISIT' && deriveOverdue(s.dueDate, s.status, now).isOverdue,
+      ),
+    ).length;
+
+    const pmsmaLabel = getCategoryLabel('OTHER', this.profile);
+    const pmsmaOverdueCount = hrp.filter((p) =>
+      steps.some(
+        (s) =>
+          s.pid === p.id &&
+          s.cat === 'OTHER' &&
+          s.detail === pmsmaLabel &&
+          deriveOverdue(s.dueDate, s.status, now).isOverdue,
+      ),
+    ).length;
+
+    // NS-18(v): reuses NS-9's own isAtRiskOfDropOut — not a reimplementation.
+    const atRiskOfDropOutIds = hrp.filter((p) => this.isAtRiskOfDropOut(p.id)).map((p) => p.id);
+
+    // NS-18(vi): the distinct dashboard-scoped derivation above, not isLostToFollow.
+    const lostToFollowUpCount = hrp.filter((p) => this.isLostToFollowUpDashboard(p.id)).length;
+
+    await delay(SIMULATED_LATENCY_MS);
+    return {
+      totalRegistered,
+      hrpCount,
+      hrpPercentage: totalRegistered === 0 ? 0 : Math.round((hrpCount / totalRegistered) * 100),
+      referralsPending,
+      ancOverdueCount,
+      pmsmaOverdueCount,
+      atRiskOfDropOutIds,
+      lostToFollowUpCount,
+    };
+  }
+
+  /** NS-19: four HRP-scoped dashboard insights, derived on read. */
+  async dashboardInsights(): Promise<HrpDashboardInsights> {
+    const now = new Date();
+    this.syncEscalation(now);
+
+    const hrpIds = new Set(
+      this.allPatientsSync()
+        .filter((p) => p.pregnancyStatus === 'HIGH_RISK')
+        .map((p) => p.id),
+    );
+
+    // NS-19(i): reuses NS-6's own CompletionLocation vocabulary and its
+    // COMPLETED_OUTCOME_LOCATIONS map — the three-way split is a finer read
+    // of the same `completionLocation` field NS-6 already populates, not a
+    // separate concept.
+    const hrpReferrals = this.state.referrals.filter((r) => hrpIds.has(r.patientId));
+    const resolved = hrpReferrals.filter((r) => r.status === 'COMPLETED');
+    const referralClosure = {
+      totalResolved: resolved.length,
+      pending: hrpReferrals.filter((r) => r.status === 'PENDING').length,
+      referredPublicFacility: resolved.filter((r) => r.completionLocation === 'REFERRED_PUBLIC_FACILITY').length,
+      otherPublicFacility: resolved.filter((r) => r.completionLocation === 'OTHER_PUBLIC_FACILITY').length,
+      privateFacility: resolved.filter((r) => r.completionLocation === 'PRIVATE_FACILITY').length,
+    };
+
+    // NS-19(ii): completed ÷ due FOLLOW_UP_VISIT (ANC) steps — planned dates
+    // met. No gestational-age or LMP field exists anywhere in the type
+    // system to derive a protocol window from (types.ts's WorkStep carries
+    // none), so there is nothing here for that calculation to reach for.
+    const steps = this.allSteps();
+    const hrpAncSteps = steps.filter((s) => hrpIds.has(s.pid) && s.cat === 'FOLLOW_UP_VISIT');
+    const ancCompleted = hrpAncSteps.filter((s) => s.status === 'COMPLETED').length;
+    const ancComplianceRate = hrpAncSteps.length === 0 ? 0 : Math.round((ancCompleted / hrpAncSteps.length) * 100);
+
+    // NS-19(iii): completed ÷ scheduled PMSMA-labelled OTHER steps, HRP-scoped only.
+    const pmsmaLabel = getCategoryLabel('OTHER', this.profile);
+    const hrpPmsmaSteps = steps.filter((s) => hrpIds.has(s.pid) && s.cat === 'OTHER' && s.detail === pmsmaLabel);
+    const pmsmaAttended = hrpPmsmaSteps.filter((s) => s.status === 'COMPLETED').length;
+    const pmsmaAttendanceRate =
+      hrpPmsmaSteps.length === 0 ? 0 : Math.round((pmsmaAttended / hrpPmsmaSteps.length) * 100);
+
+    // NS-19(iv): any of NS-7's three "completed" leaves ÷ every recorded
+    // outcome, HRP-scoped — reuses the same COMPLETED_OUTCOME_LOCATIONS map
+    // NS-6/NS-19(i) read, rather than a separate list of "completed" leaves.
+    const hrpTracked = hrpReferrals.filter((r) => r.lastTrackingOutcome !== undefined);
+    const trackingCompleted = hrpTracked.filter(
+      (r) => r.lastTrackingOutcome && InMemoryCoordinationEngine.COMPLETED_OUTCOME_LOCATIONS[r.lastTrackingOutcome],
+    ).length;
+    const trackingSuccessRate =
+      hrpTracked.length === 0 ? 0 : Math.round((trackingCompleted / hrpTracked.length) * 100);
+
+    await delay(SIMULATED_LATENCY_MS);
+    return {
+      referralClosure,
+      ancComplianceRate,
+      ancComplianceLabel: 'planned date met',
+      pmsmaAttendanceRate,
+      trackingSuccessRate,
+    };
   }
 
   /** NS-3 decision ("ANC scheduling is manual"): records an ANC visit due on `dueDate`, entered by whoever decided it. Populates ANC_DUE (NS-11). */

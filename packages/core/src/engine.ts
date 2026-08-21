@@ -182,6 +182,48 @@ export interface UnreadCounts {
   byFilter: Partial<Record<WorklistFilter, number>>;
 }
 
+/** ITEM-9-PHC-MO-DASHBOARD.md NS-18: six HRP-scoped figures, all derived on read (§11.1 precedent), never stored. */
+export interface HrpDashboardViews {
+  /** Every registered patient with a recorded pregnancy status — NS-18(i)'s denominator. */
+  totalRegistered: number;
+  /** NS-18(i)'s numerator: HRP-flagged patients only. */
+  hrpCount: number;
+  /** hrpCount ÷ totalRegistered, as a whole percentage. */
+  hrpPercentage: number;
+  /** NS-18(ii): HRPs with at least one PENDING referral. */
+  referralsPending: number;
+  /** NS-18(iii): HRPs with at least one overdue FOLLOW_UP_VISIT (ANC visit) step — reuses §11.1's deriveOverdue, the same flag getStep exposes. */
+  ancOverdueCount: number;
+  /** NS-18(iv): HRPs with at least one overdue PMSMA-labelled OTHER step. */
+  pmsmaOverdueCount: number;
+  /** NS-18(v): reuses NS-9's own AT_RISK_OF_DROP_OUT derivation (escalationCount >= 2) — not a reimplementation with its own threshold. */
+  atRiskOfDropOutIds: Id[];
+  /** NS-18(vi): HRPs whose latest tracking outcome is "does not want to go" ONLY — a distinct, narrower, dashboard-scoped figure. "Could not be contacted" stays part of NS-9's broader LOST_TO_FOLLOW/at-risk views, never counted here. */
+  lostToFollowUpCount: number;
+}
+
+/** NS-19(i): resolved referrals against total raised, HRP-scoped, split by NS-6's CompletionLocation vocabulary. */
+export interface HrpReferralClosureStatus {
+  totalResolved: number;
+  pending: number;
+  referredPublicFacility: number;
+  otherPublicFacility: number;
+  privateFacility: number;
+}
+
+/** ITEM-9-PHC-MO-DASHBOARD.md NS-19: four HRP-scoped insights, all derived on read. */
+export interface HrpDashboardInsights {
+  referralClosure: HrpReferralClosureStatus;
+  /** NS-19(ii): planned ANC visits completed ÷ planned ANC visits due — planned dates met, never a gestational-age/LMP-derived protocol window (BR-017/AP-7). */
+  ancComplianceRate: number;
+  /** Guards against the label silently reintroducing protocol-window framing (BR-017/AP-7): always "planned date met", never "protocol window met". */
+  ancComplianceLabel: string;
+  /** NS-19(iii): scheduled PMSMA sessions attended ÷ scheduled, HRP-scoped only. */
+  pmsmaAttendanceRate: number;
+  /** NS-19(iv): tracking outcomes resolving to any of NS-7's three "completed" leaves ÷ all recorded tracking outcomes, HRP-scoped. */
+  trackingSuccessRate: number;
+}
+
 // Coordination event outbox (PRD §10.5, §17, ITEM-5-TEST-CASES.md 5d). Every
 // accepted lifecycle transition writes exactly one CoordinationEvent; a
 // transition rejected by §11.2 writes none. DECLINED has no eventType of its
@@ -324,6 +366,12 @@ export interface CoordinationEngine {
   unreadCounts(context: RoleContext): Promise<UnreadCounts>;
   /** NS-14: clears the unread count for exactly this filter, for exactly this context — never any other filter, and never any other role/scope. */
   markFilterOpened(context: RoleContext, filter: WorklistFilter): Promise<void>;
+
+  // --- PHC MO dashboard (ITEM-9-PHC-MO-DASHBOARD.md NS-18, NS-19 — Tier 1) ---
+  /** NS-18: the six HRP-scoped dashboard figures, ~30,000 scope. */
+  dashboardViews(): Promise<HrpDashboardViews>;
+  /** NS-19: the four HRP-scoped dashboard insights. */
+  dashboardInsights(): Promise<HrpDashboardInsights>;
 
   // --- device sync state ---
   isOffline(): boolean;
