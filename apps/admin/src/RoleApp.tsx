@@ -9,7 +9,7 @@
 // already used by App.tsx — never a concrete engine or its own storage,
 // and never a direct seed-data import.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   FACILITIES,
   ROLE_OPTIONS,
@@ -114,6 +114,28 @@ const FILTER_ROW_HINT: Record<WorklistFilter, string> = {
   PRIVATE_CARE_DUE: 'Private care follow-up',
   AT_RISK_OF_DROP_OUT: 'At risk of drop-out',
   LOST_TO_FOLLOW: 'Lost to follow-up',
+};
+
+// ============================================================================
+// Worklist scope chips (ANM_CHO only — her scope already is her catchment,
+// per NS-1; this regroups the eight existing filters into what she acts on
+// directly vs. what she should stay aware of, it does not widen or narrow
+// patientsInScope()). PHC_SN/DH_SN don't reach WorklistScreen at all (they
+// use ArrivalsScreen), so they have no scope chips here.
+// ============================================================================
+type WorklistScope = 'FACILITY' | 'CATCHMENT';
+const FACILITY_SCOPE_FILTERS: WorklistFilter[] = ['ALL_REGISTERED', 'ANC_DUE', 'PMSMA_DUE', 'TRACKING_NEEDED', 'PRIVATE_CARE_DUE'];
+const SCOPE_CHIPS: { value: WorklistScope; label: string }[] = [
+  { value: 'FACILITY', label: 'At my facility' },
+  { value: 'CATCHMENT', label: 'In my catchment' },
+];
+
+/** Design reference: every chip's "on" state tints with the acting role's own accent, never one fixed brand colour. */
+const ROLE_ACCENT: Record<Role, string> = {
+  ASHA: 'var(--ml-burnt-orange)',
+  ANM_CHO: 'var(--status-success)',
+  PHC_SN: 'var(--ml-periwinkle)',
+  DH_SN: 'var(--ml-merlot)',
 };
 
 // ============================================================================
@@ -369,7 +391,12 @@ function SectionHead({ dot, label, count }: { dot: string; label: string; count:
 // ============================================================================
 function WorklistScreen({ context, onOpenPatient }: { context: RoleContext; onOpenPatient: (pid: Id, referralId?: Id) => void }) {
   const [filter, setFilter] = useState<WorklistFilter>('ALL_REGISTERED');
+  const [scope, setScope] = useState<WorklistScope>('FACILITY');
   const scopeKey = `${context.role}:${context.scope ?? ''}`;
+  const hasScopeChips = context.role === 'ANM_CHO';
+  const visibleFilters = !hasScopeChips || scope === 'CATCHMENT'
+    ? WORKLIST_FILTERS
+    : WORKLIST_FILTERS.filter((f) => FACILITY_SCOPE_FILTERS.includes(f.value));
 
   const { data: rowsData } = useEngineData(() => engine.worklist(context, filter), [scopeKey, filter]);
   const rows = rowsData ?? [];
@@ -385,17 +412,34 @@ function WorklistScreen({ context, onOpenPatient }: { context: RoleContext; onOp
     engine.markFilterOpened(context, f);
   };
 
+  const selectScope = (s: WorklistScope) => {
+    setScope(s);
+    if (s === 'FACILITY' && !FACILITY_SCOPE_FILTERS.includes(filter)) selectFilter('ALL_REGISTERED');
+  };
+
   return (
     <div style={{ animation: 'nsFade .2s ease' }}>
-      <div style={{ padding: '6px 18px 10px', position: 'sticky', top: 0, background: 'var(--surface-page)', zIndex: 2 }}>
+      <div
+        style={{ padding: '6px 18px 10px', position: 'sticky', top: 0, background: 'var(--surface-page)', zIndex: 2, '--chip-accent': ROLE_ACCENT[context.role] } as CSSProperties}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div className="h-screen" style={{ fontSize: 21 }}>Worklist</div>
           {!!unread?.total && (
             <span className="badge" style={{ color: '#fff', background: 'var(--status-danger)' }}>{unread.total} new</span>
           )}
         </div>
-        <div className="nsScroll" style={{ display: 'flex', gap: 7, marginTop: 11, overflowX: 'auto' }}>
-          {WORKLIST_FILTERS.map((f) => {
+        {hasScopeChips && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 11, marginBottom: 7 }}>
+            <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: S.muted }}>Scope</span>
+            {SCOPE_CHIPS.map((s) => (
+              <button key={s.value} className={`chip chip--brand chip--sm${scope === s.value ? ' chip--on' : ''}`} onClick={() => selectScope(s.value)}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="nsScroll" style={{ display: 'flex', gap: 7, marginTop: hasScopeChips ? 0 : 11, overflowX: 'auto' }}>
+          {visibleFilters.map((f) => {
             const on = filter === f.value;
             const count = unread?.byFilter[f.value] ?? 0;
             return (

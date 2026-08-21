@@ -325,18 +325,26 @@ input {
 /* ---- Chips -------------------------------------------------------------- */
 .chip {
   flex: none;
-  border: 1.5px solid var(--border-default);
+  border: 1.5px solid var(--border-subtle);
   background: #fff;
-  color: var(--text-muted);
+  color: var(--text-body);
   font-size: 12.5px;
   font-weight: 600;
-  padding: 6px 13px;
+  padding: 7px 13px;
   border-radius: 999px;
   cursor: pointer;
 }
+/* Design reference's scope/risk chips are the same chip, smaller. */
+.chip--sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+/* --chip-accent lets a role-scoped screen tint the "on" state with that
+   role's own accent (design reference's chip(active, role.accent)); falls
+   back to brand blue where no role accent is set (e.g. App.tsx's flow). */
 .chip--brand.chip--on {
-  border-color: var(--ml-blue);
-  background: var(--ml-blue);
+  border-color: var(--chip-accent, var(--ml-blue));
+  background: var(--chip-accent, var(--ml-blue));
   color: #fff;
 }
 .chip--soft.chip--on {
