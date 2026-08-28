@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./vendor/react.production.min.js"></script>
+<script src="./vendor/react-dom.production.min.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/medtronic-labs-design-system-019e1fa0-d5f8-7f2e-85fc-99d9289ae228/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/medtronic-labs-design-system-019e1fa0-d5f8-7f2e-85fc-99d9289ae228/tokens/colors.css">
+<link rel="stylesheet" href="_ds/medtronic-labs-design-system-019e1fa0-d5f8-7f2e-85fc-99d9289ae228/tokens/typography.css">
+<link rel="stylesheet" href="_ds/medtronic-labs-design-system-019e1fa0-d5f8-7f2e-85fc-99d9289ae228/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/medtronic-labs-design-system-019e1fa0-d5f8-7f2e-85fc-99d9289ae228/tokens/base.css">
+<link rel="stylesheet" href="_ds/medtronic-labs-design-system-019e1fa0-d5f8-7f2e-85fc-99d9289ae228/styles.css">
+<script src="_ds/medtronic-labs-design-system-019e1fa0-d5f8-7f2e-85fc-99d9289ae228/_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: #E9E7E2; }
+  a { color: var(--ml-blue); }
+  a:hover { color: var(--ml-periwinkle); }
+  button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+  .scr::-webkit-scrollbar { width: 0; }
+  @keyframes puls { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+</style>
+</helmet>
+
+<div style="min-height: 100vh; background: #E9E7E2; font-family: Inter, system-ui, sans-serif; color: #2A2826; display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 34px 16px 56px">
+
+  <div style="display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; max-width: 620px">
+    <div style="font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #1E14BE; font-weight: 600">Next Steps · CPHC module</div>
+    <div style="font-size: 26px; font-weight: 500; letter-spacing: -.3px; color: #010101">Clickable prototype — ANM / CHO flow</div>
+    <div style="font-size: 14px; color: #70706E; text-wrap: pretty">Haryana pilot. Follow the path: Today → Add patient information → RCH → Register page → review → Pooja Varma → profile → work plan.</div>
+  </div>
+
+  <div style="display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap; justify-content: center">
+
+    <div style="background: #17161A; padding: 11px; border-radius: 46px; box-shadow: 0 26px 60px rgba(30,20,190,.18), 0 2px 6px rgba(0,0,0,.2)">
+      <div style="width: 390px; height: 844px; background: #FCFBF9; border-radius: 36px; overflow: hidden; position: relative; display: flex; flex-direction: column">
+
+        <div style="height: 34px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; font-weight: 600; color: #2A2826; background: #FCFBF9">
+          <span>9:41</span>
+          <span style="display: flex; gap: 5px; align-items: center; opacity: .75">
+            <svg width="15" height="11" viewBox="0 0 15 11" fill="none"><path d="M1 7.5 3 9.5 7.5 5 12 9.5 14 7.5" stroke="#2A2826" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg width="20" height="10" viewBox="0 0 20 10" fill="none"><rect x=".7" y=".7" width="15" height="8.6" rx="2.4" stroke="#2A2826" stroke-width="1.2"/><rect x="2.4" y="2.4" width="10.5" height="5.2" rx="1.2" fill="#2A2826"/><path d="M17.6 3.6v2.8" stroke="#2A2826" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </span>
+        </div>
+
+        <div style="flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 14px 10px 10px; background: #FCFBF9; border-bottom: 1px solid #EFEEEA">
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0">
+            <sc-if value="{{ ui.showBack }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ back }}" aria-label="Back" style="width: 44px; height: 44px; flex: none; border: none; background: transparent; border-radius: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer" style-hover="background: #EFEDFF">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#1E14BE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </sc-if>
+            <div style="font-size: 17px; font-weight: 600; color: #010101; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ ui.title }}</div>
+          </div>
+          <div style="display: flex; flex: none; background: #F1EFEA; border-radius: 999px; padding: 3px">
+            <button onClick="{{ setEn }}" style="border: none; cursor: pointer; border-radius: 999px; padding: 7px 13px; font-size: 13px; font-weight: 600; background: {{ ui.enBg }}; color: {{ ui.enFg }}">EN</button>
+            <button onClick="{{ setHi }}" style="border: none; cursor: pointer; border-radius: 999px; padding: 7px 13px; font-size: 13px; font-weight: 600; background: {{ ui.hiBg }}; color: {{ ui.hiFg }}">हिं</button>
+          </div>
+        </div>
+
+        <div class="scr" ref="{{ scrollRef }}" style="flex: 1; overflow-y: auto; overflow-x: hidden; background: #FCFBF9">
+
+          <sc-if value="{{ s.home }}" hint-placeholder-val="{{ true }}">
+            <div style="padding: 18px 16px 28px; display: flex; flex-direction: column; gap: 14px; animation: rise .22s ease">
+              <div style="display: flex; flex-direction: column; gap: 2px">
+                <div style="font-size: 24px; font-weight: 600; color: #010101; letter-spacing: -.3px">{{ t.greet }}</div>
+                <div style="font-size: 14px; color: #70706E">{{ t.hwc }}</div>
+              </div>
+
+              <div style="background: #1E14BE; border-radius: 24px; padding: 20px; color: #fff; display: flex; flex-direction: column; gap: 14px">
+                <div style="font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; opacity: .72">{{ t.todayTitle }}</div>
+                <div style="font-size: 30px; font-weight: 600; letter-spacing: -.5px; line-height: 1.15">{{ home.visitsLine }}</div>
+                <div style="font-size: 15px; line-height: 1.4; color: #BCB5F7">{{ home.bundleLine }}</div>
+                <button onClick="{{ goPlan }}" style="border: none; cursor: pointer; background: #fff; color: #1E14BE; border-radius: 999px; height: 52px; font-size: 16px; font-weight: 600; width: 100%" style-active="transform: scale(.97)">{{ t.openPlan }}</button>
+              </div>
+
+              <button onClick="{{ goCapture }}" style="text-align: left; border: 2px solid #1E14BE; cursor: pointer; background: #fff; border-radius: 24px; padding: 20px; display: flex; gap: 16px; align-items: center; width: 100%" style-active="transform: scale(.985)">
+                <div style="width: 56px; height: 56px; flex: none; border-radius: 18px; background: #EFEDFF; display: flex; align-items: center; justify-content: center">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1.2-2h6.2l1.2 2h1.7A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z" stroke="#1E14BE" stroke-width="1.7" stroke-linejoin="round"/><circle cx="11.8" cy="12.4" r="3.4" stroke="#1E14BE" stroke-width="1.7"/></svg>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+                  <div style="font-size: 18px; font-weight: 600; color: #010101">{{ t.addTitle }}</div>
+                  <div style="font-size: 14px; color: #70706E; line-height: 1.35">{{ home.addedLine }}</div>
+                </div>
+              </button>
+
+              <sc-if value="{{ home.showConfirm }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ goConfirmQueue }}" style="text-align: left; border: 1px solid #FFBD9B; cursor: pointer; background: #FFF6F0; border-radius: 24px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; width: 100%" style-active="transform: scale(.985)">
+                  <div style="display: flex; align-items: center; gap: 10px">
+                    <span style="width: 10px; height: 10px; border-radius: 5px; background: #C35721"></span>
+                    <span style="font-size: 17px; font-weight: 600; color: #010101">{{ t.confirmTitle }}</span>
+                  </div>
+                  <div style="font-size: 14px; color: #595959; line-height: 1.45">{{ home.confirmLine }}</div>
+                  <span style="align-self: flex-start; margin-top: 2px; background: #C35721; color: #fff; border-radius: 999px; padding: 11px 22px; font-size: 15px; font-weight: 600">{{ t.confirmCta }}</span>
+                </button>
+              </sc-if>
+
+              <sc-if value="{{ home.showAllClear }}" hint-placeholder-val="{{ false }}">
+                <div style="border: 1px solid #98EFC4; background: #F1FCF6; border-radius: 24px; padding: 18px 20px; display: flex; gap: 12px; align-items: center">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.2" stroke="#2E9E6B" stroke-width="1.7"/><path d="m8 12.3 2.6 2.6L16 9.5" stroke="#2E9E6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <div style="font-size: 15px; color: #2A2826; line-height: 1.4">{{ t.allClear }}</div>
+                </div>
+              </sc-if>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 2px">
+                <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 20px; padding: 14px 15px; display: flex; flex-direction: column; gap: 4px">
+                  <div style="font-size: 22px; font-weight: 600; color: #1E14BE">{{ home.m1v }}</div>
+                  <div style="font-size: 12.5px; color: #70706E; line-height: 1.3">{{ t.m1 }}</div>
+                </div>
+                <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 20px; padding: 14px 15px; display: flex; flex-direction: column; gap: 4px">
+                  <div style="font-size: 22px; font-weight: 600; color: #2E9E6B">{{ home.m2v }}</div>
+                  <div style="font-size: 12.5px; color: #70706E; line-height: 1.3">{{ t.m2 }}</div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.capProg }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 18px 16px 28px; display: flex; flex-direction: column; gap: 14px; animation: rise .22s ease">
+              <div style="font-size: 21px; font-weight: 600; color: #010101; letter-spacing: -.2px">{{ t.q1 }}</div>
+              <sc-for list="{{ programmes }}" as="p" hint-placeholder-count="4">
+                <button onClick="{{ p.pick }}" style="text-align: left; width: 100%; cursor: pointer; background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 18px 20px; display: flex; align-items: center; gap: 14px" style-hover="border-color: #1E14BE" style-active="transform: scale(.985)">
+                  <span style="width: 12px; height: 44px; border-radius: 6px; flex: none; background: {{ p.color }}"></span>
+                  <span style="display: flex; flex-direction: column; gap: 3px">
+                    <span style="font-size: 17.5px; font-weight: 600; color: #010101">{{ p.name }}</span>
+                    <span style="font-size: 14px; color: #70706E">{{ p.count }}</span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.capMode }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 18px 16px 28px; display: flex; flex-direction: column; gap: 14px; animation: rise .22s ease">
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <div style="font-size: 21px; font-weight: 600; color: #010101">{{ t.q2 }}</div>
+                <div style="font-size: 14px; color: #70706E">{{ ui.progName }}</div>
+              </div>
+              <button onClick="{{ pickMode }}" style="text-align: left; width: 100%; cursor: pointer; background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 18px 20px; display: flex; align-items: center; gap: 16px" style-hover="border-color: #1E14BE" style-active="transform: scale(.985)">
+                <span style="width: 52px; height: 52px; flex: none; border-radius: 16px; background: #EFEDFF; display: flex; align-items: center; justify-content: center">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" stroke="var(--ml-blue)" stroke-width="1.75" stroke-linejoin="round"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" stroke="var(--ml-blue)" stroke-width="1.75" stroke-linecap="round"/></svg>
+                </span>
+                <span style="display: flex; flex-direction: column; gap: 3px">
+                  <span style="font-size: 17.5px; font-weight: 600; color: #010101">{{ mode.speak }}</span>
+                  <span style="font-size: 14px; color: #70706E">{{ mode.speakHint }}</span>
+                </span>
+              </button>
+              <button onClick="{{ pickMode }}" style="text-align: left; width: 100%; cursor: pointer; background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 18px 20px; display: flex; align-items: center; gap: 16px" style-hover="border-color: #1E14BE" style-active="transform: scale(.985)">
+                <span style="width: 52px; height: 52px; flex: none; border-radius: 16px; background: #EFEDFF; display: flex; align-items: center; justify-content: center">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" stroke="var(--ml-blue)" stroke-width="1.75"/><path d="M3.5 9.5h17M3.5 14.5h17M9 4.5v15" stroke="var(--ml-blue)" stroke-width="1.75" stroke-linecap="round"/></svg>
+                </span>
+                <span style="display: flex; flex-direction: column; gap: 3px">
+                  <span style="font-size: 17.5px; font-weight: 600; color: #010101">{{ mode.register }}</span>
+                  <span style="font-size: 14px; color: #70706E">{{ mode.registerHint }}</span>
+                </span>
+              </button>
+              <button onClick="{{ pickMode }}" style="text-align: left; width: 100%; cursor: pointer; background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 18px 20px; display: flex; align-items: center; gap: 16px" style-hover="border-color: #1E14BE" style-active="transform: scale(.985)">
+                <span style="width: 52px; height: 52px; flex: none; border-radius: 16px; background: #EFEDFF; display: flex; align-items: center; justify-content: center">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M15.5 4.5 19.5 8.5 9 19H5v-4L15.5 4.5Z" stroke="var(--ml-blue)" stroke-width="1.75" stroke-linejoin="round"/><path d="M13.5 6.5 17.5 10.5" stroke="var(--ml-blue)" stroke-width="1.75" stroke-linecap="round"/></svg>
+                </span>
+                <span style="display: flex; flex-direction: column; gap: 3px">
+                  <span style="font-size: 17.5px; font-weight: 600; color: #010101">{{ mode.notebook }}</span>
+                  <span style="font-size: 14px; color: #70706E">{{ mode.notebookHint }}</span>
+                </span>
+              </button>
+              <button onClick="{{ pickMode }}" style="text-align: left; width: 100%; cursor: pointer; background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 18px 20px; display: flex; align-items: center; gap: 16px" style-hover="border-color: #1E14BE" style-active="transform: scale(.985)">
+                <span style="width: 52px; height: 52px; flex: none; border-radius: 16px; background: #EFEDFF; display: flex; align-items: center; justify-content: center">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="5.5" width="18" height="13" rx="2.5" stroke="var(--ml-blue)" stroke-width="1.75"/><circle cx="9" cy="11" r="2.2" stroke="var(--ml-blue)" stroke-width="1.75"/><path d="M14 10h4M14 13.5h4M5.8 15.6c.7-1.4 1.8-2.1 3.2-2.1s2.5.7 3.2 2.1" stroke="var(--ml-blue)" stroke-width="1.75" stroke-linecap="round"/></svg>
+                </span>
+                <span style="display: flex; flex-direction: column; gap: 3px">
+                  <span style="font-size: 17.5px; font-weight: 600; color: #010101">{{ mode.card }}</span>
+                  <span style="font-size: 14px; color: #70706E">{{ mode.cardHint }}</span>
+                </span>
+              </button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.capShot }}" hint-placeholder-val="{{ false }}">
+            <div style="background: #17161A; min-height: 100%; display: flex; flex-direction: column">
+              <div style="flex: 1; position: relative; display: flex; align-items: center; justify-content: center; padding: 20px">
+                <div style="position: absolute; inset: 24px 20px; border: 3px solid rgba(255,255,255,.85); border-radius: 18px"></div>
+                <div style="width: 300px; background: #F3EBDC; border-radius: 6px; padding: 14px 12px; transform: rotate(-1.2deg); display: flex; flex-direction: column; gap: 7px; box-shadow: 0 8px 24px rgba(0,0,0,.4)">
+                  <div style="font-size: 11px; letter-spacing: .1em; color: #8A7A5F; text-transform: uppercase">RCH register · page 4</div>
+                  <sc-for list="{{ registerRows }}" as="r" hint-placeholder-count="6">
+                    <div style="display: flex; gap: 8px; border-bottom: 1px solid #DED2B8; padding-bottom: 5px; font-family: 'Segoe Script', 'Bradley Hand', cursive; font-size: 13px; color: #4A4034">
+                      <span style="width: 18px; color: #9A8B6F">{{ r.n }}</span>
+                      <span style="flex: 1">{{ r.name }}</span>
+                      <span style="width: 28px">{{ r.age }}</span>
+                      <span style="width: 74px">{{ r.village }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="flex: none; padding: 14px 18px 26px; display: flex; flex-direction: column; gap: 14px">
+                <div style="color: #fff; font-size: 15px; text-align: center; opacity: .9">{{ t.camHint }}</div>
+                <div style="display: flex; gap: 8px; align-items: center; min-height: 46px">
+                  <sc-for list="{{ shots }}" as="sh" hint-placeholder-count="1">
+                    <div style="width: 40px; height: 46px; border-radius: 8px; background: #F3EBDC; border: 2px solid rgba(255,255,255,.5); display: flex; align-items: flex-end; justify-content: center; font-size: 10px; color: #6B5E48; padding-bottom: 3px">{{ sh.label }}</div>
+                  </sc-for>
+                  <div style="color: rgba(255,255,255,.7); font-size: 13px; margin-left: 4px">{{ ui.shotCount }}</div>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between">
+                  <div style="width: 84px"></div>
+                  <button onClick="{{ shoot }}" aria-label="Capture" style="width: 78px; height: 78px; border-radius: 39px; background: #fff; border: 5px solid rgba(255,255,255,.35); cursor: pointer" style-active="transform: scale(.94)"></button>
+                  <button onClick="{{ goProcessing }}" style="width: 84px; border: none; background: transparent; color: #98EFC4; font-size: 16px; font-weight: 600; cursor: pointer">{{ t.camDone }}</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.capProc }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 40px 22px; display: flex; flex-direction: column; gap: 26px; animation: rise .22s ease">
+              <div style="font-size: 23px; font-weight: 600; color: #010101; line-height: 1.3">{{ proc.head }}</div>
+              <x-import component-from-global-scope="MedtronicLABSDesignSystem_019e1f.ProgressBar" value="{{ proc.value }}" size="lg" hint-size="100%,12px"></x-import>
+              <div style="display: flex; flex-direction: column; gap: 16px">
+                <sc-for list="{{ proc.steps }}" as="st" hint-placeholder-count="3">
+                  <div style="display: flex; gap: 12px; align-items: center; font-size: 16px; color: {{ st.color }}">
+                    <span style="width: 22px; height: 22px; flex: none; border-radius: 11px; border: 2px solid {{ st.color }}; display: flex; align-items: center; justify-content: center; font-size: 12px; color: {{ st.color }}">{{ st.mark }}</span>
+                    <span style="line-height: 1.35">{{ st.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-size: 14px; color: #909090; line-height: 1.45">{{ t.procFoot }}</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.review }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 16px 16px 28px; display: flex; flex-direction: column; gap: 14px; animation: rise .22s ease">
+              <button onClick="{{ toggleClear }}" style="text-align: left; width: 100%; cursor: pointer; background: #F1FCF6; border: 1px solid #98EFC4; border-radius: 20px; padding: 16px 18px; display: flex; gap: 12px; align-items: center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="flex: none"><circle cx="12" cy="12" r="9.2" stroke="#2E9E6B" stroke-width="1.7"/><path d="m8 12.3 2.6 2.6L16 9.5" stroke="#2E9E6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="display: flex; flex-direction: column; gap: 2px; flex: 1">
+                  <span style="font-size: 15.5px; font-weight: 600; color: #010101">{{ t.clearRow }}</span>
+                  <span style="font-size: 13.5px; color: #595959">{{ ui.clearHint }}</span>
+                </span>
+              </button>
+
+              <sc-if value="{{ ui.clearOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 20px; padding: 6px 16px">
+                  <sc-for list="{{ clearNames }}" as="c" hint-placeholder-count="9">
+                    <div style="display: flex; justify-content: space-between; gap: 10px; padding: 11px 0; border-bottom: 1px solid #F2F1ED; font-size: 14.5px; color: #2A2826">
+                      <span>{{ c.name }}</span>
+                      <span style="color: #909090">{{ c.meta }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px">
+                <div style="font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #C35721">{{ t.needHelp }}</div>
+                <div style="flex: 1; height: 1px; background: #EDEBE5"></div>
+                <div style="font-size: 13px; color: #70706E">{{ ui.reviewProgress }}</div>
+              </div>
+
+              <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 24px; padding: 18px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 6px 20px rgba(30,20,190,.06)">
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="font-size: 12px; color: #909090; letter-spacing: .06em; text-transform: uppercase">{{ t.fromPhoto }}</div>
+                  <div style="background: #F3EBDC; border: 1px solid #DED2B8; border-radius: 10px; padding: 12px 14px; display: flex; gap: 10px; font-family: 'Segoe Script', 'Bradley Hand', cursive; font-size: 19px; color: #4A4034">
+                    <span style="color: #9A8B6F; font-size: 14px">{{ cur.row }}</span>
+                    <span style="flex: 1">{{ cur.crop }}</span>
+                  </div>
+                </div>
+                <div style="font-size: 20px; font-weight: 600; color: #010101; line-height: 1.35">{{ cur.question }}</div>
+                <div style="display: flex; flex-direction: column; gap: 10px">
+                  <sc-for list="{{ cur.options }}" as="o" hint-placeholder-count="2">
+                    <button onClick="{{ o.pick }}" style="width: 100%; cursor: pointer; height: 58px; border-radius: 16px; border: 2px solid #1E14BE; background: #fff; color: #1E14BE; font-size: 18px; font-weight: 600" style-hover="background: #EFEDFF" style-active="transform: scale(.985)">{{ o.label }}</button>
+                  </sc-for>
+                  <button onClick="{{ skipOne }}" style="width: 100%; cursor: pointer; height: 52px; border-radius: 16px; border: 1px solid #DEDDD8; background: #fff; color: #595959; font-size: 16px">{{ t.somethingElse }}</button>
+                </div>
+                <div style="border-top: 1px solid #F2F1ED; padding-top: 12px; display: flex; flex-direction: column; gap: 6px">
+                  <div style="font-size: 13px; color: #909090; letter-spacing: .06em; text-transform: uppercase">{{ t.alsoRead }}</div>
+                  <sc-for list="{{ cur.fields }}" as="f" hint-placeholder-count="3">
+                    <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 15px; padding: 3px 0">
+                      <span style="color: #70706E">{{ f.k }}</span>
+                      <span style="color: #2A2826; font-weight: 500">{{ f.v }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <button onClick="{{ goHome }}" style="align-self: center; border: none; background: transparent; color: #1E14BE; font-size: 16px; font-weight: 600; padding: 12px 18px; cursor: pointer">{{ t.notNow }}</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.payoff }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 44px 22px 28px; display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center; animation: rise .3s ease">
+              <div style="width: 92px; height: 92px; border-radius: 46px; background: #98EFC4; display: flex; align-items: center; justify-content: center">
+                <svg width="46" height="46" viewBox="0 0 24 24" fill="none"><path d="m6 12.5 4 4L18 8" stroke="#146B45" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div style="font-size: 27px; font-weight: 600; color: #010101; letter-spacing: -.4px; line-height: 1.2">{{ t.payoffTitle }}</div>
+              <div style="font-size: 17px; color: #2A2826; line-height: 1.5; max-width: 300px; text-wrap: pretty">{{ t.payoffBody }}</div>
+              <div style="background: #EFEDFF; border-radius: 20px; padding: 16px 18px; font-size: 16px; color: #1E14BE; font-weight: 500; line-height: 1.45; width: 100%; text-wrap: pretty">{{ t.payoffSaving }}</div>
+              <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 4px">
+                <button onClick="{{ goIdentity }}" style="width: 100%; cursor: pointer; height: 58px; border-radius: 999px; border: none; background: #1E14BE; color: #fff; font-size: 17px; font-weight: 600" style-active="transform: scale(.98)">{{ t.payoffNext }}</button>
+                <button onClick="{{ goHome }}" style="width: 100%; cursor: pointer; height: 52px; border-radius: 999px; border: none; background: transparent; color: #1E14BE; font-size: 16px; font-weight: 600">{{ t.notNow }}</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.identity }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 16px 16px 28px; display: flex; flex-direction: column; gap: 16px; animation: rise .22s ease">
+              <div style="font-size: 22px; font-weight: 600; color: #010101; line-height: 1.3">{{ t.idQuestion }}</div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+                <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 4px">
+                  <div style="font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #909090">{{ t.record }} A</div>
+                  <div style="font-size: 18px; font-weight: 600; color: #1E14BE">{{ idA.name }}</div>
+                  <div style="margin-top: 6px; align-self: flex-start; background: #EFEDFF; color: #1E14BE; border-radius: 999px; padding: 5px 11px; font-size: 12.5px; font-weight: 600">{{ idA.chip }}</div>
+                </div>
+                <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 4px">
+                  <div style="font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #909090">{{ t.record }} B</div>
+                  <div style="font-size: 18px; font-weight: 600; color: #1E14BE">{{ idB.name }}</div>
+                  <div style="margin-top: 6px; align-self: flex-start; background: #EFEDFF; color: #1E14BE; border-radius: 999px; padding: 5px 11px; font-size: 12.5px; font-weight: 600">{{ idB.chip }}</div>
+                </div>
+              </div>
+
+              <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 20px; overflow: hidden">
+                <sc-for list="{{ idRows }}" as="r" hint-placeholder-count="5">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #F2F1ED; background: {{ r.bg }}">
+                    <div style="display: flex; flex-direction: column; gap: 2px">
+                      <span style="font-size: 11.5px; color: #909090; letter-spacing: .05em; text-transform: uppercase">{{ r.label }}</span>
+                      <span style="font-size: 15.5px; color: #2A2826; font-weight: {{ r.weight }}">{{ r.a }}</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 2px">
+                      <span style="font-size: 11.5px; color: transparent; letter-spacing: .05em; text-transform: uppercase">{{ r.label }}</span>
+                      <span style="font-size: 15.5px; color: #2A2826; font-weight: {{ r.weight }}">{{ r.b }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <button onClick="{{ toggleWhy }}" style="text-align: left; width: 100%; cursor: pointer; background: transparent; border: none; padding: 4px 2px; color: #1E14BE; font-size: 15px; font-weight: 600; display: flex; gap: 8px; align-items: center">
+                <span style="width: 22px; height: 22px; border-radius: 11px; border: 1.6px solid #1E14BE; display: flex; align-items: center; justify-content: center; font-size: 13px">?</span>
+                {{ t.why }}
+              </button>
+              <sc-if value="{{ ui.whyOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="background: #EFEDFF; border-radius: 18px; padding: 15px 17px; font-size: 15px; color: #2A2826; line-height: 1.5; text-wrap: pretty">{{ t.whyBody }}</div>
+              </sc-if>
+
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 2px">
+                <button onClick="{{ idYes }}" style="width: 100%; cursor: pointer; height: 60px; border-radius: 999px; border: none; background: #1E14BE; color: #fff; font-size: 17px; font-weight: 600" style-active="transform: scale(.98)">{{ t.idYes }}</button>
+                <button onClick="{{ idNo }}" style="width: 100%; cursor: pointer; height: 56px; border-radius: 999px; border: 2px solid #1E14BE; background: #fff; color: #1E14BE; font-size: 16.5px; font-weight: 600">{{ t.idNo }}</button>
+                <button onClick="{{ goHome }}" style="width: 100%; cursor: pointer; height: 52px; border-radius: 999px; border: none; background: transparent; color: #595959; font-size: 16px">{{ t.idLater }}</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.linked }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 44px 22px 28px; display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center; animation: rise .3s ease">
+              <div style="display: flex; align-items: center; gap: -10px">
+                <div style="width: 66px; height: 66px; border-radius: 33px; background: #BCB5F7; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 600; color: #1E14BE">P</div>
+                <div style="width: 66px; height: 66px; border-radius: 33px; background: #98EFC4; margin-left: -18px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 600; color: #146B45">P</div>
+              </div>
+              <div style="font-size: 26px; font-weight: 600; color: #010101; letter-spacing: -.4px; line-height: 1.25">{{ t.linkedTitle }}</div>
+              <div style="font-size: 17px; color: #2A2826; line-height: 1.5; max-width: 300px; text-wrap: pretty">{{ t.linkedBody }}</div>
+              <div style="background: #EFEDFF; border-radius: 20px; padding: 16px 18px; font-size: 16px; color: #1E14BE; font-weight: 500; line-height: 1.45; width: 100%; text-wrap: pretty">{{ t.linkedSaving }}</div>
+              <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 4px">
+                <button onClick="{{ goProfile }}" style="width: 100%; cursor: pointer; height: 58px; border-radius: 999px; border: none; background: #1E14BE; color: #fff; font-size: 17px; font-weight: 600" style-active="transform: scale(.98)">{{ t.seeProfile }}</button>
+                <button onClick="{{ undoLink }}" style="width: 100%; cursor: pointer; height: 52px; border-radius: 999px; border: none; background: transparent; color: #994242; font-size: 16px; font-weight: 600">{{ t.undoLink }}</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.profile }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 0 0 28px; display: flex; flex-direction: column; animation: rise .22s ease">
+              <div style="background: #1E14BE; padding: 20px 18px 22px; color: #fff; display: flex; flex-direction: column; gap: 12px">
+                <div style="display: flex; gap: 14px; align-items: center">
+                  <div style="width: 62px; height: 62px; border-radius: 31px; background: rgba(255,255,255,.18); border: 1.5px solid rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 600">{{ pf.initial }}</div>
+                  <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+                    <div style="font-size: 23px; font-weight: 600; letter-spacing: -.3px">{{ pf.name }}</div>
+                    <div style="font-size: 14.5px; color: #BCB5F7">{{ pf.meta }}</div>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap">
+                  <sc-for list="{{ pf.chips }}" as="c" hint-placeholder-count="2">
+                    <span style="background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 6px 13px; font-size: 13px; font-weight: 600">{{ c.label }}</span>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ pf.showHouse }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ noop }}" style="align-self: flex-start; background: transparent; border: none; padding: 4px 0; color: #98EFC4; font-size: 14.5px; font-weight: 600; cursor: pointer; text-decoration: underline">{{ pf.houseLine }}</button>
+                </sc-if>
+              </div>
+
+              <div style="padding: 16px 16px 0; display: flex; flex-direction: column; gap: 14px">
+                <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+                  <div style="font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: #909090">{{ t.summary }}</div>
+                  <div style="font-size: 18px; line-height: 1.5; color: #010101; font-weight: 500; text-wrap: pretty">{{ pf.summary }}</div>
+                </div>
+
+                <sc-if value="{{ pf.showPrompt }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ goCapture }}" style="text-align: left; width: 100%; cursor: pointer; background: #FFF6F0; border: 1px solid #FFBD9B; border-radius: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+                    <span style="font-size: 16px; font-weight: 600; color: #010101">{{ pf.promptTitle }}</span>
+                    <span style="font-size: 14.5px; color: #595959; line-height: 1.45">{{ pf.promptBody }}</span>
+                    <span style="margin-top: 4px; background: #C35721; color: #fff; border-radius: 999px; padding: 10px 20px; font-size: 15px; font-weight: 600">{{ t.addTitle }}</span>
+                  </button>
+                </sc-if>
+
+                <sc-for list="{{ pf.groups }}" as="g" hint-placeholder-count="2">
+                  <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+                    <div style="display: flex; align-items: center; gap: 9px">
+                      <span style="width: 9px; height: 9px; border-radius: 5px; background: {{ g.color }}"></span>
+                      <span style="font-size: 15px; font-weight: 600; color: #010101">{{ g.title }}</span>
+                    </div>
+                    <sc-for list="{{ g.fields }}" as="f" hint-placeholder-count="3">
+                      <div style="display: flex; flex-direction: column; gap: 2px; opacity: {{ f.op }}">
+                        <div style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline">
+                          <span style="font-size: 14.5px; color: #70706E">{{ f.k }}</span>
+                          <span style="font-size: 16px; color: #010101; font-weight: 500; text-align: right">{{ f.v }}</span>
+                        </div>
+                        <div style="font-size: 11.5px; color: #A8A7A2; text-align: right">{{ f.src }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+
+                <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+                  <div style="font-size: 15px; font-weight: 600; color: #010101">{{ t.whatsNext }}</div>
+                  <sc-for list="{{ pf.next }}" as="n" hint-placeholder-count="3">
+                    <div style="display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-top: 1px solid #F2F1ED">
+                      <span style="width: 8px; height: 8px; border-radius: 4px; margin-top: 7px; flex: none; background: {{ n.dot }}"></span>
+                      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1">
+                        <span style="font-size: 15.5px; color: #010101">{{ n.task }}</span>
+                        <span style="display: flex; gap: 7px; align-items: center; flex-wrap: wrap">
+                          <span style="font-size: 12px; font-weight: 600; border-radius: 999px; padding: 4px 10px; background: {{ n.chipBg }}; color: {{ n.chipFg }}">{{ n.chip }}</span>
+                          <span style="font-size: 13px; color: {{ n.whenColor }}">{{ n.when }}</span>
+                        </span>
+                      </span>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <sc-if value="{{ pf.showLinks }}" hint-placeholder-val="{{ true }}">
+                  <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+                    <div style="font-size: 15px; font-weight: 600; color: #010101">{{ t.linkedRecords }}</div>
+                    <sc-for list="{{ pf.links }}" as="l" hint-placeholder-count="2">
+                      <div style="display: flex; justify-content: space-between; gap: 10px; align-items: center; padding-top: 9px; border-top: 1px solid #F2F1ED">
+                        <span style="display: flex; flex-direction: column; gap: 2px">
+                          <span style="font-size: 15px; color: #2A2826">{{ l.name }}</span>
+                          <span style="font-size: 12.5px; color: #909090">{{ l.src }}</span>
+                        </span>
+                        <button onClick="{{ noop }}" style="border: 1px solid #DEDDD8; background: #fff; color: #994242; border-radius: 999px; padding: 9px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer">{{ t.unlink }}</button>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px">
+                  <button onClick="{{ noop }}" style="flex: 1; min-width: 108px; cursor: pointer; height: 52px; border-radius: 999px; border: none; background: #1E14BE; color: #fff; font-size: 15.5px; font-weight: 600">{{ t.recordVisit }}</button>
+                  <button onClick="{{ goCapture }}" style="flex: 1; min-width: 108px; cursor: pointer; height: 52px; border-radius: 999px; border: 2px solid #1E14BE; background: #fff; color: #1E14BE; font-size: 15.5px; font-weight: 600">{{ t.addMore }}</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.plan }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 14px 16px 28px; display: flex; flex-direction: column; gap: 14px; animation: rise .22s ease">
+              <div style="display: flex; gap: 8px">
+                <sc-for list="{{ planFilters }}" as="ft" hint-placeholder-count="3">
+                  <button onClick="{{ ft.pick }}" style="cursor: pointer; border-radius: 999px; padding: 11px 16px; font-size: 14.5px; font-weight: 600; border: 1px solid {{ ft.border }}; background: {{ ft.bg }}; color: {{ ft.fg }}">{{ ft.label }}</button>
+                </sc-for>
+              </div>
+
+              <div style="font-size: 14px; color: #70706E">{{ plan.heading }}</div>
+
+              <sc-for list="{{ plan.overdue }}" as="o" hint-placeholder-count="1">
+                <div style="background: #fff; border: 1px solid #E98B8B; border-left: 6px solid #994242; border-radius: 20px; padding: 15px 16px; display: flex; flex-direction: column; gap: 9px; opacity: {{ o.op }}">
+                  <div style="display: flex; justify-content: space-between; gap: 10px; align-items: baseline">
+                    <span style="font-size: 16.5px; font-weight: 600; color: #010101">{{ o.who }}</span>
+                    <span style="font-size: 12.5px; font-weight: 600; color: #994242">{{ o.late }}</span>
+                  </div>
+                  <div style="font-size: 15px; color: #2A2826">{{ o.task }}</div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+                    <span style="font-size: 12px; font-weight: 600; border-radius: 999px; padding: 5px 11px; background: {{ o.chipBg }}; color: {{ o.chipFg }}">{{ o.chip }}</span>
+                    <button onClick="{{ o.done }}" style="cursor: pointer; border: 1px solid #1E14BE; background: #fff; color: #1E14BE; border-radius: 999px; padding: 11px 20px; font-size: 14.5px; font-weight: 600">{{ o.btn }}</button>
+                  </div>
+                </div>
+              </sc-for>
+
+              <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 24px; overflow: hidden; box-shadow: 0 6px 20px rgba(30,20,190,.06)">
+                <div style="background: #EFEDFF; padding: 14px 16px; display: flex; flex-direction: column; gap: 5px">
+                  <div style="font-size: 16.5px; font-weight: 600; color: #010101">{{ plan.bundleTitle }}</div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-7.5Z" stroke="#1E14BE" stroke-width="1.7" stroke-linejoin="round"/></svg>
+                    <span style="font-size: 14.5px; font-weight: 600; color: #1E14BE">{{ plan.bundleSaving }}</span>
+                  </div>
+                </div>
+                <sc-for list="{{ plan.bundle }}" as="b" hint-placeholder-count="3">
+                  <div style="padding: 14px 16px; border-top: 1px solid #F2F1ED; display: flex; flex-direction: column; gap: 8px; opacity: {{ b.op }}">
+                    <div style="display: flex; justify-content: space-between; gap: 10px; align-items: baseline">
+                      <button onClick="{{ b.open }}" style="border: none; background: transparent; padding: 0; cursor: pointer; font-size: 16px; font-weight: 600; color: #1E14BE; text-align: left">{{ b.who }}</button>
+                      <span style="font-size: 12.5px; color: #909090">{{ b.age }}</span>
+                    </div>
+                    <div style="font-size: 15px; color: #2A2826">{{ b.task }}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+                      <span style="font-size: 12px; font-weight: 600; border-radius: 999px; padding: 5px 11px; background: {{ b.chipBg }}; color: {{ b.chipFg }}">{{ b.chip }}</span>
+                      <button onClick="{{ b.done }}" style="cursor: pointer; border: 1px solid #1E14BE; background: #fff; color: #1E14BE; border-radius: 999px; padding: 11px 20px; font-size: 14.5px; font-weight: 600">{{ b.btn }}</button>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <sc-for list="{{ plan.others }}" as="o" hint-placeholder-count="2">
+                <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 20px; padding: 15px 16px; display: flex; flex-direction: column; gap: 9px; opacity: {{ o.op }}">
+                  <div style="display: flex; justify-content: space-between; gap: 10px; align-items: baseline">
+                    <span style="font-size: 16.5px; font-weight: 600; color: #010101">{{ o.who }}</span>
+                    <span style="font-size: 12.5px; color: #909090">{{ o.village }}</span>
+                  </div>
+                  <div style="font-size: 15px; color: #2A2826">{{ o.task }}</div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+                    <span style="font-size: 12px; font-weight: 600; border-radius: 999px; padding: 5px 11px; background: {{ o.chipBg }}; color: {{ o.chipFg }}">{{ o.chip }}</span>
+                    <button onClick="{{ o.done }}" style="cursor: pointer; border: 1px solid #1E14BE; background: #fff; color: #1E14BE; border-radius: 999px; padding: 11px 20px; font-size: 14.5px; font-weight: 600">{{ o.btn }}</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.dash }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 16px 16px 28px; display: flex; flex-direction: column; gap: 14px; animation: rise .22s ease">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+                <div style="background: #1E14BE; color: #fff; border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 5px">
+                  <div style="font-size: 28px; font-weight: 600; letter-spacing: -.5px">138</div>
+                  <div style="font-size: 13px; color: #BCB5F7; line-height: 1.3">{{ t.dOne }}</div>
+                  <div style="font-size: 12.5px; color: rgba(255,255,255,.7)">{{ t.dOneSub }}</div>
+                </div>
+                <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 5px">
+                  <div style="font-size: 28px; font-weight: 600; color: #2E9E6B; letter-spacing: -.5px">12</div>
+                  <div style="font-size: 13px; color: #2A2826; line-height: 1.3">{{ t.dTwo }}</div>
+                  <div style="font-size: 12.5px; color: #909090">{{ t.dTwoSub }}</div>
+                </div>
+              </div>
+
+              <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+                <div style="font-size: 15px; font-weight: 600; color: #010101">{{ t.coverage }}</div>
+                <sc-for list="{{ bars }}" as="b" hint-placeholder-count="4">
+                  <div style="display: flex; flex-direction: column; gap: 6px">
+                    <div style="display: flex; justify-content: space-between; font-size: 14px">
+                      <span style="color: #2A2826">{{ b.label }}</span>
+                      <span style="color: #70706E">{{ b.value }}</span>
+                    </div>
+                    <div style="height: 12px; border-radius: 6px; background: #F1EFEA; overflow: hidden">
+                      <div style="height: 100%; border-radius: 6px; background: {{ b.color }}; width: {{ b.width }}"></div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+                <div style="font-size: 15px; font-weight: 600; color: #010101">{{ t.trend }}</div>
+                <div style="display: flex; gap: 10px; align-items: flex-end; height: 120px">
+                  <sc-for list="{{ trend }}" as="m" hint-placeholder-count="5">
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 7px; align-items: center; justify-content: flex-end; height: 100%">
+                      <span style="font-size: 12px; color: #70706E">{{ m.value }}</span>
+                      <div style="width: 100%; border-radius: 8px 8px 3px 3px; background: {{ m.color }}; height: {{ m.h }}"></div>
+                      <span style="font-size: 12px; color: #909090">{{ m.label }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.mo }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 16px 16px 28px; display: flex; flex-direction: column; gap: 14px; animation: rise .22s ease">
+              <div style="display: flex; flex-direction: column; gap: 2px">
+                <div style="font-size: 21px; font-weight: 600; color: #010101">{{ t.moTitle }}</div>
+                <div style="font-size: 14px; color: #70706E">{{ t.moSub }}</div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #E7E5E0; border-radius: 999px; padding: 0 16px; height: 52px">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.6" stroke="#909090" stroke-width="1.7"/><path d="m16 16 4 4" stroke="#909090" stroke-width="1.7" stroke-linecap="round"/></svg>
+                <span style="font-size: 15px; color: #A8A7A2">{{ t.moSearch }}</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+                <sc-for list="{{ moStats }}" as="m" hint-placeholder-count="4">
+                  <div style="background: {{ m.bg }}; border: 1px solid #E7E5E0; border-radius: 20px; padding: 15px; display: flex; flex-direction: column; gap: 4px">
+                    <div style="font-size: 25px; font-weight: 600; letter-spacing: -.4px; color: {{ m.fg }}">{{ m.value }}</div>
+                    <div style="font-size: 13px; color: #595959; line-height: 1.3">{{ m.label }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+                <div style="font-size: 15px; font-weight: 600; color: #010101">{{ t.coveragePhc }}</div>
+                <sc-for list="{{ bars }}" as="b" hint-placeholder-count="4">
+                  <div style="display: flex; flex-direction: column; gap: 6px">
+                    <div style="display: flex; justify-content: space-between; font-size: 14px">
+                      <span style="color: #2A2826">{{ b.label }}</span>
+                      <span style="color: #70706E">{{ b.phcValue }}</span>
+                    </div>
+                    <div style="height: 12px; border-radius: 6px; background: #F1EFEA; overflow: hidden">
+                      <div style="height: 100%; border-radius: 6px; background: {{ b.color }}; width: {{ b.phcWidth }}"></div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="background: #fff; border: 1px solid #E7E5E0; border-radius: 22px; padding: 6px 18px 10px">
+                <div style="font-size: 15px; font-weight: 600; color: #010101; padding: 14px 0 6px">{{ t.bySubcentre }}</div>
+                <sc-for list="{{ subcentres }}" as="sc" hint-placeholder-count="4">
+                  <div style="display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 12px 0; border-top: 1px solid #F2F1ED">
+                    <div style="display: flex; flex-direction: column; gap: 2px">
+                      <span style="font-size: 15.5px; color: #010101; font-weight: 500">{{ sc.name }}</span>
+                      <span style="font-size: 12.5px; color: #909090">{{ sc.anm }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px">
+                      <span style="font-size: 14px; color: #70706E">{{ sc.value }}</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m9 5 7 7-7 7" stroke="#1E14BE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+        </div>
+
+        <sc-if value="{{ ui.snack }}" hint-placeholder-val="{{ false }}">
+          <div style="position: absolute; left: 14px; right: 14px; bottom: 94px; background: #17161A; color: #fff; border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.28); animation: rise .2s ease">
+            <span style="font-size: 14.5px">{{ ui.snack }}</span>
+            <button onClick="{{ undoDone }}" style="border: none; background: transparent; color: #98EFC4; font-size: 15px; font-weight: 700; cursor: pointer; padding: 4px 6px">{{ t.undo }}</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ ui.showNav }}" hint-placeholder-val="{{ true }}">
+          <div style="flex: none; display: grid; grid-template-columns: repeat(4, 1fr); background: #fff; border-top: 1px solid #EDEBE5; padding: 8px 4px 14px">
+            <button onClick="{{ goHome }}" style="border: none; background: transparent; cursor: pointer; display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 6px 0; color: {{ nav.home }}">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-7.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              <span style="font-size: 11.5px; font-weight: 600">{{ t.navToday }}</span>
+            </button>
+            <button onClick="{{ goPlan }}" style="border: none; background: transparent; cursor: pointer; display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 6px 0; color: {{ nav.plan }}">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span style="font-size: 11.5px; font-weight: 600">{{ t.navPlan }}</span>
+            </button>
+            <button onClick="{{ goProfile }}" style="border: none; background: transparent; cursor: pointer; display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 6px 0; color: {{ nav.people }}">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.5" r="3.6" stroke="currentColor" stroke-width="1.8"/><path d="M5 19.5c1.2-3.3 3.8-5 7-5s5.8 1.7 7 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span style="font-size: 11.5px; font-weight: 600">{{ t.navPatients }}</span>
+            </button>
+            <button onClick="{{ goDash }}" style="border: none; background: transparent; cursor: pointer; display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 6px 0; color: {{ nav.dash }}">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5.5 19V11M12 19V5.5M18.5 19v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <span style="font-size: 11.5px; font-weight: 600">{{ t.navNumbers }}</span>
+            </button>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+
+    <div style="width: 250px; display: flex; flex-direction: column; gap: 18px; padding-top: 6px">
+      <div style="display: flex; flex-direction: column; gap: 9px">
+        <div style="font-size: 11.5px; letter-spacing: .13em; text-transform: uppercase; color: #70706E; font-weight: 600">Home states</div>
+        <sc-for list="{{ homeStates }}" as="h" hint-placeholder-count="3">
+          <button onClick="{{ h.pick }}" style="text-align: left; cursor: pointer; border-radius: 14px; padding: 11px 14px; font-size: 14px; font-weight: 500; border: 1px solid {{ h.border }}; background: {{ h.bg }}; color: {{ h.fg }}">{{ h.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 9px">
+        <div style="font-size: 11.5px; letter-spacing: .13em; text-transform: uppercase; color: #70706E; font-weight: 600">Profile states</div>
+        <sc-for list="{{ profileStates }}" as="p" hint-placeholder-count="3">
+          <button onClick="{{ p.pick }}" style="text-align: left; cursor: pointer; border-radius: 14px; padding: 11px 14px; font-size: 14px; font-weight: 500; border: 1px solid {{ p.border }}; background: {{ p.bg }}; color: {{ p.fg }}">{{ p.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 9px">
+        <div style="font-size: 11.5px; letter-spacing: .13em; text-transform: uppercase; color: #70706E; font-weight: 600">Other screens</div>
+        <button onClick="{{ goMo }}" style="text-align: left; cursor: pointer; border-radius: 14px; padding: 11px 14px; font-size: 14px; font-weight: 500; border: 1px solid #DEDDD8; background: #fff; color: #2A2826">Medical Officer view</button>
+        <button onClick="{{ goDash }}" style="text-align: left; cursor: pointer; border-radius: 14px; padding: 11px 14px; font-size: 14px; font-weight: 500; border: 1px solid #DEDDD8; background: #fff; color: #2A2826">Dashboard</button>
+        <button onClick="{{ restart }}" style="text-align: left; cursor: pointer; border-radius: 14px; padding: 11px 14px; font-size: 14px; font-weight: 600; border: 1px solid #1E14BE; background: #EFEDFF; color: #1E14BE">Restart demo</button>
+      </div>
+      <div style="font-size: 12.5px; color: #909090; line-height: 1.5; text-wrap: pretty">Clinical fields are placeholders — the PHP minimum dataset is still to be agreed.</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;hi&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;homeState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;fresh&quot;,&quot;typical&quot;,&quot;clear&quot;],&quot;default&quot;:&quot;typical&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;profileState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;complete&quot;,&quot;partial&quot;,&quot;single&quot;],&quot;default&quot;:&quot;complete&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'home', lang: null, homeState: null, profileState: null,
+    reviewIndex: 0, clearOpen: false, whyOpen: false, shotCount: 1,
+    programme: 'RCH', proc: 0, done: {}, snack: null, lastDone: null, planFilter: 'today'
+  };
+  scrollRef = React.createRef();
+
+  DICT = {
+    en: {
+      greet: 'Namaste, Sunita', hwc: 'Bhiwani Khera Sub-centre · HWC',
+      todayTitle: "Today's visits", openPlan: 'Open work plan',
+      addTitle: 'Add patient information', m1: 'Patients with one profile', m2: 'Visits saved this month',
+      confirmTitle: 'Needs your confirmation', confirmCta: 'Start', allClear: 'All clear. Nothing is waiting for you today.',
+      navToday: 'Today', navPlan: 'Plan', navPatients: 'Patient', navNumbers: 'Numbers',
+      hAdd: 'Add information', hReview: 'Check what we read', hIdentity: 'Same person?', hPlan: 'Work plan',
+      hDash: 'Your numbers', hProfile: 'Patient', hMo: 'PHC Bapora', hCapture: 'Register page',
+      q1: 'Which programme?', q2: 'How do you want to add?',
+      camHint: 'Fit the page inside the box', camDone: 'Done',
+      procFoot: 'The photo is not saved. Only what we read from it is kept.',
+      clearRow: '9 patients read clearly.', clearHintOpen: 'Tap to hide.', clearHintClosed: 'Tap to check.',
+      needHelp: 'Needs your help', fromPhoto: 'From your register photo', alsoRead: 'Also read from this row',
+      somethingElse: 'Something else', notNow: 'Not now',
+      payoffTitle: '12 patients added', payoffBody: 'Nine were read clearly. You answered three questions — that was all we needed.',
+      payoffSaving: 'That is about 20 minutes of register copying you will not have to do.',
+      payoffNext: 'One more thing (10 seconds)',
+      idQuestion: 'Are these the same person?', record: 'Record',
+      why: "Why we're asking", whyBody: 'Same village, same age, and the names sound alike. One is written in the RCH register, the other in the TB register.',
+      idYes: 'Yes, same person', idNo: 'No, different people', idLater: 'Not sure, ask me later',
+      linkedTitle: 'Pooja is now one patient', linkedBody: 'Her pregnancy record and her TB record now sit together. Nothing was deleted.',
+      linkedSaving: 'One visit instead of two this month — and her card is complete when you reach the house.',
+      seeProfile: 'See her profile', undoLink: 'Undo this link',
+      summary: 'In short', whatsNext: "What's next", linkedRecords: 'Linked records', unlink: 'Unlink',
+      recordVisit: 'Record a visit', addMore: 'Add information',
+      dOne: 'Patients with one profile', dOneSub: '64% of your 214', dTwo: 'Visits saved', dTwoSub: 'By visiting one house once',
+      coverage: 'Programme coverage', coveragePhc: 'Coverage across the PHC', trend: 'Visits saved, month by month',
+      moTitle: 'PHC Bapora', moSub: '6 sub-centres · 8 ANMs', moSearch: 'Search a patient', bySubcentre: 'By sub-centre',
+      undo: 'Undo', done: 'Done', doneMark: 'Done ✓', undone: 'marked done'
+    },
+    hi: {
+      greet: 'नमस्ते, सुनीता', hwc: 'भिवानी खेड़ा उप-केंद्र · HWC',
+      todayTitle: 'आज के दौरे', openPlan: 'कार्य योजना खोलें',
+      addTitle: 'मरीज़ की जानकारी जोड़ें', m1: 'एक ही प्रोफ़ाइल वाले मरीज़', m2: 'इस महीने बचे दौरे',
+      confirmTitle: 'आपकी पुष्टि चाहिए', confirmCta: 'शुरू करें', allClear: 'सब ठीक है। आज कुछ बाकी नहीं है।',
+      navToday: 'आज', navPlan: 'योजना', navPatients: 'मरीज़', navNumbers: 'आंकड़े',
+      hAdd: 'जानकारी जोड़ें', hReview: 'पढ़ी गई जानकारी देखें', hIdentity: 'क्या यह एक ही व्यक्ति है?', hPlan: 'कार्य योजना',
+      hDash: 'आपके आंकड़े', hProfile: 'मरीज़', hMo: 'पीएचसी बापोड़ा', hCapture: 'रजिस्टर पन्ना',
+      q1: 'कौन सा कार्यक्रम?', q2: 'जानकारी कैसे जोड़ें?',
+      camHint: 'पन्ने को डिब्बे के अंदर रखें', camDone: 'हो गया',
+      procFoot: 'फ़ोटो सहेजी नहीं जाती। सिर्फ़ पढ़ी गई जानकारी रखी जाती है।',
+      clearRow: '9 मरीज़ साफ़ पढ़े गए।', clearHintOpen: 'छिपाने के लिए दबाएँ।', clearHintClosed: 'देखने के लिए दबाएँ।',
+      needHelp: 'आपकी मदद चाहिए', fromPhoto: 'आपके रजिस्टर की फ़ोटो से', alsoRead: 'इसी पंक्ति से पढ़ा गया',
+      somethingElse: 'कुछ और', notNow: 'अभी नहीं',
+      payoffTitle: '12 मरीज़ जुड़ गए', payoffBody: 'नौ साफ़ पढ़े गए। आपने तीन सवालों के जवाब दिए — बस इतना ही चाहिए था।',
+      payoffSaving: 'लगभग 20 मिनट की रजिस्टर नकल का काम बच गया।',
+      payoffNext: 'एक और छोटा काम (10 सेकंड)',
+      idQuestion: 'क्या यह एक ही व्यक्ति है?', record: 'रिकॉर्ड',
+      why: 'हम क्यों पूछ रहे हैं', whyBody: 'एक ही गाँव, एक ही उम्र, और नाम मिलते-जुलते हैं। एक RCH रजिस्टर में है, दूसरा टीबी रजिस्टर में।',
+      idYes: 'हाँ, एक ही व्यक्ति', idNo: 'नहीं, अलग व्यक्ति', idLater: 'पक्का नहीं, बाद में पूछें',
+      linkedTitle: 'पूजा अब एक ही मरीज़ हैं', linkedBody: 'उनका गर्भावस्था रिकॉर्ड और टीबी रिकॉर्ड अब साथ हैं। कुछ भी मिटाया नहीं गया।',
+      linkedSaving: 'इस महीने दो की जगह एक दौरा — और घर पहुँचते ही पूरा विवरण सामने।',
+      seeProfile: 'उनकी प्रोफ़ाइल देखें', undoLink: 'यह जोड़ हटाएँ',
+      summary: 'संक्षेप में', whatsNext: 'आगे क्या', linkedRecords: 'जुड़े रिकॉर्ड', unlink: 'अलग करें',
+      recordVisit: 'दौरा दर्ज करें', addMore: 'जानकारी जोड़ें',
+      dOne: 'एक प्रोफ़ाइल वाले मरीज़', dOneSub: '214 में से 64%', dTwo: 'बचे दौरे', dTwoSub: 'एक घर, एक दौरा',
+      coverage: 'कार्यक्रम कवरेज', coveragePhc: 'पीएचसी की कवरेज', trend: 'महीने दर महीने बचे दौरे',
+      moTitle: 'पीएचसी बापोड़ा', moSub: '6 उप-केंद्र · 8 एएनएम', moSearch: 'मरीज़ खोजें', bySubcentre: 'उप-केंद्र अनुसार',
+      undo: 'वापस लें', done: 'हो गया', doneMark: 'हो गया ✓', undone: 'पूरा किया'
+    }
+  };
+
+  get lang() { return this.state.lang ?? this.props.lang ?? 'en'; }
+  get hs() { return this.state.homeState ?? this.props.homeState ?? 'typical'; }
+  get ps() { return this.state.profileState ?? this.props.profileState ?? 'complete'; }
+  L(o) { return o[this.lang] ?? o.en; }
+
+  go = (screen) => {
+    this.setState({ screen }, () => { if (this.scrollRef.current) this.scrollRef.current.scrollTop = 0; });
+  };
+
+  startProcessing = () => {
+    this.setState({ screen: 'capProc', proc: 0 });
+    [1, 2, 3].forEach((i) => { this.timer = setTimeout(() => this.setState({ proc: i }), 700 * i); });
+    setTimeout(() => this.go('review'), 3000);
+  };
+
+  markDone = (id, label) => {
+    const done = { ...this.state.done, [id]: true };
+    this.setState({ done, lastDone: id, snack: label + ' — ' + this.L({ en: 'marked done', hi: 'पूरा किया' }) });
+    clearTimeout(this.snackT);
+    this.snackT = setTimeout(() => this.setState({ snack: null }), 4000);
+  };
+  undoDone = () => {
+    const done = { ...this.state.done };
+    delete done[this.state.lastDone];
+    this.setState({ done, snack: null });
+  };
+
+  clarifications() {
+    return [
+      {
+        row: '4', crop: 'कमला / Kamla?',
+        question: this.L({ en: 'Is this name Kamla or Kamlesh?', hi: 'यह नाम कमला है या कमलेश?' }),
+        options: ['Kamla Devi', 'Kamlesh Devi'],
+        fields: [
+          { k: this.L({ en: 'Age', hi: 'उम्र' }), v: '27' },
+          { k: this.L({ en: 'Village', hi: 'गाँव' }), v: 'Bhiwani Khera' },
+          { k: this.L({ en: 'Mobile', hi: 'मोबाइल' }), v: '••••• 7712' }
+        ]
+      },
+      {
+        row: '7', crop: 'Pooja Varma  3̷2̷',
+        question: this.L({ en: 'Is Pooja Varma 32 or 52?', hi: 'क्या पूजा वर्मा 32 की हैं या 52 की?' }),
+        options: ['32', '52'],
+        fields: [
+          { k: this.L({ en: 'Village', hi: 'गाँव' }), v: 'Bhiwani Khera' },
+          { k: this.L({ en: 'Visit', hi: 'दौरा' }), v: 'ANC 2' },
+          { k: this.L({ en: 'Mobile', hi: 'मोबाइल' }), v: '••••• 4321' }
+        ]
+      },
+      {
+        row: '11', crop: 'Rohit — 11 m?',
+        question: this.L({ en: 'Is Rohit 11 months or 1 year 1 month?', hi: 'क्या रोहित 11 महीने का है या 1 साल 1 महीने का?' }),
+        options: ['11 months', '1 year 1 month'],
+        fields: [
+          { k: this.L({ en: 'Mother', hi: 'माता' }), v: 'Pooja Varma' },
+          { k: this.L({ en: 'Village', hi: 'गाँव' }), v: 'Bhiwani Khera' },
+          { k: this.L({ en: 'Due', hi: 'देय' }), v: 'MR-1' }
+        ]
+      }
+    ];
+  }
+
+  profileData() {
+    const st = this.ps;
+    const P = (en, hi) => this.L({ en, hi });
+    const rch = {
+      title: P('Pregnancy & child health (RCH)', 'गर्भावस्था और शिशु स्वास्थ्य (RCH)'), color: '#6165DE',
+      fields: [
+        { k: P('Pregnancy', 'गर्भावस्था'), v: P('Second trimester', 'दूसरी तिमाही'), src: P('RCH register, 12 Aug 2026', 'RCH रजिस्टर, 12 अगस्त 2026'), op: '1' },
+        { k: P('History', 'इतिहास'), v: 'G2P1 · prior LSCS', src: P('RCH register, 12 Aug 2026', 'RCH रजिस्टर, 12 अगस्त 2026'), op: '1' },
+        { k: P('ANC visits done', 'हुई एएनसी जाँच'), v: '2 of 4', src: P('RCH register, 12 Aug 2026', 'RCH रजिस्टर, 12 अगस्त 2026'), op: '1' },
+        { k: 'Haemoglobin', v: '10.4 g/dL', src: P('RCH register, 3 Mar 2026 · older', 'RCH रजिस्टर, 3 मार्च 2026 · पुराना'), op: '.45' }
+      ]
+    };
+    const tb = {
+      title: P('TB', 'टीबी'), color: '#EB956A',
+      fields: [
+        { k: P('Treatment', 'इलाज'), v: P('Month 3', 'तीसरा महीना'), src: P('TB register, 2 Aug 2026', 'टीबी रजिस्टर, 2 अगस्त 2026'), op: '1' },
+        { k: P('Last follow-up', 'पिछली जाँच'), v: '2 Aug 2026', src: P('TB register, 2 Aug 2026', 'टीबी रजिस्टर, 2 अगस्त 2026'), op: '1' }
+      ]
+    };
+    const ncd = {
+      title: P('NCD', 'एनसीडी'), color: '#54CC90',
+      fields: [
+        { k: P('Blood pressure', 'रक्तचाप'), v: P('Normal', 'सामान्य'), src: P('Screening camp, 14 Jun 2026', 'जाँच शिविर, 14 जून 2026'), op: '1' },
+        { k: P('Blood sugar', 'रक्त शर्करा'), v: P('Not screened', 'जाँच नहीं हुई'), src: '—', op: '.45' }
+      ]
+    };
+    if (st === 'single') {
+      return {
+        initial: 'K', name: this.L({ en: 'Kamla Devi', hi: 'कमला देवी' }), meta: P('27 · F · Bhiwani Khera', '27 · महिला · भिवानी खेड़ा'),
+        chips: [{ label: 'RCH' }], showHouse: false, showLinks: false, showPrompt: true,
+        summary: P('27F, first pregnancy, first trimester. No other programme information yet.', '27 वर्षीय महिला, पहली गर्भावस्था, पहली तिमाही। अभी किसी और कार्यक्रम की जानकारी नहीं।'),
+        promptTitle: P('Only one register so far', 'अभी सिर्फ़ एक रजिस्टर'),
+        promptBody: P('If she is in the NCD or TB register too, add that page and we will join it up for you.', 'अगर वे एनसीडी या टीबी रजिस्टर में भी हैं, वह पन्ना जोड़ें — हम जोड़ देंगे।'),
+        groups: [{ title: rch.title, color: rch.color, fields: rch.fields.slice(0, 2) }],
+        next: [{ task: P('ANC 1 check', 'पहली एएनसी जाँच'), chip: P('Protocol', 'नियम'), chipBg: '#EFEDFF', chipFg: '#1E14BE', dot: '#1E14BE', when: P('Due in 6 days', '6 दिन में देय'), whenColor: '#70706E' }],
+        links: []
+      };
+    }
+    if (st === 'partial') {
+      return {
+        initial: 'S', name: this.L({ en: 'Suresh Kumar', hi: 'सुरेश कुमार' }), meta: P('58 · M · Dhani Mahu', '58 · पुरुष · धानी माहू'),
+        chips: [{ label: 'NCD' }, { label: 'TB' }], showHouse: false, showLinks: true, showPrompt: false,
+        summary: P('58M, on blood pressure treatment. TB screening was started but the result has not reached us yet.', '58 वर्षीय पुरुष, रक्तचाप का इलाज चल रहा है। टीबी जाँच शुरू हुई, नतीजा अभी नहीं आया।'),
+        groups: [
+          { title: ncd.title, color: ncd.color, fields: [
+            { k: P('Blood pressure', 'रक्तचाप'), v: '148 / 92', src: P('NCD register, 20 Jul 2026', 'एनसीडी रजिस्टर, 20 जुलाई 2026'), op: '1' },
+            { k: P('On treatment', 'इलाज पर'), v: P('Yes', 'हाँ'), src: P('NCD register, 20 Jul 2026', 'एनसीडी रजिस्टर, 20 जुलाई 2026'), op: '1' },
+            { k: P('Blood sugar', 'रक्त शर्करा'), v: '132 mg/dL', src: P('Screening camp, 11 Jan 2026 · older', 'जाँच शिविर, 11 जनवरी 2026 · पुराना'), op: '.45' }
+          ] },
+          { title: tb.title, color: tb.color, fields: [
+            { k: P('Sputum test', 'बलगम जाँच'), v: P('Result awaited', 'नतीजा बाकी'), src: P('Doctor note, 8 Aug 2026', 'डॉक्टर की सलाह, 8 अगस्त 2026'), op: '1' }
+          ] }
+        ],
+        next: [
+          { task: P('Bring lab results', 'जाँच रिपोर्ट लाएँ'), chip: P('Doctor', 'डॉक्टर'), chipBg: '#FFF0E6', chipFg: '#C35721', dot: '#C35721', when: P('This week', 'इस हफ़्ते'), whenColor: '#70706E' },
+          { task: P('BP re-check', 'रक्तचाप दोबारा'), chip: P('Protocol', 'नियम'), chipBg: '#EFEDFF', chipFg: '#1E14BE', dot: '#1E14BE', when: P('Overdue by 9 days', '9 दिन से बाकी'), whenColor: '#994242' }
+        ],
+        links: [
+          { name: 'Suresh Kumar', src: P('NCD register · mobile ••••• 2290', 'एनसीडी रजिस्टर · मोबाइल ••••• 2290') },
+          { name: 'S. Kumar', src: P('TB register · ABHA 91-•••• · linked automatically', 'टीबी रजिस्टर · ABHA 91-•••• · अपने आप जुड़ा') }
+        ]
+      };
+    }
+    return {
+      initial: 'P', name: this.L({ en: 'Pooja Varma', hi: 'पूजा वर्मा' }), meta: P('32 · F · Bhiwani Khera', '32 · महिला · भिवानी खेड़ा'),
+      chips: [{ label: 'RCH' }, { label: 'TB' }, { label: 'NCD' }], showHouse: true, showLinks: true, showPrompt: false,
+      houseLine: P('Same house as Rohit, 11 months', 'रोहित (11 महीने) के साथ एक ही घर'),
+      summary: P('32F, second trimester (G2P1, prior LSCS). On TB treatment, month 3. BP screened normal, June 2026.', '32 वर्षीय महिला, दूसरी तिमाही (G2P1, पहले सिज़ेरियन)। टीबी का इलाज, तीसरा महीना। जून 2026 में रक्तचाप सामान्य।'),
+      groups: [rch, tb, ncd],
+      next: [
+        { task: P('ANC 3 check', 'तीसरी एएनसी जाँच'), chip: P('Protocol', 'नियम'), chipBg: '#EFEDFF', chipFg: '#1E14BE', dot: '#1E14BE', when: P('Tuesday, 1 Sep', 'मंगलवार, 1 सितम्बर'), whenColor: '#70706E' },
+        { task: P('TB follow-up, month 4', 'टीबी जाँच, चौथा महीना'), chip: P('Protocol', 'नियम'), chipBg: '#EFEDFF', chipFg: '#1E14BE', dot: '#1E14BE', when: P('Tuesday, 1 Sep', 'मंगलवार, 1 सितम्बर'), whenColor: '#70706E' },
+        { task: P('Rohit · MR-1 vaccine', 'रोहित · एमआर-1 टीका'), chip: P('Register', 'रजिस्टर'), chipBg: '#F1FCF6', chipFg: '#2E9E6B', dot: '#2E9E6B', when: P('Overdue by 3 days', '3 दिन से बाकी'), whenColor: '#994242' }
+      ],
+      links: [
+        { name: 'Pooja Varma', src: P('RCH register · mobile ••••• 4321', 'RCH रजिस्टर · मोबाइल ••••• 4321') },
+        { name: 'Puja Verma', src: P('TB register · ABHA 91-•••• 7708', 'टीबी रजिस्टर · ABHA 91-•••• 7708') }
+      ]
+    };
+  }
+
+  renderVals() {
+    const t = { ...this.DICT.en, ...this.DICT[this.lang] };
+    const P = (en, hi) => this.L({ en, hi });
+    const sc = this.state.screen;
+    const s = {
+      home: sc === 'home', capProg: sc === 'capProg', capMode: sc === 'capMode', capShot: sc === 'capShot',
+      capProc: sc === 'capProc', review: sc === 'review', payoff: sc === 'payoff', identity: sc === 'identity',
+      linked: sc === 'linked', profile: sc === 'profile', plan: sc === 'plan', dash: sc === 'dash', mo: sc === 'mo'
+    };
+    const titles = {
+      home: '', capProg: t.hAdd, capMode: t.hAdd, capShot: t.hCapture, capProc: t.hAdd, review: t.hReview,
+      payoff: '', identity: t.hIdentity, linked: '', profile: t.hProfile, plan: t.hPlan, dash: t.hDash, mo: t.hMo
+    };
+    const hs = this.hs;
+    const cl = this.clarifications();
+    const idx = this.state.reviewIndex;
+    const cur = cl[Math.min(idx, cl.length - 1)];
+    const clOpts = cur.options.map((label) => ({ label, pick: () => this.answer() }));
+    const pf = this.profileData();
+    const navC = (k) => (sc === k ? '#1E14BE' : '#A8A7A2');
+    const chipFor = (kind) => kind === 'Protocol'
+      ? { chip: P('Protocol', 'नियम'), chipBg: '#EFEDFF', chipFg: '#1E14BE' }
+      : kind === 'Doctor'
+        ? { chip: P('Doctor', 'डॉक्टर'), chipBg: '#FFF0E6', chipFg: '#C35721' }
+        : { chip: P('Register', 'रजिस्टर'), chipBg: '#F1FCF6', chipFg: '#2E9E6B' };
+    const item = (id, base) => {
+      const isDone = !!this.state.done[id];
+      return { ...base, ...chipFor(base.kind), op: isDone ? '.45' : '1', btn: isDone ? t.doneMark : t.done, done: () => this.markDone(id, base.who) };
+    };
+
+    return {
+      t, s, cur: { ...cur, options: clOpts }, pf,
+      scrollRef: this.scrollRef,
+      noop: () => {},
+      setEn: () => this.setState({ lang: 'en' }),
+      setHi: () => this.setState({ lang: 'hi' }),
+      back: () => this.go(s.capMode ? 'capProg' : s.capShot ? 'capMode' : s.review ? 'home' : s.identity ? 'home' : s.capProg ? 'home' : 'home'),
+      goHome: () => this.go('home'),
+      goPlan: () => this.go('plan'),
+      goDash: () => this.go('dash'),
+      goMo: () => this.go('mo'),
+      goProfile: () => this.go('profile'),
+      goCapture: () => this.go('capProg'),
+      goConfirmQueue: () => this.setState({ reviewIndex: 0 }, () => this.go('review')),
+      goProcessing: this.startProcessing,
+      goIdentity: () => this.go('identity'),
+      idYes: () => this.go('linked'),
+      idNo: () => this.go('home'),
+      undoLink: () => this.go('home'),
+      undoDone: this.undoDone,
+      shoot: () => this.setState({ shotCount: Math.min(this.state.shotCount + 1, 4) }),
+      toggleClear: () => this.setState({ clearOpen: !this.state.clearOpen }),
+      toggleWhy: () => this.setState({ whyOpen: !this.state.whyOpen }),
+      skipOne: () => this.answer(),
+      restart: () => this.setState({ screen: 'home', homeState: 'typical', reviewIndex: 0, done: {}, snack: null, shotCount: 1, clearOpen: false, whyOpen: false }),
+
+      ui: {
+        title: titles[sc] || '',
+        showBack: !s.home,
+        showNav: s.home || s.plan || s.dash || s.profile || s.mo,
+        enBg: this.lang === 'en' ? '#1E14BE' : 'transparent', enFg: this.lang === 'en' ? '#fff' : '#595959',
+        hiBg: this.lang === 'hi' ? '#1E14BE' : 'transparent', hiFg: this.lang === 'hi' ? '#fff' : '#595959',
+        progName: P('Pregnancy & child health (RCH)', 'गर्भावस्था और शिशु स्वास्थ्य (RCH)'),
+        shotCount: this.state.shotCount + ' ' + (this.state.shotCount === 1 ? P('page', 'पन्ना') : P('pages', 'पन्ने')),
+        clearOpen: this.state.clearOpen,
+        clearHint: this.state.clearOpen ? t.clearHintOpen : t.clearHintClosed,
+        reviewProgress: (idx + 1) + ' ' + P('of', '/') + ' ' + cl.length,
+        whyOpen: this.state.whyOpen,
+        snack: this.state.snack
+      },
+
+      nav: { home: navC('home'), plan: navC('plan'), people: navC('profile'), dash: navC('dash') },
+
+      home: hs === 'fresh' ? {
+        visitsLine: P('No visits yet', 'अभी कोई दौरा नहीं'),
+        bundleLine: P('Add one register page and your plan builds itself.', 'एक रजिस्टर पन्ना जोड़ें — योजना अपने आप बन जाएगी।'),
+        addedLine: P('Nothing added yet. Start with a photo.', 'अभी कुछ नहीं जोड़ा। फ़ोटो से शुरू करें।'),
+        showConfirm: false, showAllClear: false, m1v: '0', m2v: '0'
+      } : hs === 'clear' ? {
+        visitsLine: P('4 visits · 6 patients', '4 दौरे · 6 मरीज़'),
+        bundleLine: P('1 bundled visit — 1 fewer trip today.', '1 दौरा एक साथ — आज 1 चक्कर कम।'),
+        addedLine: P('Added today: 12 patients from the RCH register', 'आज जोड़े: RCH रजिस्टर से 12 मरीज़'),
+        showConfirm: false, showAllClear: true, m1v: '141 / 214', m2v: '13'
+      } : {
+        visitsLine: P('6 visits · 9 patients', '6 दौरे · 9 मरीज़'),
+        bundleLine: P('2 bundled visits — 3 fewer trips today.', '2 दौरे एक साथ — आज 3 चक्कर कम।'),
+        addedLine: P('Added today: 12 patients from the RCH register', 'आज जोड़े: RCH रजिस्टर से 12 मरीज़'),
+        showConfirm: true,
+        confirmLine: P('1 person may be in your list twice · 3 entries were not clear', '1 व्यक्ति दो बार हो सकता है · 3 प्रविष्टियाँ साफ़ नहीं थीं'),
+        showAllClear: false, m1v: '138 / 214', m2v: '12'
+      },
+
+      programmes: [
+        { key: 'RCH', name: P('Pregnancy & child health', 'गर्भावस्था और शिशु स्वास्थ्य'), count: P('42 patients', '42 मरीज़'), color: '#6165DE', pick: () => this.go('capMode') },
+        { key: 'TB', name: P('TB', 'टीबी'), count: P('9 patients', '9 मरीज़'), color: '#EB956A', pick: () => this.go('capMode') },
+        { key: 'NCD', name: P('NCD', 'एनसीडी'), count: P('61 patients', '61 मरीज़'), color: '#54CC90', pick: () => this.go('capMode') },
+        { key: 'MH', name: P('Mental health', 'मानसिक स्वास्थ्य'), count: P('7 patients', '7 मरीज़'), color: '#BCB5F7', pick: () => this.go('capMode') }
+      ],
+
+      pickMode: () => this.go('capShot'),
+      mode: {
+        speak: P('Speak it', 'बोलकर बताएँ'), speakHint: P('Say the names and details', 'नाम और विवरण बोलें'),
+        register: P('Register page', 'रजिस्टर पन्ना'), registerHint: P('Rows of patients', 'मरीज़ों की पंक्तियाँ'),
+        notebook: P('Notebook page', 'कॉपी का पन्ना'), notebookHint: P('Your own handwriting', 'आपकी अपनी लिखावट'),
+        card: P('Patient card', 'मरीज़ का कार्ड'), cardHint: P('Pregnancy or TB card', 'गर्भावस्था या टीबी कार्ड')
+      },
+
+      registerRows: [
+        { n: '3', name: 'Sunita Rani', age: '41', village: 'Bhiwani Kh.' },
+        { n: '4', name: 'Kaml— Devi', age: '27', village: 'Bhiwani Kh.' },
+        { n: '5', name: 'Anita Devi', age: '24', village: 'Dhani Mahu' },
+        { n: '6', name: 'Reena Yadav', age: '30', village: 'Bhiwani Kh.' },
+        { n: '7', name: 'Pooja Varma', age: '32', village: 'Bhiwani Kh.' },
+        { n: '8', name: 'Sarita Devi', age: '35', village: 'Kharak Kalan' }
+      ],
+      shots: Array.from({ length: this.state.shotCount }, (_, i) => ({ label: 'p' + (i + 1) })),
+
+      proc: {
+        head: [P('Reading the page…', 'पन्ना पढ़ा जा रहा है…'), P('Found 12 patients', '12 मरीज़ मिले'), P('Found 12 patients', '12 मरीज़ मिले'), P('Almost done', 'लगभग हो गया')][this.state.proc],
+        value: [12, 45, 76, 100][this.state.proc],
+        steps: [
+          { label: P('Reading the page', 'पन्ना पढ़ा जा रहा है'), color: this.state.proc >= 1 ? '#2E9E6B' : '#1E14BE', mark: this.state.proc >= 1 ? '✓' : '•' },
+          { label: P('Found 12 patients, 9 read clearly', '12 मरीज़ मिले, 9 साफ़ पढ़े गए'), color: this.state.proc >= 2 ? '#2E9E6B' : this.state.proc >= 1 ? '#1E14BE' : '#C9C7C1', mark: this.state.proc >= 2 ? '✓' : '•' },
+          { label: P('Checking against your patient list', 'आपकी मरीज़ सूची से मिलाया जा रहा है'), color: this.state.proc >= 3 ? '#2E9E6B' : this.state.proc >= 2 ? '#1E14BE' : '#C9C7C1', mark: this.state.proc >= 3 ? '✓' : '•' }
+        ]
+      },
+
+      clearNames: [
+        { name: 'Sunita Rani, 41', meta: 'ANC 4' }, { name: 'Anita Devi, 24', meta: 'ANC 1' },
+        { name: 'Reena Yadav, 30', meta: 'ANC 2' }, { name: 'Sarita Devi, 35', meta: 'PNC' },
+        { name: 'Manju Bala, 29', meta: 'ANC 3' }, { name: 'Nisha Devi, 26', meta: 'ANC 1' },
+        { name: 'Bimla Devi, 33', meta: 'PNC' }, { name: 'Rekha Rani, 28', meta: 'ANC 2' },
+        { name: 'Santosh Devi, 31', meta: 'ANC 3' }
+      ],
+
+      idA: { name: 'Pooja Varma', chip: 'RCH' },
+      idB: { name: 'Puja Verma', chip: 'TB' },
+      idRows: [
+        { label: P('Name', 'नाम'), a: 'Pooja Varma', b: 'Puja Verma', bg: '#FFF6F0', weight: '700' },
+        { label: P('Age', 'उम्र'), a: '32', b: '32', bg: '#fff', weight: '400' },
+        { label: P('Sex', 'लिंग'), a: P('Female', 'महिला'), b: P('Female', 'महिला'), bg: '#fff', weight: '400' },
+        { label: P('Village', 'गाँव'), a: 'Bhiwani Khera', b: 'Bhiwani Kheda', bg: '#FFF6F0', weight: '700' },
+        { label: P('Identifier', 'पहचान'), a: P('Mobile ••••• 4321', 'मोबाइल ••••• 4321'), b: 'ABHA 91-•••• 7708', bg: '#FFF6F0', weight: '700' }
+      ],
+
+      planFilters: [
+        { key: 'today', label: P('Today', 'आज') }, { key: 'week', label: P('This week', 'इस हफ़्ते') },
+        { key: 'village', label: P('Bhiwani Khera', 'भिवानी खेड़ा') }
+      ].map((f) => ({
+        label: f.label, pick: () => this.setState({ planFilter: f.key }),
+        bg: this.state.planFilter === f.key ? '#1E14BE' : '#fff',
+        fg: this.state.planFilter === f.key ? '#fff' : '#2A2826',
+        border: this.state.planFilter === f.key ? '#1E14BE' : '#DEDDD8'
+      })),
+
+      plan: {
+        heading: P('Tuesday, 1 September · 6 visits, 2 bundled', 'मंगलवार, 1 सितम्बर · 6 दौरे, 2 एक साथ'),
+        bundleTitle: P('Bhiwani Khera · one house', 'भिवानी खेड़ा · एक ही घर'),
+        bundleSaving: P('3 people, 1 visit', '3 लोग, 1 दौरा'),
+        overdue: [item('od1', { who: this.L({ en: 'Kamla Devi', hi: 'कमला देवी' }), task: P('BP re-check', 'रक्तचाप दोबारा'), kind: 'Protocol', late: P('4 days late', '4 दिन देरी') })],
+        bundle: [
+          { ...item('b1', { who: this.L({ en: 'Pooja Varma', hi: 'पूजा वर्मा' }), task: P('ANC 3 check', 'तीसरी एएनसी जाँच'), kind: 'Protocol' }), age: '32', open: () => this.go('profile') },
+          { ...item('b2', { who: this.L({ en: 'Pooja Varma', hi: 'पूजा वर्मा' }), task: P('TB follow-up, month 4', 'टीबी जाँच, चौथा महीना'), kind: 'Protocol' }), age: '32', open: () => this.go('profile') },
+          { ...item('b3', { who: this.L({ en: 'Rohit', hi: 'रोहित' }), task: P('MR-1 vaccine', 'एमआर-1 टीका'), kind: 'Register' }), age: P('11 months', '11 महीने'), open: () => this.go('profile') }
+        ],
+        others: [
+          item('o1', { who: this.L({ en: 'Suresh Kumar', hi: 'सुरेश कुमार' }), task: P('Bring lab results', 'जाँच रिपोर्ट लाएँ'), kind: 'Doctor', village: 'Dhani Mahu' }),
+          item('o2', { who: this.L({ en: 'Meena Rani', hi: 'मीना रानी' }), task: P('Follow-up talk', 'फ़ॉलो-अप बातचीत'), kind: 'Register', village: 'Kharak Kalan' }),
+          item('o3', { who: this.L({ en: 'Anita Devi', hi: 'अनीता देवी' }), task: P('ANC 1 check', 'पहली एएनसी जाँच'), kind: 'Protocol', village: 'Dhani Mahu' })
+        ]
+      },
+
+      bars: [
+        { label: P('Pregnancy & child health', 'गर्भावस्था और शिशु'), value: '78%', width: '78%', phcValue: '71%', phcWidth: '71%', color: '#6165DE' },
+        { label: P('TB', 'टीबी'), value: '62%', width: '62%', phcValue: '58%', phcWidth: '58%', color: '#EB956A' },
+        { label: P('NCD', 'एनसीडी'), value: '45%', width: '45%', phcValue: '49%', phcWidth: '49%', color: '#54CC90' },
+        { label: P('Mental health', 'मानसिक स्वास्थ्य'), value: '21%', width: '21%', phcValue: '18%', phcWidth: '18%', color: '#BCB5F7' }
+      ],
+      trend: [
+        { label: P('Apr', 'अप्रैल'), value: '3', h: '22%', color: '#BCB5F7' },
+        { label: P('May', 'मई'), value: '5', h: '38%', color: '#BCB5F7' },
+        { label: P('Jun', 'जून'), value: '7', h: '54%', color: '#6165DE' },
+        { label: P('Jul', 'जुलाई'), value: '9', h: '70%', color: '#6165DE' },
+        { label: P('Aug', 'अगस्त'), value: '12', h: '94%', color: '#1E14BE' }
+      ],
+
+      moStats: [
+        { value: '1,106', label: P('Patients with one profile', 'एक प्रोफ़ाइल वाले मरीज़'), bg: '#EFEDFF', fg: '#1E14BE' },
+        { value: '1,842', label: P('Patients in the catchment', 'क्षेत्र के कुल मरीज़'), bg: '#fff', fg: '#010101' },
+        { value: '87', label: P('Overdue visits', 'बाकी दौरे'), bg: '#FFF6F0', fg: '#994242' },
+        { value: '14', label: P('Identity questions waiting', 'पहचान के सवाल बाकी'), bg: '#fff', fg: '#C35721' }
+      ],
+      subcentres: [
+        { name: 'Bhiwani Khera', anm: 'Sunita Devi', value: '64%' },
+        { name: 'Dhani Mahu', anm: 'Kavita Sharma', value: '58%' },
+        { name: 'Kharak Kalan', anm: 'Rajni Yadav', value: '71%' },
+        { name: 'Bapora', anm: 'Neelam Rani', value: '49%' }
+      ],
+
+      homeStates: [
+        { key: 'fresh', label: 'Fresh install' }, { key: 'typical', label: 'Typical day' }, { key: 'clear', label: 'All-clear day' }
+      ].map((h) => ({
+        label: h.label, pick: () => this.setState({ homeState: h.key, screen: 'home' }),
+        bg: hs === h.key ? '#EFEDFF' : '#fff', fg: hs === h.key ? '#1E14BE' : '#2A2826', border: hs === h.key ? '#1E14BE' : '#DEDDD8'
+      })),
+      profileStates: [
+        { key: 'complete', label: 'Complete — Pooja' }, { key: 'partial', label: 'Partial — Suresh' }, { key: 'single', label: 'One programme — Kamla' }
+      ].map((p) => ({
+        label: p.label, pick: () => this.setState({ profileState: p.key, screen: 'profile' }),
+        bg: this.ps === p.key ? '#EFEDFF' : '#fff', fg: this.ps === p.key ? '#1E14BE' : '#2A2826', border: this.ps === p.key ? '#1E14BE' : '#DEDDD8'
+      }))
+    };
+  }
+
+  answer() {
+    const n = this.state.reviewIndex + 1;
+    if (n >= this.clarifications().length) this.setState({ reviewIndex: 0 }, () => this.go('payoff'));
+    else this.setState({ reviewIndex: n }, () => { if (this.scrollRef.current) this.scrollRef.current.scrollTop = 0; });
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+/* Medtronic LABS — Webfonts
+   Inter (variable). The brand font per the Brand Guide:
+   "Inter is a variable font crafted & designed for screens."
+   Weights used: 300 (Light), 400 (Regular), 500 (Medium), 600/700 (Bold). */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../assets/fonts/Inter-Variable.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../assets/fonts/Inter-Italic-Variable.ttf") format("truetype");
+}

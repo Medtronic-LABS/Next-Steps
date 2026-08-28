@@ -1,0 +1,90 @@
+/* Medtronic LABS — Base layer
+   Element defaults + typography helpers built on the design tokens.
+   Loaded after the token files. */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-base);
+  letter-spacing: var(--ls-body);
+  color: var(--text-body);
+  background: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings — medium weight, tight single spacing, never all-caps by default */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: var(--fw-medium);
+  color: var(--text-strong);
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-tight);
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--fs-h1); }
+h2 { font-size: var(--fs-h2); }
+h3 { font-size: var(--fs-h3); }
+h4 { font-size: var(--fs-h4); }
+h5 { font-size: var(--fs-body); }
+
+p { margin: 0; text-wrap: pretty; }
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+a:hover { color: var(--ml-brand-hover); text-decoration: underline; }
+
+strong, b { font-weight: var(--fw-bold); }
+
+small { font-size: var(--fs-caption); }
+
+code, kbd, samp, pre { font-family: var(--font-mono); }
+
+::selection {
+  background: var(--ml-blue-30);
+  color: var(--ml-ink-900);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+}
+
+img { max-width: 100%; display: block; }
+
+/* ---- Typography helpers ------------------------------------------------- */
+.ml-display {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-display);
+  letter-spacing: var(--ls-display);
+  color: var(--text-strong);
+}
+.ml-h1 { font-size: var(--fs-h1); font-weight: var(--fw-medium); line-height: var(--lh-heading); letter-spacing: var(--ls-tight); color: var(--text-strong); }
+.ml-h2 { font-size: var(--fs-h2); font-weight: var(--fw-medium); line-height: var(--lh-heading); color: var(--text-strong); }
+.ml-h3 { font-size: var(--fs-h3); font-weight: var(--fw-medium); line-height: var(--lh-snug); color: var(--text-strong); }
+.ml-subtitle { font-size: var(--fs-subtitle); font-weight: var(--fw-regular); line-height: var(--lh-snug); color: var(--text-muted); }
+.ml-body { font-size: var(--fs-body); font-weight: var(--fw-regular); line-height: var(--lh-base); }
+.ml-body-medium { font-size: var(--fs-body); font-weight: var(--fw-medium); line-height: var(--lh-base); }
+.ml-caption { font-size: var(--fs-caption); font-weight: var(--fw-regular); line-height: var(--lh-snug); color: var(--text-muted); }
+.ml-eyebrow {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--text-brand);
+}

@@ -1,0 +1,94 @@
+/* Medtronic LABS — Color tokens
+   Source: Medtronic LABS Brand Guide (Colors, Text Hierarchy).
+   "The color palette must be applied uniformly throughout print and web."
+
+   Base palette = literal brand swatches.
+   Semantic aliases map brand colors to UI roles. */
+
+:root {
+  /* ---- Primary ---------------------------------------------------------- */
+  --ml-blue: #1E14BE;            /* MEDIUM BLUE — RGB(30,20,190). Core brand. */
+  --ml-blue-60: #2514BE;         /* Medium Blue 60% (printed reference) */
+  --ml-periwinkle: #6165DE;      /* RGB(97,101,222) — lighter brand blue */
+  --ml-seafoam: #54CC90;         /* SEAFOAM — RGB(84,204,144) */
+  --ml-terracotta: #EB956A;      /* TERRACOTTA — RGB(235,149,106) */
+  --ml-burnt-orange: #C35721;    /* BURNT ORANGE — RGB(195,87,33) */
+
+  /* ---- Secondary -------------------------------------------------------- */
+  --ml-blue-30: #BCB5F7;         /* Medium Blue 30% — RGB(188,181,247) */
+  --ml-peppermint: #98EFC4;      /* PEPPERMINT — RGB(152,239,196) */
+  --ml-peach: #FFBD9B;           /* PEACH — RGB(255,189,155) */
+  --ml-pink: #E98B8B;            /* PINK — RGB(233,139,139) */
+  --ml-merlot: #994242;          /* MERLOT — RGB(153,66,66) */
+  --ml-maroon: #751A1A;          /* MAROON — RGB(117,26,26) */
+
+  /* ---- Logomark tints (exact, sampled from the logo) -------------------- */
+  --ml-mark-periwinkle: #655AD0;
+  --ml-mark-peach: #F1B495;
+  --ml-mark-seafoam: #88DBB1;
+
+  /* ---- Neutrals --------------------------------------------------------- */
+  --ml-white: #FFFFFF;
+  --ml-offwhite: #FCFBF9;        /* OFFWHITE — RGB(252,251,249) */
+  --ml-grey: #DEDDD8;            /* GREY — RGB(222,221,216) */
+  --ml-black: #000000;
+
+  /* Ink ramp — dark text greys observed across the guide */
+  --ml-ink-900: #010101;         /* headlines / primary text */
+  --ml-ink-800: #2A2826;         /* body on light */
+  --ml-ink-600: #595959;         /* secondary text */
+  --ml-ink-500: #70706E;         /* captions / muted */
+  --ml-ink-400: #909090;         /* disabled / hint */
+
+  /* ---- Image gradient (Brand Guide: Image Gradient) --------------------- */
+  /* START #994242 100% -> FINISH #BCB5F7 30% */
+  --ml-gradient-image: linear-gradient(135deg, #994242 0%, rgba(188,181,247,0.30) 100%); /* @kind other */
+  /* Duotone overlay used on photography (merlot -> periwinkle) */
+  --ml-gradient-duotone: linear-gradient(150deg, rgba(117,26,26,0.55) 0%, rgba(97,101,222,0.55) 100%); /* @kind other */
+
+  /* ====================================================================== */
+  /* SEMANTIC ALIASES                                                       */
+  /* ====================================================================== */
+
+  /* Brand / accent */
+  --ml-brand: var(--ml-blue);
+  --ml-brand-hover: #1A11A6;     /* blue darkened ~8% for hover */
+  --ml-brand-active: #150E8C;    /* blue darkened more for press */
+  --ml-accent: var(--ml-seafoam);
+
+  /* Surfaces */
+  --surface-page: var(--ml-offwhite);
+  --surface-card: var(--ml-white);
+  --surface-sunken: var(--ml-offwhite);
+  --surface-brand: var(--ml-blue);        /* indigo hero / nav blocks */
+  --surface-brand-soft: #EFEDFF;          /* pale indigo wash */
+  --surface-muted: var(--ml-grey);
+
+  /* Text */
+  --text-strong: var(--ml-ink-900);
+  --text-body: var(--ml-ink-800);
+  --text-muted: var(--ml-ink-500);
+  --text-subtle: var(--ml-ink-400);
+  --text-on-brand: var(--ml-white);
+  --text-brand: var(--ml-blue);
+  --text-link: var(--ml-blue);
+
+  /* Borders */
+  --border-subtle: var(--ml-grey);
+  --border-default: #CFCEC8;
+  --border-strong: var(--ml-ink-800);
+  --border-brand: var(--ml-blue);
+
+  /* Feedback / status */
+  --status-success: #2E9E6B;     /* seafoam-derived, AA on white */
+  --status-success-soft: var(--ml-peppermint);
+  --status-warning: var(--ml-burnt-orange);
+  --status-warning-soft: var(--ml-peach);
+  --status-danger: var(--ml-merlot);
+  --status-danger-soft: var(--ml-pink);
+  --status-info: var(--ml-periwinkle);
+  --status-info-soft: var(--ml-blue-30);
+
+  /* Focus ring */
+  --focus-ring: var(--ml-periwinkle);
+}
