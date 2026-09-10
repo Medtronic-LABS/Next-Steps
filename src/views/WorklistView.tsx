@@ -97,10 +97,11 @@ export const WorklistView: React.FC<WorklistViewProps> = ({ onSelectPatient, onO
       flexDirection: "column",
       background: "var(--surface-page)",
       overflowY: "auto",
-      padding: "14px 16px 32px"
+      padding: "14px 16px 88px",
+      minHeight: 0
     }}>
       {/* Title */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 12, flexShrink: 0 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--ml-ink-900)", margin: 0, letterSpacing: "-0.01em" }}>
           Active Worklist
         </h1>
@@ -118,7 +119,8 @@ export const WorklistView: React.FC<WorklistViewProps> = ({ onSelectPatient, onO
         border: "1.5px solid #DEDDD8",
         borderRadius: 14,
         padding: "9px 12px",
-        marginBottom: 12
+        marginBottom: 10,
+        flexShrink: 0
       }}>
         <Search size={16} color="var(--ml-ink-400)" />
         <input
@@ -146,8 +148,17 @@ export const WorklistView: React.FC<WorklistViewProps> = ({ onSelectPatient, onO
         )}
       </div>
 
-      {/* Filter Chips Row (matching prototype) */}
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6, marginBottom: 10 }}>
+      {/* Filter Chips Row (Fixed: Protected from flex shrink and given proper height & spacing) */}
+      <div style={{
+        display: "flex",
+        gap: 8,
+        overflowX: "auto",
+        padding: "4px 1px 6px 1px",
+        marginBottom: 10,
+        flexShrink: 0,
+        minHeight: 40,
+        alignItems: "center"
+      }}>
         {[
           { key: "ALL", label: `All (${openSteps.length})` },
           { key: "OVERDUE", label: `Overdue (${overdueCount})`, isAlert: overdueCount > 0 },
@@ -161,15 +172,17 @@ export const WorklistView: React.FC<WorklistViewProps> = ({ onSelectPatient, onO
               onClick={() => setActiveFilter(chip.key as any)}
               style={{
                 flex: "none",
-                padding: "7px 14px",
+                padding: "7px 13px",
                 borderRadius: 999,
                 border: isSelected ? "1.5px solid var(--ml-blue)" : "1.5px solid #DEDDD8",
                 background: isSelected ? "#EFEDFF" : "#FFF",
                 color: isSelected ? "var(--ml-blue)" : chip.isAlert ? "#994242" : "var(--ml-ink-700)",
-                fontSize: 12.5,
+                fontSize: 12,
                 fontWeight: 700,
                 cursor: "pointer",
-                whiteSpace: "nowrap"
+                whiteSpace: "nowrap",
+                boxShadow: isSelected ? "0 1px 3px rgba(30,20,190,0.1)" : "none",
+                lineHeight: "1.2"
               }}
             >
               {chip.label}
@@ -179,8 +192,17 @@ export const WorklistView: React.FC<WorklistViewProps> = ({ onSelectPatient, onO
       </div>
 
       {/* Scope Chips Row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-        <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--ml-ink-400)" }}>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 14,
+        flexShrink: 0,
+        flexWrap: "nowrap",
+        overflowX: "auto",
+        paddingBottom: 2
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--ml-ink-400)", flexShrink: 0 }}>
           Scope
         </span>
         {[
@@ -200,7 +222,9 @@ export const WorklistView: React.FC<WorklistViewProps> = ({ onSelectPatient, onO
                 color: isSelected ? "var(--ml-ink-900)" : "var(--ml-ink-500)",
                 fontSize: 11.5,
                 fontWeight: 600,
-                cursor: "pointer"
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0
               }}
             >
               {sc.label}
@@ -291,7 +315,7 @@ export const WorklistView: React.FC<WorklistViewProps> = ({ onSelectPatient, onO
               </div>
 
               {/* Row 3: Action Buttons */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 4 }}>
                 <button
                   onClick={() => {
                     if (onOpenDialog) {
@@ -300,22 +324,24 @@ export const WorklistView: React.FC<WorklistViewProps> = ({ onSelectPatient, onO
                   }}
                   style={{
                     flex: 1,
-                    padding: "8px 12px",
+                    minWidth: 0,
+                    padding: "8px 8px",
                     borderRadius: 10,
                     background: "var(--ml-blue)",
                     color: "#FFF",
                     border: "none",
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontWeight: 700,
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: 5
+                    gap: 5,
+                    whiteSpace: "nowrap"
                   }}
                 >
-                  <Check size={14} strokeWidth={2.8} />
-                  <span>Update Status</span>
+                  <Check size={13} strokeWidth={2.8} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>Update Status</span>
                 </button>
 
                 <button
@@ -326,27 +352,31 @@ export const WorklistView: React.FC<WorklistViewProps> = ({ onSelectPatient, onO
                   }}
                   style={{
                     flex: 1,
-                    padding: "8px 12px",
+                    minWidth: 0,
+                    padding: "8px 8px",
                     borderRadius: 10,
                     background: "#E7F6EE",
                     color: "#2E9E6B",
                     border: "1px solid #D0EFE0",
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontWeight: 700,
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: 5
+                    gap: 5,
+                    whiteSpace: "nowrap"
                   }}
                 >
-                  <CheckCircle2 size={14} />
-                  <span>Confirm Arrival</span>
+                  <CheckCircle2 size={13} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>Confirm Arrival</span>
                 </button>
 
                 <a
                   href={`tel:${patient.phone}`}
+                  title={`Call ${patient.name}`}
                   style={{
+                    flex: "none",
                     padding: "8px 10px",
                     borderRadius: 10,
                     background: "#FAF9F6",

@@ -127,7 +127,8 @@ export const JourneyView: React.FC<JourneyViewProps> = ({ onBack, onGoToCapture,
       flexDirection: "column",
       background: "var(--surface-page)",
       overflowY: "auto",
-      padding: "0 0 32px"
+      padding: "0 0 88px",
+      minHeight: 0
     }}>
       {/* Blue Patient Hero Banner (matching Medtronic LABS prototype) */}
       <div style={{

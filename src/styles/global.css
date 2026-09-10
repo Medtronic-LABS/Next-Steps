@@ -48,7 +48,7 @@ body {
   position: relative;
   width: 100%;
   max-width: 416px;
-  height: 870px;
+  height: min(870px, calc(100vh - 32px));
   background: #0B0B12;
   border-radius: 48px;
   padding: 10px;

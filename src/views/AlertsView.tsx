@@ -37,10 +37,11 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ onSelectPatient, onOpenD
       flexDirection: "column",
       background: "var(--surface-page)",
       overflowY: "auto",
-      padding: "14px 16px 32px"
+      padding: "14px 16px 88px",
+      minHeight: 0
     }}>
       {/* Title & SLA Sweep */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexShrink: 0 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--ml-ink-900)", margin: 0, letterSpacing: "-0.01em" }}>
             Escalation Alerts

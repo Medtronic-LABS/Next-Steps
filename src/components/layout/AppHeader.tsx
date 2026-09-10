@@ -46,12 +46,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenDevDrawer, onOpenLau
         flexShrink: 0
       }}>
         {/* Top row: Brand + Role Pill + Controls */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, flexWrap: "nowrap" }}>
           {/* Left: Brand and clickable Role Pill */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, flexShrink: 1 }}>
             <div 
               onClick={onOpenLauncher}
-              style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", flexShrink: 0 }}
             >
               <div style={{
                 width: 24,
@@ -67,7 +67,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenDevDrawer, onOpenLau
               }}>
                 NS
               </div>
-              <span style={{ fontSize: 15, fontWeight: 800, color: "var(--ml-ink-900)", letterSpacing: "-0.01em" }}>
+              <span style={{ fontSize: 14.5, fontWeight: 800, color: "var(--ml-ink-900)", letterSpacing: "-0.01em" }}>
                 Next Steps
               </span>
             </div>
@@ -80,82 +80,88 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenDevDrawer, onOpenLau
                 display: "flex",
                 alignItems: "center",
                 gap: 4,
-                padding: "3px 8px",
+                padding: "3px 7px",
                 borderRadius: 12,
                 background: "#F4F3EE",
                 border: "1px solid #E6E4DC",
                 cursor: "pointer",
-                fontSize: 11
+                fontSize: 11,
+                minWidth: 0,
+                flexShrink: 1
               }}
             >
               <span style={{
                 background: roleConfig.accent,
                 color: "#FFF",
-                padding: "1px 5px",
+                padding: "1px 4px",
                 borderRadius: 4,
                 fontSize: 9,
-                fontWeight: 800
+                fontWeight: 800,
+                flexShrink: 0
               }}>
                 {roleConfig.short}
               </span>
               <span style={{
                 fontWeight: 600,
                 color: "var(--ml-ink-800)",
-                maxWidth: 90,
+                maxWidth: 82,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
+                whiteSpace: "nowrap",
+                fontSize: 10.5
               }}>
-                {roleConfig.facility}
+                {roleConfig.facility.replace("Sub-centre ", "SC ").replace("District Hospital, ", "DH ").replace("Village ", "")}
               </span>
-              <ChevronDown size={12} color="var(--ml-ink-500)" />
+              <ChevronDown size={11} color="var(--ml-ink-500)" style={{ flexShrink: 0 }} />
             </button>
           </div>
 
           {/* Right: Sync Status & CCE Trigger */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
             <button
               onClick={() => syncOutbox()}
               title="OpenPHC Outbox Sync Status"
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 4,
-                padding: "4px 8px",
-                borderRadius: 12,
-                fontSize: 11,
+                gap: 3,
+                padding: "4px 7px",
+                borderRadius: 10,
+                fontSize: 10.5,
                 fontWeight: 600,
                 border: "none",
                 cursor: "pointer",
                 background: queuedCount > 0 ? "#FDF0E8" : "#EBF9F2",
                 color: queuedCount > 0 ? "#C35721" : "#2E9E6B",
-                transition: "all 0.15s"
+                transition: "all 0.15s",
+                whiteSpace: "nowrap"
               }}
             >
-              <RefreshCw size={11} className={queuedCount > 0 ? "animate-spin" : ""} />
-              <span>{queuedCount > 0 ? `${queuedCount} Outbox` : "Synced"}</span>
+              <RefreshCw size={10.5} className={queuedCount > 0 ? "animate-spin" : ""} />
+              <span>{queuedCount > 0 ? `${queuedCount}` : "Synced"}</span>
             </button>
 
             <button
               onClick={onOpenDevDrawer}
               title="OpenPHC Care Coordination Engine Inspector"
               style={{
-                padding: "4px 8px",
+                padding: "4px 7px",
                 borderRadius: 8,
                 border: "1px solid #C8C4F8",
                 background: "#EFEDFF",
                 color: "var(--ml-blue)",
-                fontSize: 10.5,
+                fontSize: 10,
                 fontWeight: 800,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: 4,
-                boxShadow: "0 1px 3px rgba(30,20,190,0.08)"
+                gap: 3,
+                boxShadow: "0 1px 3px rgba(30,20,190,0.08)",
+                whiteSpace: "nowrap"
               }}
             >
-              <Radio size={12} />
-              <span>CCE Cockpit</span>
+              <Radio size={11} />
+              <span>Cockpit</span>
             </button>
           </div>
         </div>
@@ -168,7 +174,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenDevDrawer, onOpenLau
           background: "#F8F7F4",
           padding: "2px 4px",
           borderRadius: 10,
-          gap: 2
+          gap: 2,
+          flexShrink: 0
         }}>
           {(["ANC", "PNC", "NCD", "CANCER"] as const).map((svc) => (
             <button
@@ -177,10 +184,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenDevDrawer, onOpenLau
               style={{
                 flex: 1,
                 border: "none",
-                padding: "4px 0",
+                padding: "5px 0",
                 borderRadius: 8,
-                fontSize: 10,
-                fontWeight: service === svc ? 800 : 500,
+                fontSize: 10.5,
+                fontWeight: service === svc ? 800 : 600,
                 background: service === svc ? "#FFFFFF" : "transparent",
                 color: service === svc ? "var(--ml-blue)" : "var(--ml-ink-600)",
                 boxShadow: service === svc ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
@@ -195,12 +202,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenDevDrawer, onOpenLau
         </div>
       </header>
 
-      {/* Quick Role Switcher Modal */}
+      {/* Quick Role Switcher Modal (Contained inside device screen) */}
       {isRoleModalOpen && (
         <div 
           onClick={() => setIsRoleModalOpen(false)}
           style={{
-            position: "fixed",
+            position: "absolute",
             inset: 0,
             background: "rgba(0,0,0,0.45)",
             zIndex: 90,

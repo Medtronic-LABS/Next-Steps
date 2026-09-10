@@ -257,7 +257,8 @@ export const InsightsView: React.FC = () => {
         padding: "9px 14px",
         background: "#FFF",
         borderBottom: "1px solid #ECEAE4",
-        overflowX: "auto"
+        overflowX: "auto",
+        flexShrink: 0
       }}>
         {/* SC Select */}
         <div style={{ position: "relative", flex: "none" }}>
@@ -318,7 +319,7 @@ export const InsightsView: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div style={{ padding: "14px 14px 32px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ padding: "14px 14px 88px", display: "flex", flexDirection: "column", gap: 12 }}>
         {activeTab === "OVERVIEW" && (
           <>
             {/* Blue HRP Summary Card */}

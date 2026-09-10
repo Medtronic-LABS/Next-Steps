@@ -111,7 +111,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     <div 
       onClick={onClose}
       style={{
-        position: "fixed",
+        position: "absolute",
         inset: 0,
         background: "rgba(11, 11, 18, 0.45)",
         zIndex: 100,
@@ -125,7 +125,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
         className="animate-slide-up"
         style={{
           width: "100%",
-          maxHeight: "88vh",
+          maxHeight: "90%",
           background: "#FFFFFF",
           borderRadius: "26px 26px 0 0",
           padding: "16px 18px 32px 18px",
