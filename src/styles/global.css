@@ -1,0 +1,120 @@
+@import "./tokens/fonts.css";
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+@import "./tokens/base.css";
+
+:root {
+  --app-bg: #E8E6E0;
+  --surface-page: #FCFBF9;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background-color: var(--app-bg);
+  font-family: var(--font-sans);
+  color: var(--ml-ink-900);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Container for Desktop vs Native Mobile */
+.app-device-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: radial-gradient(120% 120% at 50% 0%, #F3F1EC 0%, #E4E1DB 70%);
+}
+
+@media (max-width: 500px) {
+  .app-device-wrapper {
+    padding: 0;
+    background: var(--surface-page);
+  }
+}
+
+.mobile-device-shell {
+  position: relative;
+  width: 100%;
+  max-width: 416px;
+  height: 870px;
+  background: #0B0B12;
+  border-radius: 48px;
+  padding: 10px;
+  box-shadow: 0 40px 90px -20px rgba(30, 20, 190, 0.28), 0 12px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 500px) {
+  .mobile-device-shell {
+    max-width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    background: var(--surface-page);
+  }
+}
+
+.mobile-screen-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--surface-page);
+  border-radius: 40px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 500px) {
+  .mobile-screen-content {
+    border-radius: 0;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+button {
+  font-family: inherit;
+  user-select: none;
+}
+
+button:active {
+  transform: scale(0.98);
+}
