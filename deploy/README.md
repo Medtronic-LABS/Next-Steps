@@ -1,96 +1,110 @@
-# EC2 Deployment Guide: Next Steps & OpenPHC CCE Mock
+# EC2 Multi-Domain Deployment: Next Steps & OpenPHC CCE Mock
 
-This guide covers deploying the **Next Steps Care Coordination Application** and the **OpenPHC CCE Mock Microservices** to your AWS EC2 instance (`13.232.251.63`) under the Medtronic LABS domain (`nextsteps.mdtlabs.org`).
+This guide covers deploying the **Next Steps Care Coordination Web App** and the **OpenPHC CCE Mock Engine** to the shared AWS EC2 instance (`13.232.251.63`), running safely alongside the existing `vda-admin.mdtlabs.org` and `vda-api.mdtlabs.org` services.
 
 ---
 
-## 1. Domain Recommendation for Raghu / IT
+## 1. Domain Request Email for Raghu / IT
 
-Send the following email to Raghu and your IT/DevOps team:
+Since the server already hosts `vda-admin` and `vda-api`, follow the exact same naming convention:
 
 ```text
-Subject: DNS Configuration Request for Next Steps & CCE Demo (13.232.251.63)
+Subject: Subdomain DNS Mapping for Next Steps & CCE Demo (13.232.251.63)
 
-Hi Raghu & DevOps Team,
+Hi Raghu,
 
-Please create an A-record for the Next Steps Frontline Care Coordination & CCE deployment:
+Following up on your recommendation for https and subdomains, could you please map the following subdomains for the Next Steps frontline care coordination prototype and CCE engine?
 
-• Subdomain: nextsteps.mdtlabs.org
-• Record Type: A
-• Target IP: 13.232.251.63
-• TTL: 300 seconds
+1. Web Portal:
+   • Subdomain: nextsteps.mdtlabs.org (or nextsteps-admin.mdtlabs.org)
+   • Record Type: A
+   • Target IP: 13.232.251.63
 
-We will configure Nginx with Certbot (or Caddy) to handle automatic HTTPS for both the web application and the CCE Collector API (/v1/*) under this unified subdomain.
+2. CCE Engine API:
+   • Subdomain: nextsteps-api.mdtlabs.org
+   • Record Type: A
+   • Target IP: 13.232.251.63
+
+We have configured an isolated Nginx virtual host with Certbot on the EC2 instance so it runs cleanly alongside the existing vda-admin and vda-api domains without any port or routing conflicts.
 
 Thank you,
 Sumit
 ```
 
----
-
-## 2. Architecture on EC2
-
-```
-                       Internet
-                          |
-              https://nextsteps.mdtlabs.org
-                          |
-                          v
-         +----------------------------------+
-         |     Nginx / Caddy (Port 443)     |
-         |         (Let's Encrypt)          |
-         +----------------------------------+
-                 /                  \
-                /                    \
-       [ /v1/* Reverse Proxy ]   [ /* Static SPA ]
-              |                           |
-              v                           v
-     +-----------------+         +-----------------+
-     | CCE Mock Server |         |  Vite React App |
-     | (systemd :8080) |         | (/var/www/.../dist)
-     +-----------------+         +-----------------+
-```
+> **Note**: If IT prefers creating only **one** subdomain instead of two, `nextsteps.mdtlabs.org` alone is also fully supported! Nginx automatically routes `/` to the web app and `/v1/` to the CCE API under that single subdomain.
 
 ---
 
-## 3. Quick 1-Command Deployment on EC2
+## 2. Server Architecture on EC2 (`13.232.251.63`)
 
-SSH into your EC2 instance:
+Nginx routes traffic based on the HTTP `Host` header, keeping all projects completely isolated:
+
+```
+                            EC2 (13.232.251.63)
+                                     |
+               +---------------------+---------------------+
+               |                     |                     |
+     vda-admin.mdtlabs.org   vda-api.mdtlabs.org   nextsteps.mdtlabs.org / nextsteps-api
+       (Existing VDA UI)     (Existing VDA API)           |
+                                                          +--> /     -> /var/www/next-steps/dist (Vite)
+                                                          +--> /v1/* -> 127.0.0.1:8088 (CCE Mock)
+```
+
+- **CCE Mock Port**: `8088` (Isolated from VDA's backend ports)
+- **Nginx Config**: `/etc/nginx/sites-available/nextsteps.conf` (Does not modify any `vda*` configurations)
+- **Reload**: Uses `nginx -t && systemctl reload nginx` (Zero downtime for existing VDA services)
+
+---
+
+## 3. Deploying via EC2 Terminal (Step-by-Step)
+
+In your active SSH terminal (`ubuntu@13.232.251.63`), run the following:
+
+### Step A: Check Active Ports
 ```bash
-ssh -i "$env:USERPROFILE\.ssh\id_ed25519" ubuntu@13.232.251.63
+sudo ss -tulpn | grep LISTEN
 ```
+*(Confirms what ports VDA uses so 8088 is completely free).*
 
-Then run the automated setup script:
+### Step B: Run the Setup Script
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Medtronic-LABS/Next-Steps/dev/deploy/setup-ec2.sh | bash
 ```
 
-Or clone and run:
+Or execute manually:
 ```bash
-git clone -b dev https://github.com/Medtronic-LABS/Next-Steps.git
-chmod +x Next-Steps/deploy/setup-ec2.sh
-./Next-Steps/deploy/setup-ec2.sh nextsteps.mdtlabs.org
+# Clone or pull the dev branch
+sudo git clone -b dev https://github.com/Medtronic-LABS/Next-Steps.git /var/www/next-steps || (cd /var/www/next-steps && sudo git pull origin dev)
+sudo chown -R ubuntu:ubuntu /var/www/next-steps
+cd /var/www/next-steps
+
+# Install and build
+npm install
+npm run build
+
+# Run deployment script
+chmod +x deploy/setup-ec2.sh
+./deploy/setup-ec2.sh nextsteps.mdtlabs.org nextsteps-api.mdtlabs.org
 ```
 
 ---
 
-## 4. Enabling HTTPS with Certbot (Once DNS is mapped)
+## 4. Activating HTTPS via Certbot (After DNS is Configured)
 
-Once Raghu confirms `nextsteps.mdtlabs.org` points to `13.232.251.63`, run:
+Once Raghu or IT confirms the DNS records are live:
 
 ```bash
-sudo certbot --nginx -d nextsteps.mdtlabs.org
+sudo certbot --nginx -d nextsteps.mdtlabs.org -d nextsteps-api.mdtlabs.org
 ```
+*(Certbot will issue and attach SSL certificates specifically for Next Steps without touching VDA's SSL certificates).*
 
 ---
 
-## 5. Connecting the Android App to the Hosted CCE
+## 5. Mobile App Integration
 
-In the Android mobile application:
-1. Open the app and tap **`CCE Cockpit`** in the header.
-2. Navigate to Tab 4 (**`Outbox Queue`**).
-3. Set the Collector URL to:
-   ```text
-   https://nextsteps.mdtlabs.org/v1/events
-   ```
-4. Now any referral created or confirmed on the physical Android phone automatically syncs with the live hosted CCE engine!
+In the compiled Android APK on the phone:
+1. Open **Next Steps** and tap **`CCE Cockpit`** in the header.
+2. Go to **`Outbox Queue`** (Tab 4).
+3. The app comes pre-configured with `https://nextsteps.mdtlabs.org/v1/events` (or `https://nextsteps-api.mdtlabs.org/v1/events`).
+4. Tap **Test Ping** to confirm live cloud round-trip!
+
