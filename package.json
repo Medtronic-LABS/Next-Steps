@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "node cce-local-mock.cjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "cap:sync": "npm run build && npx cap sync",

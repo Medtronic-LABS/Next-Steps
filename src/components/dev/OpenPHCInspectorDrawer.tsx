@@ -1012,7 +1012,7 @@ export const OpenPHCInspectorDrawer: React.FC<OpenPHCInspectorDrawerProps> = ({ 
               gap: 8
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, color: "#94A3B8" }}>Collector URL:</span>
+                <span style={{ fontSize: 11, color: "#94A3B8", flexShrink: 0 }}>Collector:</span>
                 <input
                   type="text"
                   value={endpoint}
@@ -1020,6 +1020,7 @@ export const OpenPHCInspectorDrawer: React.FC<OpenPHCInspectorDrawerProps> = ({ 
                     setEndpoint(e.target.value);
                     outboxManager.setEndpoint(e.target.value);
                   }}
+                  placeholder="https://..."
                   style={{
                     flex: 1,
                     background: "#0E131F",
@@ -1027,10 +1028,40 @@ export const OpenPHCInspectorDrawer: React.FC<OpenPHCInspectorDrawerProps> = ({ 
                     borderRadius: 6,
                     padding: "4px 8px",
                     color: "#E2E8F0",
-                    fontSize: 11,
+                    fontSize: 10.5,
                     fontFamily: "ui-monospace, monospace"
                   }}
                 />
+              </div>
+
+              {/* Quick Preset Endpoint Buttons */}
+              <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
+                {[
+                  { label: "🌐 Live Public Tunnel", url: "https://honest-otters-arrive.loca.lt/v1/events" },
+                  { label: "☁️ Render Cloud", url: "https://next-steps-cce.onrender.com/v1/events" },
+                  { label: "💻 Localhost:8080", url: "http://localhost:8080/v1/events" },
+                ].map((preset) => (
+                  <button
+                    key={preset.url}
+                    onClick={() => {
+                      setEndpoint(preset.url);
+                      outboxManager.setEndpoint(preset.url);
+                    }}
+                    style={{
+                      padding: "3px 8px",
+                      borderRadius: 6,
+                      border: endpoint === preset.url ? "1px solid #38BDF8" : "1px solid #28334E",
+                      background: endpoint === preset.url ? "#16314A" : "#1A243B",
+                      color: endpoint === preset.url ? "#38BDF8" : "#94A3B8",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
               </div>
 
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>

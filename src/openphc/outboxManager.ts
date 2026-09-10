@@ -5,7 +5,10 @@ export type OutboxListener = (events: OutboxEvent[]) => void;
 
 class OutboxManager {
   private listeners: Set<OutboxListener> = new Set();
-  private cceEndpoint: string = "http://localhost:8080/v1/events";
+  private cceEndpoint: string = 
+    (typeof window !== "undefined" && window.localStorage.getItem("openphc_cce_endpoint")) ||
+    (import.meta.env?.VITE_CCE_ENDPOINT as string) ||
+    "https://honest-otters-arrive.loca.lt/v1/events";
 
   public subscribe(listener: OutboxListener): () => void {
     this.listeners.add(listener);
@@ -63,9 +66,10 @@ class OutboxManager {
           method: "POST",
           headers: {
             "Content-Type": "application/cloudevents+json",
+            "Bypass-Tunnel-Reminder": "true",
           },
           body: JSON.stringify(item.payload),
-          signal: AbortSignal.timeout(2500),
+          signal: AbortSignal.timeout(4000),
         });
 
         if (res.ok) {
@@ -108,6 +112,9 @@ class OutboxManager {
 
   public setEndpoint(url: string) {
     this.cceEndpoint = url;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("openphc_cce_endpoint", url);
+    }
   }
 
   public getEndpoint(): string {
