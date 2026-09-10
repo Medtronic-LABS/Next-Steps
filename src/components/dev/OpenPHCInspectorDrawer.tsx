@@ -1037,6 +1037,7 @@ export const OpenPHCInspectorDrawer: React.FC<OpenPHCInspectorDrawerProps> = ({ 
               {/* Quick Preset Endpoint Buttons */}
               <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
                 {[
+                  { label: "🏥 nextsteps.mdtlabs.org", url: "https://nextsteps.mdtlabs.org/v1/events" },
                   { label: "🌐 Live Public Tunnel", url: "https://honest-otters-arrive.loca.lt/v1/events" },
                   { label: "☁️ Render Cloud", url: "https://next-steps-cce.onrender.com/v1/events" },
                   { label: "💻 Localhost:8080", url: "http://localhost:8080/v1/events" },

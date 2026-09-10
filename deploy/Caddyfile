@@ -1,0 +1,16 @@
+# Caddy Configuration for Next Steps & CCE Mock Service
+# Place at: /etc/caddy/Caddyfile
+
+nextsteps.mdtlabs.org {
+    # CCE Backend Microservices & Collector
+    handle /v1/* {
+        reverse_proxy 127.0.0.1:8080
+    }
+
+    # Next Steps Web App Frontend (Vite React PWA)
+    handle {
+        root * /var/www/next-steps/dist
+        try_files {path} /index.html
+        file_server
+    }
+}
