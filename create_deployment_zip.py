@@ -379,7 +379,7 @@ if command -v nginx &> /dev/null; then
     sudo rm -f /etc/nginx/sites-enabled/nextsteps.conf /etc/nginx/sites-available/nextsteps.conf
 
     # Check if Let's Encrypt certificates exist
-    if [ -f /etc/letsencrypt/live/nextsteps-admin.mdtlabs.org/fullchain.pem ]; then
+    if sudo test -f /etc/letsencrypt/live/nextsteps-admin.mdtlabs.org/fullchain.pem; then
         echo "🔒 Active Let's Encrypt certificate found! Enabling HTTPS virtual host..."
         sudo cp $TARGET_DIR/nginx-ssl.conf /etc/nginx/sites-available/next-steps
     else
