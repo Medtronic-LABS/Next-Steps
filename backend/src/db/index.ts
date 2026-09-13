@@ -14,13 +14,17 @@ let dbInstance: any;
 try {
   const Database = require('better-sqlite3');
   dbInstance = new Database(dbPath);
-} catch (e1) {
+  console.log(`[Database] SQLite connected via better-sqlite3 at: ${dbPath}`);
+} catch (e1: any) {
   try {
     const { DatabaseSync } = require('node:sqlite');
     dbInstance = new DatabaseSync(dbPath);
-  } catch (e2) {
-    console.error('Fatal: Could not initialize SQLite driver (better-sqlite3 or node:sqlite).', e1, e2);
-    throw new Error('SQLite driver initialization failed');
+    console.log(`[Database] SQLite connected via node:sqlite at: ${dbPath}`);
+  } catch (e2: any) {
+    console.error('Fatal: Could not initialize SQLite driver.');
+    console.error('better-sqlite3 error:', e1?.message || e1);
+    console.error('node:sqlite error:', e2?.message || e2);
+    throw new Error(`SQLite driver initialization failed: ${e1?.message || ''}`);
   }
 }
 

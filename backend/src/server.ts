@@ -28,6 +28,10 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.get('/api/cce/status', (req, res) => {
+  res.redirect(307, '/api/admin/status');
+});
+
 // Initialize database schema and initial seed data
 console.log('[Database] Initializing Next-Steps data store...');
 initDatabase();
