@@ -1,0 +1,21 @@
+{
+  "short_name": "Next Steps",
+  "name": "Next Steps for Maternal Care",
+  "icons": [
+    {
+      "src": "/assets/logo-mark.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/assets/logo-mark.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#1E14BE",
+  "theme_color": "#1E14BE",
+  "display": "standalone",
+  "orientation": "portrait"
+}

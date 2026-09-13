@@ -1,0 +1,54 @@
+﻿services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nextsteps-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: nextsteps_db
+      POSTGRES_USER: nextsteps_user
+      POSTGRES_PASSWORD: nextsteps_secure_password_123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextsteps_user -d nextsteps_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nextsteps-backend
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://nextsteps_user:nextsteps_secure_password_123@postgres:5432/nextsteps_db
+      - CCE_KEYCLOAK_TOKEN_URL=https://keycloak.cce.mdtlabs.org/realms/cce/protocol/openid-connect/token
+      - CCE_CLIENT_ID=nextstep-emitter
+      - CCE_CLIENT_SECRET=ZsFq3nfpMefiN82WteylKeLECwS3Z4sw
+      - CCE_GATEWAY_URL=https://api.cce.mdtlabs.org/v1/events
+      - CCE_SOURCE_SYSTEM=nextsteps/rewa-district
+      - OUTBOX_POLL_INTERVAL_MS=3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  admin-panel:
+    build:
+      context: ./admin-panel
+      dockerfile: Dockerfile
+    container_name: nextsteps-admin-panel
+    restart: always
+    ports:
+      - "5174:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

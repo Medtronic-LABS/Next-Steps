@@ -1,0 +1,9 @@
+{
+  "appId": "org.medtroniclabs.nextsteps",
+  "appName": "Next Steps",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

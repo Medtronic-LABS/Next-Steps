@@ -1,0 +1,120 @@
+@import './tokens/fonts.css';
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/base.css';
+@import './styles.css';
+
+:root {
+  --app-max-width: 480px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #E8E6E0;
+  font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(120% 120% at 50% 0%, #F3F1EC 0%, #E4E1DB 70%);
+}
+
+.mobile-app-shell {
+  position: relative;
+  width: 100%;
+  max-width: var(--app-max-width);
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  background: var(--surface-page);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px -15px rgba(30, 20, 190, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 480px) {
+  #root {
+    background: var(--surface-page);
+  }
+  .mobile-app-shell {
+    max-width: 100%;
+    box-shadow: none;
+    height: 100dvh;
+  }
+}
+
+a {
+  color: var(--ml-blue);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--ml-brand-hover);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.qn-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@keyframes nsSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes nsFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mcWave {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
+@keyframes mcPulse {
+  0% { box-shadow: 0 0 0 0 rgba(153, 66, 66, 0.45); }
+  70% { box-shadow: 0 0 0 16px rgba(153, 66, 66, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(153, 66, 66, 0); }
+}
+
+@keyframes mcDots {
+  0%, 80%, 100% { opacity: 0.25; }
+  40% { opacity: 1; }
+}
+
+@keyframes nsToast {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+button {
+  font-family: inherit;
+  user-select: none;
+}

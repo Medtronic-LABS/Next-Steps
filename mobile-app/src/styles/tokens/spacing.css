@@ -1,0 +1,64 @@
+/* Medtronic LABS — Spacing, radius, shadow, layout tokens.
+   Spacing is an 8px-based scale (with 4px half-steps). The brand's
+   iconography sits on a 24x24 grid; UI rhythm follows the same 8px logic. */
+
+:root {
+  /* ---- Spacing (8px base) ---------------------------------------------- */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+  --space-9: 64px;
+  --space-10: 80px;
+  --space-11: 96px;
+  --space-12: 128px;
+
+  /* ---- Radius ----------------------------------------------------------- */
+  /* The brand favours soft, generous curves — cards, image "soft curved
+     edges", and pill buttons. */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-pill: 999px;
+  --radius-image: 20px;     /* "Images also have a soft curved edge." */
+
+  /* ---- Border widths ---------------------------------------------------- */
+  --border-thin: 1px;
+  --border-medium: 1.5px;
+  --border-thick: 2px;
+
+  /* ---- Elevation -------------------------------------------------------- */
+  /* Soft, low-contrast shadows tinted toward the brand indigo. */
+  --shadow-xs: 0 1px 2px rgba(30, 20, 190, 0.06);
+  --shadow-sm: 0 2px 8px rgba(30, 20, 190, 0.08);
+  --shadow-md: 0 8px 24px rgba(30, 20, 190, 0.10);
+  --shadow-lg: 0 16px 48px rgba(30, 20, 190, 0.14);
+  --shadow-focus: 0 0 0 3px rgba(97, 101, 222, 0.40);
+
+  /* ---- Icon sizing (24px grid per Brand Guide) -------------------------- */
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-base: 24px;        /* default — the brand icon grid */
+  --icon-lg: 32px;
+  --icon-stroke: 1.75;      /* @kind other */
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);     /* @kind other */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);         /* @kind other */
+  --duration-fast: 120ms;   /* @kind other */
+  --duration-base: 200ms;   /* @kind other */
+  --duration-slow: 320ms;   /* @kind other */
+
+  /* ---- Layout ----------------------------------------------------------- */
+  --container-sm: 640px;    /* @kind spacing */
+  --container-md: 960px;    /* @kind spacing */
+  --container-lg: 1200px;   /* @kind spacing */
+  --container-xl: 1320px;   /* @kind spacing */
+}

@@ -32,3 +32,15 @@ android/local.properties
 android/captures/
 *.apk
 *.aab
+
+# Database & Environment files
+.env
+.env*.local
+*.db
+*.sqlite
+*.sqlite3
+data/
+backend/data/
+*.zip
+__pycache__/
+.tempmediaStorage/

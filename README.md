@@ -289,6 +289,94 @@ OPENPHC INGESTION FLOW TEST
 
 ---
 
+
+---
+
+## Live Deployed CCE Integration & Architecture
+
+This repository is integrated with the live deployed **OpenPHC Care Coordination Engine (CCE)** environment and contains a complete enterprise multi-tier architecture:
+
+```
+                                +-----------------------------------+
+                                |    Live Keycloak (MDT LABS CCE)   |
+                                | keycloak.cce.mdtlabs.org/realms/cce|
+                                +-----------------+-----------------+
+                                                  | OAuth2 Client Credentials
+                                                  v
++-----------------------+               +-------------------+               +------------------------------+
+| Next-Steps Mobile /   |  /api/sync/   | Next-Steps Backend| CloudEvents   | Live CCE Event Gateway       |
+| Frontline PWA Client  | ------------> | (Express + TS)    | ------------> | api.cce.mdtlabs.org/v1/events|
++-----------------------+    Push/Pull  | Reliable Outbox   | 1.0 (HTTP 202)| (Collector Service)          |
+                                        +---------+---------+               +------------------------------+
++-----------------------+                         |
+| Next-Steps Admin &    |   /api/admin/           |
+| Supervisory Portal    | ------------------------+
+| (React 18 + Vite)     |
++-----------------------+
+```
+
+### 1. Live CCE Endpoints & Credentials
+- **Keycloak Token Endpoint**: `https://keycloak.cce.mdtlabs.org/realms/cce/protocol/openid-connect/token`
+  - Grant Type: `client_credentials`
+  - Client ID: `nextstep-emitter`
+  - Client Secret: `ZsFq3nfpMefiN82WteylKeLECwS3Z4sw`
+- **CCE Gateway Ingestion Endpoint**: `POST https://api.cce.mdtlabs.org/v1/events`
+  - Content-Type: `application/cloudevents+json`
+  - Format: CloudEvents 1.0 wrapping FHIR R4 `Task` resources
+  - Contract: OpenPHC `cce-collector-service` v2.0 API reference
+
+### 2. Multi-Tier Directory Layout
+- **`/` (Root)**: Frontline mobile & web application with offline Dexie.js store and in-app OpenPHC Event Inspector drawer.
+- **`/backend`**: Express + TypeScript service handling:
+  - Keycloak OAuth2 token management with automatic proactive refresh
+  - Reliable DB Outbox table with exponential backoff retry worker
+  - Frontline sync APIs (`/api/sync/push`, `/api/sync/pull`)
+  - Admin & Telemetry APIs (`/api/cce/status`, `/api/admin/...`)
+  - PostgreSQL & SQLite dual database support
+- **`/admin-panel`**: React 18 + Vite Care Coordination Admin & Supervisory Portal:
+  - CCE Telemetry Cockpit (Keycloak token status, CCE API latency, live outbox feed)
+  - 7 Personas & Permissions matrix (ASHA, ANM, Staff Nurse, MO, High-Risk Specialist, Care Coordinator, Nodal)
+  - Facilities & Catchment hierarchy with bulk CSV onboarding
+  - SLA Configuration per catchment level (Sub-centre, PHC, CHC, DH)
+  - Care Cascade & Supervisory drop-off analytics
+  - Immutable Audit Logs
+- **`/mobile-app`**: Native Android / Capacitor packaged frontline client.
+- **`/docs`**: Personas, permissions, and admin panel requirements documentation.
+- **`docker-compose.yml`**: Full-stack container orchestration for PostgreSQL, Backend, and Admin Panel.
+
+### 3. Quickstart with Docker Compose
+```bash
+# Start PostgreSQL, Backend, and Admin Panel
+docker compose up -d
+
+# Verify services:
+# - Admin Panel: http://localhost:5174
+# - Backend API & Health: http://localhost:4000/api/cce/status
+```
+
+### 4. Running Backend & Admin Locally
+```bash
+# Backend (Port 4000)
+cd backend
+npm install
+npm run dev
+
+# Admin Panel (Port 5174)
+cd admin-panel
+npm install
+npm run dev
+```
+
+### 5. Verified Live Event Ingestion
+Live ingestion into `https://api.cce.mdtlabs.org/v1/events` was verified with real tokens:
+```json
+{
+  "status": "ACCEPTED",
+  "ackEventId": "01a09a7c-1f41-755e-9ad1-95da2987e62d",
+  "httpStatus": 202
+}
+```
+
 ## License
 
 MIT

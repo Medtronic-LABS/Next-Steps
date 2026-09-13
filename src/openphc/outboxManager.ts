@@ -8,7 +8,7 @@ class OutboxManager {
   private cceEndpoint: string = 
     (typeof window !== "undefined" && window.localStorage.getItem("openphc_cce_endpoint")) ||
     (import.meta.env?.VITE_CCE_ENDPOINT as string) ||
-    "https://honest-otters-arrive.loca.lt/v1/events";
+    "https://api.cce.mdtlabs.org/v1/events";
 
   public subscribe(listener: OutboxListener): () => void {
     this.listeners.add(listener);
