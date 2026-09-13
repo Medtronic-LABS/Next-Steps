@@ -1,9 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-// Use node:sqlite which is built into Node 22+
-// @ts-ignore
-import { DatabaseSync } from 'node:sqlite';
 import { config } from '../config.js';
+
 
 const dataDir = path.resolve(process.cwd(), 'data');
 if (!fs.existsSync(dataDir)) {
@@ -11,10 +9,26 @@ if (!fs.existsSync(dataDir)) {
 }
 
 const dbPath = path.resolve(process.cwd(), config.sqliteDbPath);
-export const db = new DatabaseSync(dbPath);
+
+let dbInstance: any;
+try {
+  const Database = require('better-sqlite3');
+  dbInstance = new Database(dbPath);
+} catch (e1) {
+  try {
+    const { DatabaseSync } = require('node:sqlite');
+    dbInstance = new DatabaseSync(dbPath);
+  } catch (e2) {
+    console.error('Fatal: Could not initialize SQLite driver (better-sqlite3 or node:sqlite).', e1, e2);
+    throw new Error('SQLite driver initialization failed');
+  }
+}
+
+export const db = dbInstance;
 
 // Enable WAL mode for high concurrency
 db.exec('PRAGMA journal_mode = WAL;');
+
 
 export function initDatabase() {
   db.exec(`
