@@ -11,6 +11,17 @@ import templateHtml from './data/template.raw.html?raw';
 
 const renderTemplate = compileTemplate(templateHtml);
 
+const getSyncEndpoint = () => {
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      return `${window.location.protocol}//${window.location.host}/api/sync/push`;
+    }
+    const custom = window.localStorage.getItem('nextsteps_sync_endpoint');
+    if (custom) return custom;
+  }
+  return 'http://13.232.251.63:4000/api/sync/push';
+};
+
 export default class App extends React.Component<any, any> {
   state = { screen:'launcher', role:null, folder:null, tab:null, svc:'ANC', selId:null, query:'', filter:'ALL', scopeFilter:'FACILITY', dialog:null, cap:null, toast:null, women:null, acked:null,
     reg:{name:'', phone:'', village:VILLAGES[0].name, abha:'', status:'HIGH', wa:true} };
@@ -503,7 +514,7 @@ export default class App extends React.Component<any, any> {
     this.setState({women:[woman, ...this.state.women], screen:'journey', selId:id, reg:null});
     this.toast(woman.name+' registered · linked ASHA '+asha);
     try {
-      fetch('http://localhost:4000/api/sync/push', {
+      fetch(getSyncEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patients: [woman], actorId: this.state.role, actorName: ROLES[this.state.role]?.name || this.state.role })
@@ -561,7 +572,7 @@ export default class App extends React.Component<any, any> {
     this.toast(done?(lower?'Closed below the referred level · flagged':'Step closed · visible to every level'):'Outcome recorded · step stays open');
     try {
       const stepFound = this.stepById(d.stepId);
-      fetch('http://localhost:4000/api/sync/push', {
+      fetch(getSyncEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -682,7 +693,7 @@ export default class App extends React.Component<any, any> {
     this.setState({women:ws, screen:'journey', cap:null});
     this.toast(fresh.length+' step'+(fresh.length>1?'s':'')+' saved · reminders scheduled');
     try {
-      fetch('http://localhost:4000/api/sync/push', {
+      fetch(getSyncEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
