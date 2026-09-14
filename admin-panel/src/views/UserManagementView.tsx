@@ -85,6 +85,8 @@ export const UserManagementView: React.FC = () => {
       dh_sn: 'DH Staff Nurse / Oncology',
       tert_sn: 'Tertiary Staff Nurse',
       phc_mo: 'PHC Medical Officer (MO)',
+      chc_mo: 'CHC Medical Officer (MO)',
+      dh_mo: 'District Programme Officer (DPO)',
       dpo: 'District Programme Officer (DPO)',
       admin: 'System Administrator',
     };
@@ -206,6 +208,7 @@ export const UserManagementView: React.FC = () => {
                     <option value="dh_sn">DH Staff Nurse / Oncology Coordinator</option>
                     <option value="tert_sn">Tertiary Staff Nurse</option>
                     <option value="phc_mo">PHC Medical Officer (Supervisory)</option>
+                    <option value="chc_mo">CHC Medical Officer (Block Supervisory)</option>
                     <option value="dpo">District Programme Officer (DPO)</option>
                   </select>
                 </div>

@@ -1,28 +1,4 @@
-// @ts-nocheck
-import React from 'react';
-import {
-  TODAY, TODAY_ISO, MON, CAT, LVL, LADDER, FUP, AVA, OPTMETA,
-  ROLES, capUsers, INS_LOGINS, MC_LOGINS, FOLDERS, SVC, SVC_KEYS, DATED,
-  INS_SCOPES, INS_SC, INS_BASE, INS_SVC, INS_PEOPLE, INS_PEOPLE_SVC, TABMETA,
-  MC_SRC, MC_LIB, MC_MODULES, MC_ASK, uid, VILLAGES
-} from './data/constants';
-import { compileTemplate } from './runtime/renderer';
-import templateHtml from './data/template.raw.html?raw';
-
-const renderTemplate = compileTemplate(templateHtml);
-
-const getSyncEndpoint = () => {
-  if (typeof window !== 'undefined') {
-    const custom = window.localStorage.getItem('nextsteps_sync_endpoint');
-    if (custom) return custom;
-    if (window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      return `${window.location.protocol}//${window.location.host}/api/sync/push`;
-    }
-  }
-  return 'https://nextsteps-api.mdtlabs.org/api/sync/push';
-};
-
-export default class App extends React.Component<any, any> {
+class Component extends DCLogic {
   state = { screen:'launcher', role:null, folder:null, tab:null, svc:'ANC', selId:null, query:'', filter:'ALL', scopeFilter:'FACILITY', dialog:null, cap:null, toast:null, women:null, acked:null,
     reg:{name:'', phone:'', village:VILLAGES[0].name, abha:'', status:'HIGH', wa:true} };
 
@@ -513,13 +489,6 @@ export default class App extends React.Component<any, any> {
       nbRisk:(k==='PNC' && r.nbStatus==='high'), sc:ROLES[this.state.role].facility, asha, abha:r.abha||'', consent:!!r.consent, steps:[]};
     this.setState({women:[woman, ...this.state.women], screen:'journey', selId:id, reg:null});
     this.toast(woman.name+' registered · linked ASHA '+asha);
-    try {
-      fetch(getSyncEndpoint(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patients: [woman], actorId: this.state.role, actorName: ROLES[this.state.role]?.name || this.state.role })
-      }).catch(e => console.log('Sync offline:', e));
-    } catch(e) {}
   }
   cancerCond(r){
     const L={ORAL:'Oral', BREAST:'Breast', CERVICAL:'Cervical', OTHER:'Other'};
@@ -551,8 +520,9 @@ export default class App extends React.Component<any, any> {
   confirmClose(){
     const d=this.state.dialog;
     let stepLevel=null; this.allSteps().forEach(({s})=>{ if(s.id===d.stepId) stepLevel=s.level; });
-    const isOwnFacility = (this.state.role!=='asha') && (stepLevel===ROLES[this.state.role]?.level);
-    const ready = isOwnFacility ? !!d.outcome : (d.outcome==='NO_CONTACT' || (d.outcome && d.src));
+    const ownAam = this.state.role==='anm' && stepLevel==='SUBCENTRE';
+    const facility = (this.state.role!=='asha' && this.state.role!=='anm') || ownAam;
+    const ready = facility ? !!d.outcome : (d.outcome==='NO_CONTACT' || (d.outcome && d.src));
     if(!ready) return;
     this.applyClose(d.stepId, d.outcome, d.src);
   }
@@ -562,34 +532,13 @@ export default class App extends React.Component<any, any> {
     const done=d.outcome==='COMPLETED';
     // Care recorded on someone else's behalf (elsewhere) — the closer's own level is not where care happened
     const elsewhere = ['AT_REFERRED_FACILITY','OTHER_PUBLIC_FACILITY','PRIVATE_PROVIDER'].indexOf(d.src)>-1;
-    const clev = done && !elsewhere ? role.level : (d.src === 'DELIVERED_ON_SITE' ? role.level : null);
+    const clev = done && !elsewhere ? role.level : null;
     const ws=this.state.women.map(w=>({...w, steps:w.steps.map(s=> s.id!==d.stepId ? s
       : {...s, status:done?'DONE':'OPEN', outcome:d.outcome, cdate:done?TODAY_ISO:null, csrc:d.src||d.outcome, clevel:clev, cby:role.short+' · '+role.facility})}));
     let lower=false;
     this.allSteps().forEach(({s})=>{ if(s.id===d.stepId && done && clev && LADDER.indexOf(clev)<LADDER.indexOf(s.level)) lower=true; });
     this.setState({women:ws, dialog:null});
     this.toast(done?(lower?'Closed below the referred level · flagged':'Step closed · visible to every level'):'Outcome recorded · step stays open');
-    try {
-      const stepFound = this.stepById(d.stepId);
-      fetch(getSyncEndpoint(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          steps: [{
-            id: d.stepId,
-            patient_id: stepFound ? stepFound.w.id : 'Patient/w1',
-            status: done ? 'DONE' : 'OPEN',
-            closed_at: done ? TODAY_ISO : null,
-            closed_source: d.src || d.outcome,
-            closed_level: clev,
-            closed_by: role.short + ' · ' + role.facility,
-            downgraded: lower ? 1 : 0
-          }],
-          actorId: this.state.role,
-          actorName: role.name
-        })
-      }).catch(e => console.log('Sync offline:', e));
-    } catch(e) {}
   }
 
   openSms(stepId){ this.setState({dialog:{type:'sms', stepId}}); }
@@ -691,23 +640,11 @@ export default class App extends React.Component<any, any> {
     const ws=this.state.women.map(w=> w.id!==c.womanId ? w : {...w, steps:[...w.steps, ...fresh]});
     this.setState({women:ws, screen:'journey', cap:null});
     this.toast(fresh.length+' step'+(fresh.length>1?'s':'')+' saved · reminders scheduled');
-    try {
-      fetch(getSyncEndpoint(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          steps: fresh.map(f => ({ ...f, patient_id: c.womanId })),
-          actorId: role,
-          actorName: ROLES[role]?.name || role
-        })
-      }).catch(e => console.log('Sync offline:', e));
-    } catch(e) {}
   }
 
   chip(active, tone){ return active ? {bg:tone||'#1E14BE', fg:'#fff', bd:tone||'#1E14BE'} : {bg:'#fff', fg:'#2A2826', bd:'#DEDDD8'}; }
 
   stepVM(s, w){
-    const role = ROLES[this.state.role] || {};
     const cm=CAT[s.cat], lm=LVL[s.level];
     const open=s.status==='OPEN';
     const isRef=s.cat==='REFERRAL';
@@ -720,16 +657,9 @@ export default class App extends React.Component<any, any> {
       dueLabel='Completed '+this.fmt(s.cdate);
       dueColor='#1B6B47';
     } else if(isRef){
-      const isTarget = s.level === role.level && s.owner !== this.state.role;
-      const d = this.diff(s.sent);
-      if(isTarget){
-        const fromRole = s.owner ? (ROLES[s.owner]?.short || this.facShort(ROLES[s.owner]?.level) || 'frontline') : 'frontline';
-        dueLabel = 'Referred from ' + fromRole + (d>0 ? (' · ' + d + 'd ago') : ' · today');
-        dueColor = '#1E14BE';
-      } else {
-        dueLabel = d>=7 ? ('Awaiting '+lm.label+' · '+d+' days') : ('Sent '+this.fmt(s.sent)+' · awaiting '+lm.label);
-        dueColor = d>=7 ? '#994242' : '#6165DE';
-      }
+      const d=this.diff(s.sent);
+      dueLabel = d>=7 ? ('Awaiting '+lm.label+' · '+d+' days') : ('Sent '+this.fmt(s.sent)+' · awaiting '+lm.label);
+      dueColor = d>=7 ? '#994242' : '#6165DE';
     } else if(!s.due){
       const d=this.diff(s.sent||TODAY_ISO);
       dueLabel = d>=7 ? ('Not done yet · '+d+' days at '+lm.label) : ('Added '+this.fmt(s.sent||TODAY_ISO)+' · at '+lm.label);
@@ -747,7 +677,7 @@ export default class App extends React.Component<any, any> {
       downgraded, downNote:downgraded?('Closed at '+this.facShort(cl)+' in place of '+this.facShort(s.level)):''};
   }
 
-  hasScope(){ return ['anm','phc_sn','chc_sn','phc_mo','chc_mo','dh_mo'].indexOf(this.state.role)>-1; }
+  hasScope(){ return ['anm','phc_sn','chc_sn'].indexOf(this.state.role)>-1; }
   scope(){ return this.hasScope() ? (this.state.scopeFilter||'FACILITY') : 'FACILITY'; }
   inCatchment(w){
     const role=ROLES[this.state.role];
@@ -759,7 +689,7 @@ export default class App extends React.Component<any, any> {
     const rf=this.state.riskFilter||'ALL';
     const isAsha=this.state.role==='asha';
     const sc=this.scope();
-    const hiOnly=['dh_sn','tert_sn','dh_mo'].indexOf(this.state.role)>-1;
+    const hiOnly=['dh_sn','tert_sn'].indexOf(this.state.role)>-1;
     const mine=this.allSteps().filter(({s,w})=> (sc==='CATCHMENT'
         ? this.inCatchment(w)
         : hiOnly
@@ -772,15 +702,10 @@ export default class App extends React.Component<any, any> {
             : this.svc()==='NCD'
               ? (rf==='DM' ? /diabet/i.test(w.cond||'') : rf==='HTN' ? /hyperten/i.test(w.cond||'') : true)
               : (rf==='HRP' ? w.risk==='HRP' : w.risk!=='HRP'))));
-    const b={overdue:[],today:[],incoming:[],outbound:[],pending:[],soon:[],unreach:[],closed:[]};
+    const b={overdue:[],today:[],incoming:[],pending:[],soon:[],unreach:[],closed:[]};
     mine.forEach(({s,w})=>{
       if(s.status==='DONE'){ if(s.cdate===TODAY_ISO) b.closed.push({s,w}); return; }
-      if(s.cat==='REFERRAL'){
-        const isIncoming = (s.level===role.level && s.owner!==this.state.role);
-        if(isIncoming) b.incoming.push({s,w});
-        else b.outbound.push({s,w});
-        return;
-      }
+      if(s.cat==='REFERRAL'){ b.incoming.push({s,w}); return; }
       if(!s.due){ b.pending.push({s,w}); return; }
       const d=this.diff(s.due);
       if(s.rem==='failed'){ b.unreach.push({s,w}); return; }
@@ -797,8 +722,7 @@ export default class App extends React.Component<any, any> {
     const defs=[
       {key:'overdue', title:'Overdue', dot:'#994242', pillBg:'#F7E3E3'},
       {key:'today', title:'Due today', dot:'#C35721', pillBg:'#FBE7DC'},
-      {key:'incoming', title:'Incoming referrals to act on', dot:'#1E14BE', pillBg:'#EFEDFF'},
-      {key:'outbound', title:'Referrals sent · awaiting confirmation', dot:'#6165DE', pillBg:'#E7E7FB'},
+      {key:'incoming', title:(this.state.role==='anm'||this.state.role==='asha')?'Referrals sent':'Referrals to act on', dot:'#1E14BE', pillBg:'#EFEDFF'},
       {key:'pending', title:this.scope()==='CATCHMENT'?'No date needed':'To be done here', dot:'#2E9E6B', pillBg:'#D9F7E8'},
       {key:'unreach', title:'Unreachable', dot:'#909090', pillBg:'#ECEBE7'},
       {key:'soon', title:'Due soon · 7 days', dot:'#6165DE', pillBg:'#E7E7FB'},
@@ -810,10 +734,9 @@ export default class App extends React.Component<any, any> {
   alertsVM(){
     const role=ROLES[this.state.role];
     const out=[];
-    const isCatchment = this.scope() === 'CATCHMENT';
     this.allSteps().forEach(({s,w})=>{
       if(s.status!=='OPEN') return;
-      const mine = isCatchment ? this.inCatchment(w) : (s.level===role.level || s.owner===this.state.role);
+      const mine = s.level===role.level || s.owner===this.state.role;
       if(!mine) return;
       if(s.cat==='REFERRAL'){ const d=this.diff(s.sent); if(d>=7) out.push({s,w,type:'REFERRAL_STALE',d}); return; }
       if(!s.due){ const d=this.diff(s.sent||TODAY_ISO); if(d>=7) out.push({s,w,type:'NOT_DONE',d}); return; }
@@ -1389,35 +1312,24 @@ export default class App extends React.Component<any, any> {
             const rowShell=(k,label,hint,ac,sf,icon)=>({label, hint, ac, sf, icon, onTap:tog(k),
               chev: exp===k?CH_OPEN:CH_SHUT, rbg: exp===k?'var(--surface-brand-soft)':'transparent'});
             const isHbnc = s.cat==='HBNC';
-            const isOwnFacility = (st.role!=='asha') && (s.level===ROLES[st.role]?.level);
-            const isMo = ['phc_mo','chc_mo','dh_mo'].indexOf(st.role)>-1;
-            const askWhere = !isHbnc && !isOwnFacility && !isMo;
-            const ownFac = LVL[ROLES[st.role].level] || {short:'Facility'};
+            const askWhere = !isHbnc && (st.role==='asha' || (st.role==='anm' && s.level!=='SUBCENTRE'));
+            const ownFac = LVL[ROLES[st.role].level];
+            // WhatsApp nudge: only ASHA / ANM / PHC MO closing a referral, follow-up or refill
+            // that is scheduled at some OTHER facility (she is chasing the woman, not seeing her).
             const myLvl = ROLES[st.role].level;
-            const nudgeOk = !isHbnc && !isOwnFacility;
+            const nudgeOk = !isHbnc
+              && (st.role==='asha' || ((myLvl==='SUBCENTRE'||myLvl==='PHC') && s.level!==myLvl));
             const facWord = ownFac.short==='TER' ? 'Tertiary care' : ownFac.short==='SC' ? 'the AAM' : ownFac.short;
-            const isLower = !isOwnFacility && myLvl && LADDER.indexOf(myLvl) < LADDER.indexOf(s.level);
-
-            const whereOpts = [
-              {k:'AT_REFERRED_FACILITY', l:'At recommended facility (' + (LVL[s.level]?.short || s.level) + ')'},
-              {k:'OTHER_PUBLIC_FACILITY', l:'At another public health facility'},
-              {k:'PRIVATE_PROVIDER', l:'At a private provider'},
-            ];
-            if(isLower && st.role !== 'asha') {
-              whereOpts.push({k:'DELIVERED_ON_SITE', l:'Delivered here at ' + facWord + ' (below referred level)'});
-            }
-
-            const completeRow = isMo
-              ? {...rowShell('supervisory','Supervisory view','Frontline steps are closed by facility staff / ANM','#70706E','#EDECE8','M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'), chev:CH_SHUT, rbg:'transparent'}
-              : askWhere
+            dlg.rows=[
+              askWhere
                 ? {...rowShell('complete','Mark complete','One tap — where did care happen?','#1B6B47','#D9F7E8','M20 6L9 17l-5-5'),
                     openComplete:exp==='complete',
-                    opts:whereOpts.map(o=>({label:o.l, onTap:()=>this.applyClose(s.id,'COMPLETED',o.k)}))}
-                : {...rowShell('complete', isHbnc?'Mark complete':('Mark complete at '+facWord), isHbnc?'Home visit done':'Care was delivered here on-site','#1B6B47','#D9F7E8','M20 6L9 17l-5-5'),
-                    chev:CH_SHUT, rbg:'transparent', onTap:()=>this.applyClose(s.id,'COMPLETED',null)};
-
-            dlg.rows=[
-              completeRow,
+                    opts:[{k:'AT_REFERRED_FACILITY',l:'At the recommended facility'},
+                          {k:'OTHER_PUBLIC_FACILITY',l:'At another public health facility'},
+                          {k:'PRIVATE_PROVIDER',l:'At a private provider'}]
+                      .map(o=>({label:o.l, onTap:()=>this.applyClose(s.id,'COMPLETED',o.k)}))}
+                : {...rowShell('complete', isHbnc?'Mark complete':('Mark complete at '+facWord), isHbnc?'Home visit done':'Care was delivered here','#1B6B47','#D9F7E8','M20 6L9 17l-5-5'),
+                    chev:CH_SHUT, rbg:'transparent', onTap:()=>this.applyClose(s.id,'COMPLETED',null)},
               ...(nudgeOk ? [{...rowShell('wa','Send WhatsApp nudge', w.consent?'Reminder in Hindi — one tap':'No consent on record','#1B6B47','#D9F7E8','M21 11.5a8.4 8.4 0 0 1-12.2 7.5L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z'),
                 openWa:exp==='wa', hasConsent:!!w.consent, noConsent:!w.consent, msg, phone:w.phone,
                 onSend:()=>{ this.setState({dialog:null}); this.toast('WhatsApp nudge sent to '+w.name); },
@@ -1439,13 +1351,14 @@ export default class App extends React.Component<any, any> {
             dlg.confirmDisabled=dl.date?'1':'0.5'; dlg.onConfirm=()=>this.confirmResched();
           }
           if(dl.type==='close'){
-            const isOwnFacility = (st.role!=='asha') && (s.level===ROLES[st.role]?.level);
-            const outs = isOwnFacility
-              ? [{k:'COMPLETED',l:'Mark as done',h:'The step was carried out on-site at this facility'}]
+            const ownAam = st.role==='anm' && s.level==='SUBCENTRE';
+            const facility = (st.role!=='asha' && st.role!=='anm') || ownAam;
+            const outs = facility
+              ? [{k:'COMPLETED',l:'Mark as done',h: ownAam ? 'The visit was carried out at the AAM / sub-centre' : 'The step was carried out at this facility'}]
               : [{k:'COMPLETED',l:'Completed',h:'The step was carried out'},
                  {k:'NOT_COMPLETED',l:'Not completed',h:'She did not receive the service'},
                  {k:'NO_CONTACT',l:'Could not be contacted',h:'No response after repeated attempts'}];
-            const SUB= isOwnFacility ? {} : {
+            const SUB= facility ? {} : {
               COMPLETED:{heading:'Where did care actually happen?', items:[
                 {k:'AT_REFERRED_FACILITY',l:'At the recommended facility',h:'Service delivered at the facility she was sent to'},
                 {k:'OTHER_PUBLIC_FACILITY',l:'At another public facility',h:'A different government facility'},
@@ -1461,9 +1374,9 @@ export default class App extends React.Component<any, any> {
             dlg.hasSub=!!sub; dlg.subHeading=sub?sub.heading:'';
             dlg.sources=(sub?sub.items:[]).map(x=>{ const on=dl.src===x.k; return {label:x.l, hint:x.h, bg:on?'#EFEDFF':'#fff', bd:on?'#1E14BE':'#DEDDD8',
               dot:on?'#1E14BE':'#DEDDD8', fill:on?'#1E14BE':'transparent', onTap:()=>this.setState({dialog:{...dl, src:x.k}})}; });
-            const ready = isOwnFacility ? !!dl.outcome : (dl.outcome==='NO_CONTACT' ? true : !!(dl.outcome && dl.src));
+            const ready = facility ? !!dl.outcome : (dl.outcome==='NO_CONTACT' ? true : !!(dl.outcome && dl.src));
             dlg.confirmDisabled=ready?'1':'0.5';
-            dlg.confirmLabel = dl.asha ? 'Confirm complete' : isOwnFacility ? 'Mark as done' : (dl.outcome==='COMPLETED' ? 'Mark completed' : (dl.outcome ? 'Save outcome' : 'Choose an outcome'));
+            dlg.confirmLabel = dl.asha ? 'Confirm complete' : facility ? 'Mark as done' : (dl.outcome==='COMPLETED' ? 'Mark completed' : (dl.outcome ? 'Save outcome' : 'Choose an outcome'));
             dlg.confirmBg = dl.outcome==='COMPLETED'||!dl.outcome ? 'var(--status-success)' : 'var(--ml-blue)';
             dlg.onConfirm=()=>this.confirmClose();
           }
@@ -1478,14 +1391,5 @@ export default class App extends React.Component<any, any> {
       base.dlg=dlg;
     }
     return base;
-  }
-
-  render() {
-    const vals = this.renderVals();
-    return (
-      <div className="mobile-app-shell">
-        {renderTemplate(vals, this)}
-      </div>
-    );
   }
 }
