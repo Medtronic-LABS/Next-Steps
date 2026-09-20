@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import '../setup.js';
 import { clearFirestore } from '../setup.js';
 import { loadFixtures } from '../../src/fixtures/loadFixtures.js';
-import { ANITA } from '../../src/fixtures/seed.js';
+import { ANITA, LAKSHMI_DEVI, CHC_TEONTHAR } from '../../src/fixtures/seed.js';
+import { confirmStep } from '../../src/domain/ReferralService.js';
 import { getDb } from '../../src/domain/firestore.js';
 import { routeInboundMessage } from '../../src/workflows/router.js';
 import type { InboundMessage } from '../../src/webhook/inbound.js';
@@ -16,6 +17,10 @@ function textMessage(from: string, text: string): InboundMessage {
 
 function interactiveMessage(from: string, replyId: string): InboundMessage {
   return { from, whatsappMessageId: `wamid.${Math.random()}`, kind: 'interactive', replyId };
+}
+
+function flowReplyMessage(from: string, flowResponse: Record<string, unknown>): InboundMessage {
+  return { from, whatsappMessageId: `wamid.${Math.random()}`, kind: 'flow_reply', flowName: 'flow', flowResponse };
 }
 
 describe('routeInboundMessage — spec §11/§18/§19 edge cases', () => {
@@ -74,5 +79,58 @@ describe('routeInboundMessage — spec §11/§18/§19 edge cases', () => {
     const priyaMenu = await routeInboundMessage(textMessage('919800000102', 'menu'));
     const priyaButtons = priyaMenu[0]!.kind === 'buttons' ? priyaMenu[0]!.buttons : [];
     expect(priyaButtons.some((b) => b.title === 'Expected arrivals')).toBe(true);
+  });
+
+  it('closes a step from a completed WhatsApp Flow reply', async () => {
+    const step = await confirmStep({
+      actorUserId: ANITA.id,
+      patientId: LAKSHMI_DEVI.id,
+      destinationFacilityId: CHC_TEONTHAR.id,
+      dueDate: '2026-01-01',
+    });
+
+    const outbound = await routeInboundMessage(
+      flowReplyMessage(ANITA_FROM, { provenance: 'AT_REFERRED_FACILITY', step_id: step.id, patient_id: LAKSHMI_DEVI.id }),
+    );
+    expect(outbound[0]).toMatchObject({ kind: 'text', body: expect.stringContaining('Referral completed as intended') });
+
+    const stepDoc = await getDb().collection('careSteps').doc(step.id).get();
+    expect(stepDoc.data()!.status).toBe('DONE');
+  });
+
+  it('falls back to unrecognized on a Flow reply with an invalid provenance value', async () => {
+    const outbound = await routeInboundMessage(
+      flowReplyMessage(ANITA_FROM, { provenance: 'NOT_A_REAL_VALUE', step_id: 'step-1' }),
+    );
+    expect(outbound).toEqual([
+      { kind: 'text', to: '+919800000101', body: "Sorry, I didn't understand that. Type menu to see your options." },
+    ]);
+  });
+
+  it('falls back to unrecognized on a Flow reply missing step_id', async () => {
+    const outbound = await routeInboundMessage(flowReplyMessage(ANITA_FROM, { provenance: 'AT_REFERRED_FACILITY' }));
+    expect(outbound).toEqual([
+      { kind: 'text', to: '+919800000101', body: "Sorry, I didn't understand that. Type menu to see your options." },
+    ]);
+  });
+
+  it('sends the closure Flow instead of the flat list when FLOW_CLOSURE_PROVENANCE_ID is configured', async () => {
+    await confirmStep({
+      actorUserId: ANITA.id,
+      patientId: LAKSHMI_DEVI.id,
+      destinationFacilityId: CHC_TEONTHAR.id,
+      dueDate: '2026-01-01',
+    });
+    process.env.FLOW_CLOSURE_PROVENANCE_ID = 'test-flow-id';
+    try {
+      // Lakshmi has exactly one open step, so "find Lakshmi" auto-selects it
+      // straight to renderStepActions: [Call, Completed, Reschedule].
+      const stepActions = await routeInboundMessage(textMessage(ANITA_FROM, 'find Lakshmi'));
+      const closeToken = stepActions[0]!.kind === 'buttons' ? stepActions[0]!.buttons[1]!.id : undefined;
+      const outbound = await routeInboundMessage(interactiveMessage(ANITA_FROM, closeToken!));
+      expect(outbound[0]).toMatchObject({ kind: 'flow', flowId: 'test-flow-id' });
+    } finally {
+      delete process.env.FLOW_CLOSURE_PROVENANCE_ID;
+    }
   });
 });

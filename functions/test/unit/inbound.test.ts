@@ -45,6 +45,53 @@ describe('parseWebhookPayload (spec §15/§19 webhook payload validation)', () =
     expect(messages).toEqual([{ from: '919800000101', whatsappMessageId: 'wamid.3', kind: 'interactive', replyId: 'action-token' }]);
   });
 
+  it('parses a completed WhatsApp Flow reply (nfm_reply)', () => {
+    const { messages } = parseWebhookPayload(
+      payload({
+        messages: [
+          {
+            from: '919800000101',
+            id: 'wamid.flow1',
+            type: 'interactive',
+            interactive: {
+              type: 'nfm_reply',
+              nfm_reply: {
+                name: 'flow',
+                body: 'Sent',
+                response_json: '{"provenance":"AT_REFERRED_FACILITY","step_id":"step-1","patient_id":"LAKSHMI_DEVI"}',
+              },
+            },
+          },
+        ],
+      }),
+    );
+    expect(messages).toEqual([
+      {
+        from: '919800000101',
+        whatsappMessageId: 'wamid.flow1',
+        kind: 'flow_reply',
+        flowName: 'flow',
+        flowResponse: { provenance: 'AT_REFERRED_FACILITY', step_id: 'step-1', patient_id: 'LAKSHMI_DEVI' },
+      },
+    ]);
+  });
+
+  it('drops a Flow reply with malformed response_json rather than throwing', () => {
+    const { messages } = parseWebhookPayload(
+      payload({
+        messages: [
+          {
+            from: '919800000101',
+            id: 'wamid.flow2',
+            type: 'interactive',
+            interactive: { type: 'nfm_reply', nfm_reply: { name: 'flow', response_json: 'not json' } },
+          },
+        ],
+      }),
+    );
+    expect(messages).toEqual([]);
+  });
+
   it('drops an interactive message with neither button_reply nor list_reply', () => {
     const { messages } = parseWebhookPayload(
       payload({ messages: [{ from: '919800000101', id: 'wamid.4', type: 'interactive', interactive: {} }] }),

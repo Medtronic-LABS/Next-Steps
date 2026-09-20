@@ -252,6 +252,32 @@ export async function renderProvenancePrompt(
   };
 }
 
+/**
+ * Native WhatsApp Flow alternative to renderProvenancePrompt's flat list —
+ * one screen instead of a list-tap round trip. Requires a published Flow
+ * (Meta dashboard) whose id is passed in by the caller; unlike the other
+ * render* functions this one takes no whatsappSenderId/issueActionToken,
+ * because the Flow's own screen fields (step_id/patient_id/provenance) are
+ * the correlated state, not an opaque conversation action token (spec §9
+ * tokens are a WhatsApp-adapter concern for buttons/lists specifically).
+ */
+export function renderClosureProvenanceFlow(
+  to: string,
+  flowId: string,
+  stepId: string,
+  patientId: string,
+): OutboundMessage {
+  return {
+    kind: 'flow',
+    to,
+    body: 'What happened with this referral?',
+    flowId,
+    flowCta: 'Close referral',
+    screenId: 'PROVENANCE',
+    flowActionData: { step_id: stepId, patient_id: patientId },
+  };
+}
+
 export function renderStepClosed(to: string, downgraded: boolean): OutboundMessage {
   return {
     kind: 'text',

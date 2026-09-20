@@ -20,7 +20,16 @@ export type OutboundMessage =
   | { kind: 'text'; to: string; body: string }
   | { kind: 'buttons'; to: string; body: string; buttons: ButtonSpec[] }
   | { kind: 'list'; to: string; body: string; buttonLabel: string; sections: ListSection[] }
-  | { kind: 'template'; to: string; templateName: string; params: Record<string, string> };
+  | { kind: 'template'; to: string; templateName: string; params: Record<string, string> }
+  | {
+      kind: 'flow';
+      to: string;
+      body: string;
+      flowId: string;
+      flowCta: string;
+      screenId: string;
+      flowActionData?: Record<string, string>;
+    };
 
 export interface SendResult {
   whatsappMessageId: string;
@@ -109,6 +118,28 @@ export class GraphApiWhatsAppClient implements WhatsAppClient {
                 parameters: Object.values(message.params).map((text) => ({ type: 'text', text })),
               },
             ],
+          },
+        };
+      case 'flow':
+        return {
+          ...base,
+          type: 'interactive',
+          interactive: {
+            type: 'flow',
+            body: { text: message.body },
+            action: {
+              name: 'flow',
+              parameters: {
+                flow_message_version: '3',
+                flow_id: message.flowId,
+                flow_cta: message.flowCta,
+                flow_action: 'navigate',
+                flow_action_payload: {
+                  screen: message.screenId,
+                  data: message.flowActionData ?? {},
+                },
+              },
+            },
           },
         };
     }

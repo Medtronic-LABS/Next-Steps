@@ -5,6 +5,7 @@ import { getPatientById } from '../domain/PatientService.js';
 import { DomainError, type ContactOutcomeValue, type Provenance } from '../domain/types.js';
 import {
   renderCallInitiated,
+  renderClosureProvenanceFlow,
   renderContactOutcomeRecorded,
   renderProvenancePrompt,
   renderRescheduleChooseAnotherUnavailable,
@@ -41,6 +42,13 @@ export async function handleStartClose(
   patientId: string,
   stepId: string,
 ): Promise<OutboundMessage[]> {
+  // Real Flow if one's been published and its id configured; falls back to
+  // the flat list otherwise (unset in tests/emulator, and until a Flow
+  // exists for this project — see docs/whatsapp/flows.md).
+  const flowId = process.env.FLOW_CLOSURE_PROVENANCE_ID;
+  if (flowId) {
+    return [renderClosureProvenanceFlow(to, flowId, stepId, patientId)];
+  }
   return [await renderProvenancePrompt(to, whatsappSenderId, patientId, stepId)];
 }
 

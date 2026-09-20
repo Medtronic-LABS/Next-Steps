@@ -29,6 +29,16 @@ import {
 
 const GREETINGS = new Set(['menu', 'hi', 'hello']);
 
+const PROVENANCE_VALUES: readonly Provenance[] = [
+  'AT_REFERRED_FACILITY',
+  'OTHER_FACILITY',
+  'PRIVATE_PROVIDER',
+  'NOT_COMPLETED',
+];
+function isProvenance(value: unknown): value is Provenance {
+  return typeof value === 'string' && (PROVENANCE_VALUES as readonly string[]).includes(value);
+}
+
 export async function routeInboundMessage(message: InboundMessage): Promise<OutboundMessage[]> {
   const to = normalizeWhatsAppNumber(message.from);
   const user = await resolveSender(message.from);
@@ -42,6 +52,23 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     if (GREETINGS.has(lower)) return handleMenuCommand(to, user);
     if (lower.startsWith('find ')) return handleFindCommand(to, to, user.id, text.slice('find '.length).trim());
     return [renderUnrecognized(to)];
+  }
+
+  if (message.kind === 'flow_reply') {
+    // No opaque action token here — the Flow's own screen output carries
+    // its state (see MessageRenderer.renderClosureProvenanceFlow). Shape,
+    // not flowName, discriminates which Flow this came from: Meta reports
+    // `name` as a fixed "flow" constant, not something we choose per-Flow.
+    const { provenance, step_id: stepId } = message.flowResponse ?? {};
+    if (!isProvenance(provenance) || typeof stepId !== 'string') {
+      return [renderUnrecognized(to)];
+    }
+    try {
+      return await handleCloseWithProvenance(to, user.id, stepId, provenance);
+    } catch (err) {
+      if (err instanceof DomainError) return [{ kind: 'text', to, body: err.message }];
+      throw err;
+    }
   }
 
   const replyId = message.replyId ?? '';

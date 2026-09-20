@@ -1,0 +1,50 @@
+{
+  "version": "5.0",
+  "screens": [
+    {
+      "id": "PROVENANCE",
+      "title": "Close referral",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "step_id": { "type": "string" },
+        "patient_id": { "type": "string" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "form",
+            "children": [
+              {
+                "type": "RadioButtonsGroup",
+                "name": "provenance",
+                "label": "Where was the patient seen?",
+                "required": true,
+                "data-source": [
+                  { "id": "AT_REFERRED_FACILITY", "title": "Seen at the referred facility" },
+                  { "id": "OTHER_FACILITY", "title": "Seen at a different facility" },
+                  { "id": "PRIVATE_PROVIDER", "title": "Seen by a private provider" },
+                  { "id": "NOT_COMPLETED", "title": "Not seen anywhere" }
+                ]
+              },
+              {
+                "type": "Footer",
+                "label": "Submit",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {
+                    "provenance": "${form.provenance}",
+                    "step_id": "${data.step_id}",
+                    "patient_id": "${data.patient_id}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
