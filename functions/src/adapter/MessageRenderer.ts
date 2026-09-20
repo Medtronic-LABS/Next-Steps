@@ -1,5 +1,5 @@
 import { issueActionToken, issueActionTokens } from '../conversation/ConversationService.js';
-import type { CareStep, Patient, Provenance, Role } from '../domain/types.js';
+import type { CareStep, Patient, Provenance, Role, User } from '../domain/types.js';
 import type { WorklistSummary } from '../domain/WorklistService.js';
 import type { OutboundMessage } from './WhatsAppClient.js';
 
@@ -8,26 +8,29 @@ export const CMD = {
   MENU: 'cmd:MENU',
   FIND_PATIENT: 'cmd:FIND_PATIENT',
   WORKLIST: 'cmd:WORKLIST',
+  EXPECTED_ARRIVALS: 'cmd:EXPECTED_ARRIVALS',
 } as const;
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-export function renderMenu(to: string, _role: Role): OutboundMessage {
+export function renderMenu(to: string, role: Role): OutboundMessage {
+  const rows: { id: string; title: string; description: string }[] = [
+    { id: CMD.FIND_PATIENT, title: 'Find a patient', description: 'Search and view open steps' },
+    { id: CMD.WORKLIST, title: "Today's work", description: 'Due today and overdue' },
+  ];
+  // Expected arrivals is a receiving-facility concern (spec Phase 4) — only
+  // staff at a destination facility (e.g. Priya, STAFF_NURSE) act on it.
+  if (role === 'STAFF_NURSE') {
+    rows.push({ id: CMD.EXPECTED_ARRIVALS, title: 'Expected arrivals', description: 'Patients referred to your facility' });
+  }
   return {
     kind: 'list',
     to,
     body: 'What would you like to do?',
     buttonLabel: 'Menu',
-    sections: [
-      {
-        rows: [
-          { id: CMD.FIND_PATIENT, title: 'Find a patient', description: 'Search and view open steps' },
-          { id: CMD.WORKLIST, title: "Today's work", description: 'Due today and overdue' },
-        ],
-      },
-    ],
+    sections: [{ rows }],
   };
 }
 
@@ -125,24 +128,61 @@ export async function renderReferralConfirmed(
 export async function renderStepActions(
   to: string,
   whatsappSenderId: string,
-  patientId: string,
-  stepId: string,
+  actor: User,
+  step: CareStep,
 ): Promise<OutboundMessage> {
-  const [callToken, closeToken, rescheduleToken] = (await issueActionTokens(whatsappSenderId, [
+  const patientId = step.patientId;
+  const stepId = step.id;
+  const actions: { type: string; patientId: string; stepId: string }[] = [
     { type: 'CALL', patientId, stepId },
     { type: 'START_CLOSE', patientId, stepId },
     { type: 'START_RESCHEDULE', patientId, stepId },
-  ])) as [string, string, string];
+  ];
+  // Confirm arrival is only offered to staff at the destination facility, and
+  // only once (spec §2A/§18 — arrival is a separate, single event from closure).
+  const canConfirmArrival = actor.facilityId === step.destinationFacilityId && step.arrivedAt === null;
+  if (canConfirmArrival) actions.push({ type: 'CONFIRM_ARRIVAL', patientId, stepId });
+
+  const tokens = await issueActionTokens(whatsappSenderId, actions);
+  const buttons = [
+    { id: tokens[0]!, title: 'Call' },
+    { id: tokens[1]!, title: 'Completed' },
+    { id: tokens[2]!, title: 'Reschedule' },
+  ];
+  if (canConfirmArrival) buttons.push({ id: tokens[3]!, title: 'Confirm arrival' });
+
+  return { kind: 'buttons', to, body: 'What would you like to do?', buttons };
+}
+
+export async function renderExpectedArrivals(
+  to: string,
+  whatsappSenderId: string,
+  patientNamesById: Record<string, string>,
+  steps: CareStep[],
+): Promise<OutboundMessage> {
+  if (steps.length === 0) {
+    return { kind: 'text', to, body: 'No patients are currently expected.' };
+  }
+  const tokens = await issueActionTokens(
+    whatsappSenderId,
+    steps.map((s) => ({ type: 'SELECT_STEP', patientId: s.patientId, stepId: s.id })),
+  );
+  const rows = steps.map((s, i) => ({
+    id: tokens[i]!,
+    title: patientNamesById[s.patientId] ?? s.patientId,
+    description: `Referred — due ${fmtDate(s.dueDate)}`,
+  }));
   return {
-    kind: 'buttons',
+    kind: 'list',
     to,
-    body: 'What would you like to do?',
-    buttons: [
-      { id: callToken, title: 'Call' },
-      { id: closeToken, title: 'Completed' },
-      { id: rescheduleToken, title: 'Reschedule' },
-    ],
+    body: `${steps.length} patient${steps.length === 1 ? '' : 's'} expected.`,
+    buttonLabel: 'View patient',
+    sections: [{ rows }],
   };
+}
+
+export function renderArrivalRecorded(to: string, patientDisplayName: string): OutboundMessage {
+  return { kind: 'text', to, body: `Arrival recorded for ${patientDisplayName}. Type menu to continue.` };
 }
 
 export async function renderCallInitiated(

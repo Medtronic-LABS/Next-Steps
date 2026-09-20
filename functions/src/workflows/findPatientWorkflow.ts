@@ -1,5 +1,6 @@
 import { searchPatients, getPatientById } from '../domain/PatientService.js';
-import { getOpenSteps } from '../domain/CareStepService.js';
+import { getOpenSteps, getStepById } from '../domain/CareStepService.js';
+import { getUserById } from '../domain/UserService.js';
 import { DomainError } from '../domain/types.js';
 import { updateConversation } from '../conversation/ConversationService.js';
 import {
@@ -13,12 +14,13 @@ import type { OutboundMessage } from '../adapter/WhatsAppClient.js';
 export async function handleFindCommand(
   to: string,
   whatsappSenderId: string,
+  actorUserId: string,
   query: string,
 ): Promise<OutboundMessage[]> {
   const matches = await searchPatients(query);
   if (matches.length === 0) return [renderNoMatches(to, query)];
   if (matches.length === 1) {
-    return handleSelectPatient(to, whatsappSenderId, matches[0]!.id);
+    return handleSelectPatient(to, whatsappSenderId, actorUserId, matches[0]!.id);
   }
   return [await renderPatientList(to, whatsappSenderId, matches)];
 }
@@ -26,6 +28,7 @@ export async function handleFindCommand(
 export async function handleSelectPatient(
   to: string,
   whatsappSenderId: string,
+  actorUserId: string,
   patientId: string,
 ): Promise<OutboundMessage[]> {
   const patient = await getPatientById(patientId);
@@ -36,7 +39,7 @@ export async function handleSelectPatient(
   // With exactly one open step, skip the intermediate list — same "pick the
   // obvious next thing" convenience as auto-selecting a single patient match.
   if (openSteps.length === 1) {
-    return handleSelectStep(to, whatsappSenderId, patientId, openSteps[0]!.id);
+    return handleSelectStep(to, whatsappSenderId, actorUserId, patientId, openSteps[0]!.id);
   }
 
   await updateConversation(whatsappSenderId, {
@@ -52,6 +55,7 @@ export async function handleSelectPatient(
 export async function handleSelectStep(
   to: string,
   whatsappSenderId: string,
+  actorUserId: string,
   patientId: string,
   stepId: string,
 ): Promise<OutboundMessage[]> {
@@ -61,5 +65,11 @@ export async function handleSelectStep(
     stepId,
     currentState: 'STEP_SELECTED',
   });
-  return [await renderStepActions(to, whatsappSenderId, patientId, stepId)];
+
+  const actor = await getUserById(actorUserId);
+  if (!actor) throw new DomainError('Unknown user.', 'UNKNOWN_USER');
+  const step = await getStepById(stepId);
+  if (!step) throw new DomainError('Step not found.', 'NOT_FOUND');
+
+  return [await renderStepActions(to, whatsappSenderId, actor, step)];
 }

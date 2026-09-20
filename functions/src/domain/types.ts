@@ -94,7 +94,8 @@ export type AuditEventType =
   | 'REFERRAL_CONFIRMED'
   | 'STEP_CLOSED'
   | 'STEP_RESCHEDULED'
-  | 'CONTACT_OUTCOME_RECORDED';
+  | 'CONTACT_OUTCOME_RECORDED'
+  | 'ARRIVAL_RECORDED';
 
 export interface AuditEvent {
   id: string;

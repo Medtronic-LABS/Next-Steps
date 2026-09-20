@@ -77,9 +77,6 @@ without change.
 
 ## What's deferred to a later pass
 
-- **Phase 4 (Priya)**: expected arrivals, arrival confirmation, one-tap on-site
-  closure. Priya and CHC Teonthar exist in the seed data now (referrals need a
-  destination facility), but her workflow logic is not implemented yet.
 - **Phase 5 (proactive messaging)**: overdue-alert scheduled function, approved
   templates, outbound dispatch/retry tracking.
 - **Phase 6 (hardening)**: broader reliability edge cases beyond what Phases 0–3

@@ -16,6 +16,7 @@ import { handleMenuCommand } from './menuWorkflow.js';
 import { handleFindCommand, handleSelectPatient, handleSelectStep } from './findPatientWorkflow.js';
 import { handleChangeReferral, handleConfirmReferral, handleStageReferral } from './referralWorkflow.js';
 import { handleWorklistCommand } from './worklistWorkflow.js';
+import { handleConfirmArrival, handleExpectedArrivalsCommand } from './arrivalWorkflow.js';
 import {
   handleCall,
   handleCloseWithProvenance,
@@ -39,7 +40,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     const text = (message.text ?? '').trim();
     const lower = text.toLowerCase();
     if (GREETINGS.has(lower)) return handleMenuCommand(to, user);
-    if (lower.startsWith('find ')) return handleFindCommand(to, to, text.slice('find '.length).trim());
+    if (lower.startsWith('find ')) return handleFindCommand(to, to, user.id, text.slice('find '.length).trim());
     return [renderUnrecognized(to)];
   }
 
@@ -47,6 +48,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   if (replyId === CMD.MENU) return handleMenuCommand(to, user);
   if (replyId === CMD.FIND_PATIENT) return [renderFindPatientPrompt(to)];
   if (replyId === CMD.WORKLIST) return handleWorklistCommand(to, to, user.id);
+  if (replyId === CMD.EXPECTED_ARRIVALS) return handleExpectedArrivalsCommand(to, to, user.id);
 
   // Fixed commands never expire; anything else is an opaque token that must be
   // resolved against conversation state, which a reset (spec §2D) invalidates.
@@ -56,9 +58,11 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     const { action } = await resolveActionToken(to, replyId);
     switch (action.type) {
       case 'SELECT_PATIENT':
-        return handleSelectPatient(to, to, action.patientId!);
+        return handleSelectPatient(to, to, user.id, action.patientId!);
       case 'SELECT_STEP':
-        return handleSelectStep(to, to, action.patientId!, action.stepId!);
+        return handleSelectStep(to, to, user.id, action.patientId!, action.stepId!);
+      case 'CONFIRM_ARRIVAL':
+        return handleConfirmArrival(to, user.id, action.stepId!);
       case 'STAGE_REFERRAL':
         return handleStageReferral(to, to, user.id, action.patientId!);
       case 'CONFIRM_REFERRAL':
