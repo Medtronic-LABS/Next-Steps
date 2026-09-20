@@ -2,7 +2,6 @@ import type { InboundMessage } from '../webhook/inbound.js';
 import { normalizeWhatsAppNumber, resolveSender } from '../adapter/senderResolution.js';
 import {
   CMD,
-  renderFindPatientPrompt,
   renderMoreMenu,
   renderSessionExpired,
   renderStaleAction,
@@ -12,9 +11,14 @@ import {
 import type { OutboundMessage } from '../adapter/WhatsAppClient.js';
 import { loadOrResetConversation, resolveActionToken } from '../conversation/ConversationService.js';
 import { ConversationError } from '../conversation/types.js';
-import { DomainError, type ContactOutcomeValue, type Provenance } from '../domain/types.js';
+import { DomainError, type ContactOutcomeValue, type Provenance, type User } from '../domain/types.js';
 import { handleMenuCommand } from './menuWorkflow.js';
-import { handleFindCommand, handleSelectPatient, handleSelectStep } from './findPatientWorkflow.js';
+import {
+  handleFindCommand,
+  handleListPatientsCommand,
+  handleSelectPatient,
+  handleSelectStep,
+} from './findPatientWorkflow.js';
 import {
   handleAddNextStepCommand,
   handleChangeReferral,
@@ -45,6 +49,23 @@ const PROVENANCE_VALUES: readonly Provenance[] = [
 ];
 function isProvenance(value: unknown): value is Provenance {
   return typeof value === 'string' && (PROVENANCE_VALUES as readonly string[]).includes(value);
+}
+
+/**
+ * Fixed navigation commands (spec §9 — never expire, never carry patient/step
+ * context). Shared by button taps and the menu Flow's RadioButtonsGroup
+ * selection (MessageRenderer.renderMenuFlow), since both ultimately pick one
+ * of the same fixed set of ids.
+ */
+async function dispatchFixedCommand(replyId: string, to: string, user: User): Promise<OutboundMessage[] | null> {
+  if (replyId === CMD.MENU) return handleMenuCommand(to, user);
+  if (replyId === CMD.FIND_PATIENT) return handleListPatientsCommand(to, to, user.id);
+  if (replyId === CMD.WORKLIST) return handleWorklistCommand(to, to, user.id);
+  if (replyId === CMD.EXPECTED_ARRIVALS) return handleExpectedArrivalsCommand(to, to, user.id);
+  if (replyId === CMD.ADD_NEXT_STEP) return handleAddNextStepCommand(to, to);
+  if (replyId === CMD.ALERTS) return handleAlertsCommand(to, user.id);
+  if (replyId === CMD.MORE) return [renderMoreMenu(to, user.role)];
+  return null;
 }
 
 export async function routeInboundMessage(message: InboundMessage): Promise<OutboundMessage[]> {
@@ -89,6 +110,10 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
         if (!patientId || !stepId) return [renderUnrecognized(to)];
         return await handleSelectStep(to, to, user.id, patientId, stepId);
       }
+      if (response.kind === 'menu' && typeof response.selected_id === 'string') {
+        const result = await dispatchFixedCommand(response.selected_id, to, user);
+        return result ?? [renderUnrecognized(to)];
+      }
       return [renderUnrecognized(to)];
     } catch (err) {
       if (err instanceof DomainError) return [{ kind: 'text', to, body: err.message }];
@@ -97,13 +122,8 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   }
 
   const replyId = message.replyId ?? '';
-  if (replyId === CMD.MENU) return handleMenuCommand(to, user);
-  if (replyId === CMD.FIND_PATIENT) return [renderFindPatientPrompt(to)];
-  if (replyId === CMD.WORKLIST) return handleWorklistCommand(to, to, user.id);
-  if (replyId === CMD.EXPECTED_ARRIVALS) return handleExpectedArrivalsCommand(to, to, user.id);
-  if (replyId === CMD.ADD_NEXT_STEP) return handleAddNextStepCommand(to, to);
-  if (replyId === CMD.ALERTS) return handleAlertsCommand(to, user.id);
-  if (replyId === CMD.MORE) return [renderMoreMenu(to, user.role)];
+  const fixedResult = await dispatchFixedCommand(replyId, to, user);
+  if (fixedResult) return fixedResult;
 
   // Fixed commands never expire; anything else is an opaque token that must be
   // resolved against conversation state, which a reset (spec §2D) invalidates.

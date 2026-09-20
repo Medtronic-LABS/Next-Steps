@@ -35,14 +35,15 @@ describe('golden: Anita closes an already-open referral for Lakshmi Devi', () =>
     const replay = new ConversationReplay();
 
     await replay.run(turns[0]!); // menu
-    await replay.run(turns[1]!); // Find a patient
-    const stepActions = await replay.run(turns[2]!); // find Lakshmi -> auto-selects her only open step
+    // Only Lakshmi Devi exists and has exactly one open step, so "Find a
+    // patient" auto-selects both her and that step directly.
+    const stepActions = await replay.run(turns[1]!); // Find a patient
     expect(bodies(stepActions)[0]).toContain('What would you like to do?');
 
-    const provenancePrompt = await replay.run(turns[3]!); // Completed
+    const provenancePrompt = await replay.run(turns[2]!); // Completed
     expect(bodies(provenancePrompt)[0]).toContain('What happened with this referral?');
 
-    const closed = await replay.run(turns[4]!); // Seen at the referred facility
+    const closed = await replay.run(turns[3]!); // Seen at the referred facility
     expect(bodies(closed)[0]).toContain('Referral completed as intended');
 
     // Expected Firebase state

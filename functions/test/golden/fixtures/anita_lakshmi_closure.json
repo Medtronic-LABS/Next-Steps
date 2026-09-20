@@ -1,7 +1,6 @@
 [
   { "kind": "text", "from": "+919800000101", "text": "menu" },
   { "kind": "reply", "from": "+919800000101", "replyTitle": "Find a patient" },
-  { "kind": "text", "from": "+919800000101", "text": "find Lakshmi" },
   { "kind": "reply", "from": "+919800000101", "replyTitle": "Completed" },
   { "kind": "reply", "from": "+919800000101", "replyTitle": "Seen at the referred facility" }
 ]

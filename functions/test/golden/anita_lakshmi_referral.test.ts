@@ -29,16 +29,15 @@ describe('golden: Anita stages and confirms a referral for Lakshmi Devi', () => 
     const menu = await replay.run(turns[0]!);
     expect(bodies(menu)[0]).toContain('What do you need?');
 
-    const prompt = await replay.run(turns[1]!);
-    expect(bodies(prompt)[0]).toContain('find <patient name>');
-
-    const summary = await replay.run(turns[2]!);
+    // Only Lakshmi Devi exists in the seeded patient set, so "Find a
+    // patient" auto-selects her directly instead of showing a list.
+    const summary = await replay.run(turns[1]!);
     expect(bodies(summary)[0]).toContain(`${LAKSHMI_DEVI.displayName} has no open steps.`);
 
-    const confirmPrompt = await replay.run(turns[3]!);
+    const confirmPrompt = await replay.run(turns[2]!);
     expect(bodies(confirmPrompt)[0]).toContain(CHC_TEONTHAR.name);
 
-    const confirmed = await replay.run(turns[4]!);
+    const confirmed = await replay.run(turns[3]!);
     expect(bodies(confirmed)[0]).toContain(`Referral to ${CHC_TEONTHAR.name} confirmed.`);
 
     // Expected Firebase state

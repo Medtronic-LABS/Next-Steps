@@ -77,6 +77,30 @@ export function renderMoreMenu(to: string, role: Role): OutboundMessage {
   };
 }
 
+/**
+ * Flow-based alternative to renderMenu/renderMoreMenu — every option on one
+ * native RadioButtonsGroup screen instead of buttons + a second "More" tap.
+ * Shares the flow_reply routing pattern with the closure/select-item Flows
+ * (MessageRenderer's siblings) via kind: 'menu' in the submitted payload.
+ */
+export function renderMenuFlow(to: string, flowId: string, user: User, facilityName: string): OutboundMessage {
+  const options = menuOptions(user.role);
+  const identityLine = `${user.name} · ${ROLE_LABELS[user.role]} · ${facilityName}`;
+  const greeting = `${timeOfDayGreeting()}, ${user.name}. What do you need?`;
+  return {
+    kind: 'flow',
+    to,
+    body: `${identityLine}\n${greeting}`,
+    flowId,
+    flowCta: 'Menu',
+    screenId: 'MENU',
+    flowActionData: {
+      greeting: 'What do you need?',
+      items: options.map((o) => ({ id: o.id, title: o.title })),
+    },
+  };
+}
+
 export function renderFindPatientPrompt(to: string): OutboundMessage {
   return { kind: 'text', to, body: 'Type: find <patient name>' };
 }

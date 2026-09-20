@@ -1,4 +1,4 @@
-import { searchPatients, getPatientById } from '../domain/PatientService.js';
+import { listAllPatients, searchPatients, getPatientById } from '../domain/PatientService.js';
 import { getOpenSteps, getStepById } from '../domain/CareStepService.js';
 import { getUserById } from '../domain/UserService.js';
 import { DomainError } from '../domain/types.js';
@@ -11,6 +11,26 @@ import {
   renderStepActions,
 } from '../adapter/MessageRenderer.js';
 import type { OutboundMessage } from '../adapter/WhatsAppClient.js';
+
+/**
+ * "Find a patient" lists every patient directly instead of prompting to
+ * type a name first — typing "find <name>" (handleFindCommand) still works
+ * as a faster path for a worker who already knows who they're looking for.
+ */
+export async function handleListPatientsCommand(
+  to: string,
+  whatsappSenderId: string,
+  actorUserId: string,
+): Promise<OutboundMessage[]> {
+  const patients = await listAllPatients();
+  if (patients.length === 0) return [renderNoMatches(to, '')];
+  if (patients.length === 1) {
+    return handleSelectPatient(to, whatsappSenderId, actorUserId, patients[0]!.id);
+  }
+  const flowId = process.env.FLOW_SELECT_ITEM_ID;
+  if (flowId) return [renderPatientListFlow(to, flowId, patients)];
+  return [await renderPatientList(to, whatsappSenderId, patients)];
+}
 
 export async function handleFindCommand(
   to: string,

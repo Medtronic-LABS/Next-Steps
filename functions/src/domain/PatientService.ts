@@ -20,3 +20,9 @@ export async function getPatientById(patientId: string): Promise<Patient | null>
   const doc = await getDb().collection(Collections.patients).doc(patientId).get();
   return doc.exists ? (doc.data() as Patient) : null;
 }
+
+/** "Find a patient" lists everyone directly rather than requiring a typed search first. */
+export async function listAllPatients(): Promise<Patient[]> {
+  const snap = await getDb().collection(Collections.patients).get();
+  return snap.docs.map((doc) => doc.data() as Patient);
+}
