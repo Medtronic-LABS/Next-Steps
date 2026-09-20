@@ -65,8 +65,9 @@ Conversation State             Workflows (functions/src/workflows/*)
                   (careSteps,    (auditEvents)   PROCESSING/SENT/FAILED)
                    patients,                            |
                    users, ...)                          v
-                                                  CCE system (Phase 5+,
-                                                  outbox consumer not yet built)
+                                                  CCEClient (adapter/CCEClient.ts)
+                                                  mock by default; real HTTP client
+                                                  once CCE_ENDPOINT_URL/CCE_API_KEY exist
 
 Cloud Scheduler
         |
@@ -75,6 +76,14 @@ Firebase Scheduled Function  (functions/src/scheduled/overdueAlerts.ts)
   - daily: AlertService.dispatchOverdueAlerts()
   - finds overdue OPEN steps, checks owner eligibility, sends
     care_step_overdue_v1 via WhatsAppClient, records alerts/{id}
+
+Cloud Scheduler
+        |
+        v
+Firebase Scheduled Function  (functions/src/scheduled/cceOutboxConsumer.ts)
+  - every 5 min: CCEOutboxService.drainCCEOutbox()
+  - sends each PENDING event via CCEClient; SENT on success, retried up
+    to MAX_ATTEMPTS (5) then marked FAILED
 ```
 
 This follows the spec's own correction in §25: `WhatsApp → Cloud Functions → Domain
@@ -88,8 +97,7 @@ without change.
 
 - **Rest of Phase 5**: `work_due_today_v1` and `expected_arrivals_summary_v1`
   remain unsent — only `care_step_overdue_v1` has a scheduled dispatcher
-  (`scheduled/overdueAlerts.ts` + `AlertService.dispatchOverdueAlerts`). No CCE
-  outbox consumer yet either — `cceOutbox` is written, never drained.
+  (`scheduled/overdueAlerts.ts` + `AlertService.dispatchOverdueAlerts`).
 - **Rest of Phase 6**: signature validation, payload parsing, RBAC (every
   domain service, not just closure), duplicate/stale action, conversation
   expiry, unregistered-sender data-leakage, and message-status merge behavior

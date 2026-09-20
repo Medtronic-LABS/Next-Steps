@@ -21,10 +21,13 @@ unless marked otherwise.
 
 ## Missing backend/domain functionality carried forward
 
-- CCE outbox **consumer** (background worker that flips `PENDING -> SENT`) — Phase 5+.
-  This pass only writes to the outbox; nothing drains it yet. `alerts` documents
-  are separate from `cceOutbox` and are written/updated directly by
-  `AlertService`, not via the outbox pattern.
+- No real CCE endpoint exists yet — `CCEOutboxService.drainCCEOutbox()` (scheduled
+  every 5 min via `scheduled/cceOutboxConsumer.ts`) sends through `CCEClient`
+  (`adapter/CCEClient.ts`), which defaults to an in-memory mock until
+  `CCE_ENDPOINT_URL`/`CCE_API_KEY` are configured — mirrors the
+  `WhatsAppClient` real/mock split. `alerts` documents are separate from
+  `cceOutbox` and are written/updated directly by `AlertService`, not via the
+  outbox pattern.
 - `work_due_today_v1` and `expected_arrivals_summary_v1` templates (spec §16) are
   named but unused — only `care_step_overdue_v1` has a scheduled sender. Today's
   work and expected arrivals remain pull-only (worker opens the menu), not pushed.
