@@ -7,6 +7,7 @@ import type { OutboundMessage } from './WhatsAppClient.js';
 /** Fixed navigation commands never carry patient/step context (spec §9). */
 export const CMD = {
   MENU: 'cmd:MENU',
+  MORE: 'cmd:MORE',
   FIND_PATIENT: 'cmd:FIND_PATIENT',
   WORKLIST: 'cmd:WORKLIST',
   EXPECTED_ARRIVALS: 'cmd:EXPECTED_ARRIVALS',
@@ -27,7 +28,7 @@ function timeOfDayGreeting(): string {
 
 const ROLE_LABELS: Record<Role, string> = { ANM: 'ANM', STAFF_NURSE: 'Staff Nurse' };
 
-export function renderMenu(to: string, user: User, facilityName: string): OutboundMessage {
+function menuOptions(role: Role): { id: string; title: string; description: string }[] {
   const options: { id: string; title: string; description: string }[] = [
     { id: CMD.WORKLIST, title: "Today's work", description: 'Due today and overdue' },
     { id: CMD.FIND_PATIENT, title: 'Find a patient', description: 'Search and view open steps' },
@@ -36,30 +37,43 @@ export function renderMenu(to: string, user: User, facilityName: string): Outbou
   ];
   // Expected arrivals is a receiving-facility concern (spec Phase 4) — only
   // staff at a destination facility (e.g. Priya, STAFF_NURSE) act on it.
-  if (user.role === 'STAFF_NURSE') {
+  if (role === 'STAFF_NURSE') {
     options.push({
       id: CMD.EXPECTED_ARRIVALS,
       title: 'Expected arrivals',
       description: 'Patients referred to your facility',
     });
   }
+  return options;
+}
 
+/**
+ * "Buttons + More" (spec's own UI mapping table) instead of a list — the
+ * first 2 options plus a "More" button; tapping it reveals the rest as a
+ * second buttons message (renderMoreMenu). Always fits WhatsApp's 3-button
+ * cap on both messages: 4 options -> 2 + More, then 2 more; 5 (STAFF_NURSE)
+ * -> 2 + More, then exactly 3 more.
+ */
+export function renderMenu(to: string, user: User, facilityName: string): OutboundMessage {
+  const options = menuOptions(user.role);
   const identityLine = `${user.name} · ${ROLE_LABELS[user.role]} · ${facilityName}`;
   const greeting = `${timeOfDayGreeting()}, ${user.name}. What do you need?`;
+  const body = [identityLine, greeting, ...options.map((o) => `• ${o.title} — ${o.description}`)].join('\n');
 
-  // Buttons (max 3, shown immediately) when the menu fits; a list otherwise
-  // — spec's own UI mapping table calls for exactly this: "Four-item main
-  // menu -> List message or buttons + More".
-  if (options.length <= 3) {
-    const body = [identityLine, greeting, ...options.map((o) => `• ${o.title} — ${o.description}`)].join('\n');
-    return { kind: 'buttons', to, body, buttons: options.map((o) => ({ id: o.id, title: o.title })) };
-  }
+  const primary = options.slice(0, 2);
+  const buttons = primary.map((o) => ({ id: o.id, title: o.title }));
+  if (options.length > 2) buttons.push({ id: CMD.MORE, title: 'More' });
+
+  return { kind: 'buttons', to, body, buttons };
+}
+
+export function renderMoreMenu(to: string, role: Role): OutboundMessage {
+  const rest = menuOptions(role).slice(2);
   return {
-    kind: 'list',
+    kind: 'buttons',
     to,
-    body: `${identityLine}\n${greeting}`,
-    buttonLabel: 'Menu',
-    sections: [{ rows: options.map((o) => ({ id: o.id, title: o.title, description: o.description })) }],
+    body: 'More options:',
+    buttons: rest.map((o) => ({ id: o.id, title: o.title })),
   };
 }
 

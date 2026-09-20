@@ -3,6 +3,7 @@ import { normalizeWhatsAppNumber, resolveSender } from '../adapter/senderResolut
 import {
   CMD,
   renderFindPatientPrompt,
+  renderMoreMenu,
   renderSessionExpired,
   renderStaleAction,
   renderUnregistered,
@@ -102,6 +103,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   if (replyId === CMD.EXPECTED_ARRIVALS) return handleExpectedArrivalsCommand(to, to, user.id);
   if (replyId === CMD.ADD_NEXT_STEP) return handleAddNextStepCommand(to, to);
   if (replyId === CMD.ALERTS) return handleAlertsCommand(to, user.id);
+  if (replyId === CMD.MORE) return [renderMoreMenu(to, user.role)];
 
   // Fixed commands never expire; anything else is an opaque token that must be
   // resolved against conversation state, which a reset (spec §2D) invalidates.
