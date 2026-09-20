@@ -16,21 +16,28 @@ function fmtDate(iso: string): string {
 }
 
 export function renderMenu(to: string, role: Role): OutboundMessage {
-  const rows: { id: string; title: string; description: string }[] = [
+  const options: { id: string; title: string; description: string }[] = [
     { id: CMD.FIND_PATIENT, title: 'Find a patient', description: 'Search and view open steps' },
     { id: CMD.WORKLIST, title: "Today's work", description: 'Due today and overdue' },
   ];
   // Expected arrivals is a receiving-facility concern (spec Phase 4) — only
   // staff at a destination facility (e.g. Priya, STAFF_NURSE) act on it.
   if (role === 'STAFF_NURSE') {
-    rows.push({ id: CMD.EXPECTED_ARRIVALS, title: 'Expected arrivals', description: 'Patients referred to your facility' });
+    options.push({
+      id: CMD.EXPECTED_ARRIVALS,
+      title: 'Expected arrivals',
+      description: 'Patients referred to your facility',
+    });
   }
+  // WhatsApp reply buttons (max 3, shown immediately) instead of a list
+  // message (options hidden behind a tap-to-reveal "Menu" button) — the menu
+  // never has more than 3 options in this MVP, so buttons always fit.
+  const body = ['What would you like to do?', ...options.map((o) => `• ${o.title} — ${o.description}`)].join('\n');
   return {
-    kind: 'list',
+    kind: 'buttons',
     to,
-    body: 'What would you like to do?',
-    buttonLabel: 'Menu',
-    sections: [{ rows }],
+    body,
+    buttons: options.map((o) => ({ id: o.id, title: o.title })),
   };
 }
 

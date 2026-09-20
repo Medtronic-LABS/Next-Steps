@@ -68,11 +68,11 @@ describe('routeInboundMessage — spec §11/§18/§19 edge cases', () => {
 
   it('shows Priya (STAFF_NURSE) the Expected arrivals menu item but not Anita (ANM)', async () => {
     const anitaMenu = await routeInboundMessage(textMessage(ANITA_FROM, 'menu'));
-    const anitaRows = anitaMenu[0]!.kind === 'list' ? anitaMenu[0]!.sections.flatMap((s) => s.rows) : [];
-    expect(anitaRows.some((r) => r.title === 'Expected arrivals')).toBe(false);
+    const anitaButtons = anitaMenu[0]!.kind === 'buttons' ? anitaMenu[0]!.buttons : [];
+    expect(anitaButtons.some((b) => b.title === 'Expected arrivals')).toBe(false);
 
     const priyaMenu = await routeInboundMessage(textMessage('919800000102', 'menu'));
-    const priyaRows = priyaMenu[0]!.kind === 'list' ? priyaMenu[0]!.sections.flatMap((s) => s.rows) : [];
-    expect(priyaRows.some((r) => r.title === 'Expected arrivals')).toBe(true);
+    const priyaButtons = priyaMenu[0]!.kind === 'buttons' ? priyaMenu[0]!.buttons : [];
+    expect(priyaButtons.some((b) => b.title === 'Expected arrivals')).toBe(true);
   });
 });
