@@ -5,12 +5,15 @@ import { claimMessageId, recordMessageStatus } from './idempotency.js';
 import { parseWebhookPayload } from './inbound.js';
 import { routeInboundMessage } from '../workflows/router.js';
 import { getWhatsAppClient } from '../adapter/WhatsAppClient.js';
+import { metaAppSecret, whatsappAccessToken, whatsappPhoneNumberId, whatsappVerifyToken } from '../config/secrets.js';
 
 /**
  * Meta webhook (spec §15): GET handles the verification challenge, POST
  * handles inbound messages, button/list replies, and message-status updates.
  */
-export const whatsappWebhook = onRequest(async (req, res) => {
+export const whatsappWebhook = onRequest(
+  { secrets: [whatsappPhoneNumberId, whatsappAccessToken, metaAppSecret, whatsappVerifyToken] },
+  async (req, res) => {
   if (req.method === 'GET') {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
@@ -67,5 +70,6 @@ export const whatsappWebhook = onRequest(async (req, res) => {
     }
   }
 
-  res.sendStatus(200);
-});
+    res.sendStatus(200);
+  },
+);
