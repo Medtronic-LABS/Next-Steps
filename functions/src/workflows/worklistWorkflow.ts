@@ -1,6 +1,6 @@
 import { getWorklistSummary } from '../domain/WorklistService.js';
 import { getPatientById } from '../domain/PatientService.js';
-import { renderWorklist } from '../adapter/MessageRenderer.js';
+import { renderWorklist, renderWorklistFlow } from '../adapter/MessageRenderer.js';
 import type { OutboundMessage } from '../adapter/WhatsAppClient.js';
 
 export async function handleWorklistCommand(
@@ -14,5 +14,7 @@ export async function handleWorklistCommand(
   const namesById = Object.fromEntries(
     patients.filter((p): p is NonNullable<typeof p> => p !== null).map((p) => [p.id, p.displayName]),
   );
+  const flowId = process.env.FLOW_SELECT_ITEM_ID;
+  if (flowId) return [renderWorklistFlow(to, flowId, namesById, summary)];
   return [await renderWorklist(to, whatsappSenderId, actorUserId, namesById, summary)];
 }

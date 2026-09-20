@@ -2,7 +2,7 @@ import { getExpectedArrivals, recordArrival } from '../domain/ArrivalService.js'
 import { getUserById } from '../domain/UserService.js';
 import { getPatientById } from '../domain/PatientService.js';
 import { DomainError } from '../domain/types.js';
-import { renderArrivalRecorded, renderExpectedArrivals } from '../adapter/MessageRenderer.js';
+import { renderArrivalRecorded, renderExpectedArrivals, renderExpectedArrivalsFlow } from '../adapter/MessageRenderer.js';
 import type { OutboundMessage } from '../adapter/WhatsAppClient.js';
 
 export async function handleExpectedArrivalsCommand(
@@ -18,6 +18,8 @@ export async function handleExpectedArrivalsCommand(
   const namesById = Object.fromEntries(
     patients.filter((p): p is NonNullable<typeof p> => p !== null).map((p) => [p.id, p.displayName]),
   );
+  const flowId = process.env.FLOW_SELECT_ITEM_ID;
+  if (flowId) return [renderExpectedArrivalsFlow(to, flowId, namesById, steps)];
   return [await renderExpectedArrivals(to, whatsappSenderId, namesById, steps)];
 }
 

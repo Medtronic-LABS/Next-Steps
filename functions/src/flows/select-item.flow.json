@@ -1,0 +1,54 @@
+{
+  "version": "5.0",
+  "screens": [
+    {
+      "id": "SELECT",
+      "title": "Select",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "kind": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "form",
+            "children": [
+              {
+                "type": "Dropdown",
+                "name": "selected",
+                "label": "Select one",
+                "required": true,
+                "data-source": "${data.items}"
+              },
+              {
+                "type": "Footer",
+                "label": "Continue",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {
+                    "kind": "${data.kind}",
+                    "selected_id": "${form.selected}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

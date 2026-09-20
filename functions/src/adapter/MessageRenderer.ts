@@ -1,6 +1,7 @@
 import { issueActionToken, issueActionTokens } from '../conversation/ConversationService.js';
 import type { CareStep, Patient, Provenance, Role, User } from '../domain/types.js';
 import type { WorklistSummary } from '../domain/WorklistService.js';
+import type { AnyAlert } from '../domain/AlertService.js';
 import type { OutboundMessage } from './WhatsAppClient.js';
 
 /** Fixed navigation commands never carry patient/step context (spec §9). */
@@ -9,35 +10,56 @@ export const CMD = {
   FIND_PATIENT: 'cmd:FIND_PATIENT',
   WORKLIST: 'cmd:WORKLIST',
   EXPECTED_ARRIVALS: 'cmd:EXPECTED_ARRIVALS',
+  ADD_NEXT_STEP: 'cmd:ADD_NEXT_STEP',
+  ALERTS: 'cmd:ALERTS',
 } as const;
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-export function renderMenu(to: string, role: Role): OutboundMessage {
+function timeOfDayGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+const ROLE_LABELS: Record<Role, string> = { ANM: 'ANM', STAFF_NURSE: 'Staff Nurse' };
+
+export function renderMenu(to: string, user: User, facilityName: string): OutboundMessage {
   const options: { id: string; title: string; description: string }[] = [
-    { id: CMD.FIND_PATIENT, title: 'Find a patient', description: 'Search and view open steps' },
     { id: CMD.WORKLIST, title: "Today's work", description: 'Due today and overdue' },
+    { id: CMD.FIND_PATIENT, title: 'Find a patient', description: 'Search and view open steps' },
+    { id: CMD.ADD_NEXT_STEP, title: 'Add next step', description: 'Stage a referral for any patient' },
+    { id: CMD.ALERTS, title: 'Alerts', description: 'Recently sent reminders' },
   ];
   // Expected arrivals is a receiving-facility concern (spec Phase 4) — only
   // staff at a destination facility (e.g. Priya, STAFF_NURSE) act on it.
-  if (role === 'STAFF_NURSE') {
+  if (user.role === 'STAFF_NURSE') {
     options.push({
       id: CMD.EXPECTED_ARRIVALS,
       title: 'Expected arrivals',
       description: 'Patients referred to your facility',
     });
   }
-  // WhatsApp reply buttons (max 3, shown immediately) instead of a list
-  // message (options hidden behind a tap-to-reveal "Menu" button) — the menu
-  // never has more than 3 options in this MVP, so buttons always fit.
-  const body = ['What would you like to do?', ...options.map((o) => `• ${o.title} — ${o.description}`)].join('\n');
+
+  const identityLine = `${user.name} · ${ROLE_LABELS[user.role]} · ${facilityName}`;
+  const greeting = `${timeOfDayGreeting()}, ${user.name}. What do you need?`;
+
+  // Buttons (max 3, shown immediately) when the menu fits; a list otherwise
+  // — spec's own UI mapping table calls for exactly this: "Four-item main
+  // menu -> List message or buttons + More".
+  if (options.length <= 3) {
+    const body = [identityLine, greeting, ...options.map((o) => `• ${o.title} — ${o.description}`)].join('\n');
+    return { kind: 'buttons', to, body, buttons: options.map((o) => ({ id: o.id, title: o.title })) };
+  }
   return {
-    kind: 'buttons',
+    kind: 'list',
     to,
-    body,
-    buttons: options.map((o) => ({ id: o.id, title: o.title })),
+    body: `${identityLine}\n${greeting}`,
+    buttonLabel: 'Menu',
+    sections: [{ rows: options.map((o) => ({ id: o.id, title: o.title, description: o.description })) }],
   };
 }
 
@@ -53,11 +75,14 @@ export async function renderPatientList(
   to: string,
   whatsappSenderId: string,
   patients: Patient[],
+  // 'SELECT_PATIENT_FOR_STAGE' for the "Add next step" flow (spec: stage
+  // regardless of existing open steps), 'SELECT_PATIENT' for normal find.
+  actionType: 'SELECT_PATIENT' | 'SELECT_PATIENT_FOR_STAGE' = 'SELECT_PATIENT',
 ): Promise<OutboundMessage> {
   const matches = patients.slice(0, 10);
   const tokens = await issueActionTokens(
     whatsappSenderId,
-    matches.map((p) => ({ type: 'SELECT_PATIENT', patientId: p.id })),
+    matches.map((p) => ({ type: actionType, patientId: p.id })),
   );
   const rows = matches.map((p, i) => ({ id: tokens[i]!, title: p.displayName }));
   return {
@@ -66,6 +91,25 @@ export async function renderPatientList(
     body: `Found ${patients.length} match${patients.length === 1 ? '' : 'es'}.`,
     buttonLabel: 'Select patient',
     sections: [{ rows }],
+  };
+}
+
+/**
+ * Flow-based alternative to renderPatientList — same dropdown-select Flow
+ * shared with the worklist/expected-arrivals screens (screens/select-item.flow.json).
+ * No action tokens: the selected patient id is the Flow's own screen output.
+ */
+export function renderPatientListFlow(to: string, flowId: string, patients: Patient[]): OutboundMessage {
+  const matches = patients.slice(0, 10);
+  const items = matches.map((p) => ({ id: p.id, title: p.displayName }));
+  return {
+    kind: 'flow',
+    to,
+    body: `Found ${patients.length} match${patients.length === 1 ? '' : 'es'}.`,
+    flowId,
+    flowCta: 'View matches',
+    screenId: 'SELECT',
+    flowActionData: { kind: 'patient', items },
   };
 }
 
@@ -185,6 +229,38 @@ export async function renderExpectedArrivals(
     body: `${steps.length} patient${steps.length === 1 ? '' : 's'} expected.`,
     buttonLabel: 'View patient',
     sections: [{ rows }],
+  };
+}
+
+/**
+ * Flow-based alternative to renderExpectedArrivals — shares select-item.flow.json
+ * with renderPatientListFlow/renderWorklistFlow. A step needs both a
+ * patientId and stepId to route (unlike a plain patient pick), so the
+ * option id is the composite `${patientId}::${stepId}`, split back apart
+ * in the router.
+ */
+export function renderExpectedArrivalsFlow(
+  to: string,
+  flowId: string,
+  patientNamesById: Record<string, string>,
+  steps: CareStep[],
+): OutboundMessage {
+  if (steps.length === 0) {
+    return { kind: 'text', to, body: 'No patients are currently expected.' };
+  }
+  const items = steps.map((s) => ({
+    id: `${s.patientId}::${s.id}`,
+    title: patientNamesById[s.patientId] ?? s.patientId,
+    description: `Referred — due ${fmtDate(s.dueDate)}`,
+  }));
+  return {
+    kind: 'flow',
+    to,
+    body: `${steps.length} patient${steps.length === 1 ? '' : 's'} expected.`,
+    flowId,
+    flowCta: 'View patients',
+    screenId: 'SELECT',
+    flowActionData: { kind: 'step', items },
   };
 }
 
@@ -368,6 +444,34 @@ export async function renderWorklist(
   return { kind: 'list', to, body: "Today's work", buttonLabel: 'View step', sections };
 }
 
+/** Flow-based alternative to renderWorklist — see renderExpectedArrivalsFlow for the composite-id note. */
+export function renderWorklistFlow(
+  to: string,
+  flowId: string,
+  patientNamesById: Record<string, string>,
+  summary: WorklistSummary,
+): OutboundMessage {
+  const allSteps = [...summary.overdue, ...summary.dueToday];
+  if (allSteps.length === 0) {
+    return { kind: 'text', to, body: 'Nothing overdue or due today.' };
+  }
+  const overdueIds = new Set(summary.overdue.map((s) => s.id));
+  const items = allSteps.map((s) => ({
+    id: `${s.patientId}::${s.id}`,
+    title: `${patientNamesById[s.patientId] ?? s.patientId} — ${s.kind}`,
+    description: `Due ${fmtDate(s.dueDate)}${overdueIds.has(s.id) ? ' (overdue)' : ''}`,
+  }));
+  return {
+    kind: 'flow',
+    to,
+    body: "Today's work",
+    flowId,
+    flowCta: 'View steps',
+    screenId: 'SELECT',
+    flowActionData: { kind: 'step', items },
+  };
+}
+
 export function renderSessionExpired(to: string): OutboundMessage {
   return {
     kind: 'text',
@@ -432,4 +536,24 @@ export function renderExpectedArrivalsSummary(to: string, expectedCount: number,
       facility_name: facilityName,
     },
   };
+}
+
+function alertSummaryLine(alert: AnyAlert): string {
+  const date = fmtDate(alert.sentAt.slice(0, 10));
+  switch (alert.template) {
+    case 'care_step_overdue_v1':
+      return `${date} — Overdue reminder (${alert.deliveryStatus.toLowerCase()})`;
+    case 'work_due_today_v1':
+      return `${date} — ${alert.count} step${alert.count === 1 ? '' : 's'} due today (${alert.deliveryStatus.toLowerCase()})`;
+    case 'expected_arrivals_summary_v1':
+      return `${date} — ${alert.count} patient${alert.count === 1 ? '' : 's'} expected (${alert.deliveryStatus.toLowerCase()})`;
+  }
+}
+
+/** "Alerts" menu item — a read-only history of proactive pushes sent to this user. */
+export function renderAlertHistory(to: string, alerts: AnyAlert[]): OutboundMessage {
+  if (alerts.length === 0) {
+    return { kind: 'text', to, body: 'No alerts sent yet.' };
+  }
+  return { kind: 'text', to, body: ['Recent alerts:', ...alerts.map((a) => `• ${alertSummaryLine(a)}`)].join('\n') };
 }

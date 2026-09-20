@@ -28,7 +28,7 @@ export type OutboundMessage =
       flowId: string;
       flowCta: string;
       screenId: string;
-      flowActionData?: Record<string, string>;
+      flowActionData?: Record<string, unknown>;
     };
 
 export interface SendResult {

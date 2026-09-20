@@ -73,12 +73,14 @@ describe('routeInboundMessage — spec §11/§18/§19 edge cases', () => {
 
   it('shows Priya (STAFF_NURSE) the Expected arrivals menu item but not Anita (ANM)', async () => {
     const anitaMenu = await routeInboundMessage(textMessage(ANITA_FROM, 'menu'));
-    const anitaButtons = anitaMenu[0]!.kind === 'buttons' ? anitaMenu[0]!.buttons : [];
-    expect(anitaButtons.some((b) => b.title === 'Expected arrivals')).toBe(false);
+    const anitaRows = anitaMenu[0]!.kind === 'list' ? anitaMenu[0]!.sections.flatMap((s) => s.rows) : [];
+    expect(anitaRows.some((r) => r.title === 'Expected arrivals')).toBe(false);
+    expect(anitaRows.some((r) => r.title === 'Add next step')).toBe(true);
+    expect(anitaRows.some((r) => r.title === 'Alerts')).toBe(true);
 
     const priyaMenu = await routeInboundMessage(textMessage('919800000102', 'menu'));
-    const priyaButtons = priyaMenu[0]!.kind === 'buttons' ? priyaMenu[0]!.buttons : [];
-    expect(priyaButtons.some((b) => b.title === 'Expected arrivals')).toBe(true);
+    const priyaRows = priyaMenu[0]!.kind === 'list' ? priyaMenu[0]!.sections.flatMap((s) => s.rows) : [];
+    expect(priyaRows.some((r) => r.title === 'Expected arrivals')).toBe(true);
   });
 
   it('closes a step from a completed WhatsApp Flow reply', async () => {
@@ -112,6 +114,70 @@ describe('routeInboundMessage — spec §11/§18/§19 edge cases', () => {
     expect(outbound).toEqual([
       { kind: 'text', to: '+919800000101', body: "Sorry, I didn't understand that. Type menu to see your options." },
     ]);
+  });
+
+  it('selects a patient from a select-item Flow reply (kind: patient)', async () => {
+    await confirmStep({
+      actorUserId: ANITA.id,
+      patientId: LAKSHMI_DEVI.id,
+      destinationFacilityId: CHC_TEONTHAR.id,
+      dueDate: '2026-01-01',
+    });
+
+    const outbound = await routeInboundMessage(
+      flowReplyMessage(ANITA_FROM, { kind: 'patient', selected_id: LAKSHMI_DEVI.id }),
+    );
+    // Lakshmi has exactly one open step, so this goes straight to step actions.
+    expect(outbound[0]).toMatchObject({ kind: 'buttons', body: 'What would you like to do?' });
+  });
+
+  it('selects a step from a select-item Flow reply (kind: step, composite id)', async () => {
+    const step = await confirmStep({
+      actorUserId: ANITA.id,
+      patientId: LAKSHMI_DEVI.id,
+      destinationFacilityId: CHC_TEONTHAR.id,
+      dueDate: '2026-01-01',
+    });
+
+    const outbound = await routeInboundMessage(
+      flowReplyMessage(ANITA_FROM, { kind: 'step', selected_id: `${LAKSHMI_DEVI.id}::${step.id}` }),
+    );
+    expect(outbound[0]).toMatchObject({ kind: 'buttons', body: 'What would you like to do?' });
+  });
+
+  it('falls back to unrecognized on a step Flow reply with a malformed composite id', async () => {
+    const outbound = await routeInboundMessage(
+      flowReplyMessage(ANITA_FROM, { kind: 'step', selected_id: 'no-separator-here' }),
+    );
+    expect(outbound).toEqual([
+      { kind: 'text', to: '+919800000101', body: "Sorry, I didn't understand that. Type menu to see your options." },
+    ]);
+  });
+
+  it('leaves an empty worklist as plain text even with FLOW_SELECT_ITEM_ID configured (nothing to select)', async () => {
+    process.env.FLOW_SELECT_ITEM_ID = 'test-select-flow-id';
+    try {
+      const worklist = await routeInboundMessage(interactiveMessage(ANITA_FROM, 'cmd:WORKLIST'));
+      expect(worklist[0]).toMatchObject({ kind: 'text', body: 'Nothing overdue or due today.' });
+    } finally {
+      delete process.env.FLOW_SELECT_ITEM_ID;
+    }
+  });
+
+  it('sends the worklist Flow instead of the flat list when FLOW_SELECT_ITEM_ID is configured and steps exist', async () => {
+    await confirmStep({
+      actorUserId: ANITA.id,
+      patientId: LAKSHMI_DEVI.id,
+      destinationFacilityId: CHC_TEONTHAR.id,
+      dueDate: new Date().toISOString().slice(0, 10),
+    });
+    process.env.FLOW_SELECT_ITEM_ID = 'test-select-flow-id';
+    try {
+      const worklist = await routeInboundMessage(interactiveMessage(ANITA_FROM, 'cmd:WORKLIST'));
+      expect(worklist[0]).toMatchObject({ kind: 'flow', flowId: 'test-select-flow-id' });
+    } finally {
+      delete process.env.FLOW_SELECT_ITEM_ID;
+    }
   });
 
   it('sends the closure Flow instead of the flat list when FLOW_CLOSURE_PROVENANCE_ID is configured', async () => {

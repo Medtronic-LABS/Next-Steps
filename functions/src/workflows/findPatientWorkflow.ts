@@ -6,6 +6,7 @@ import { updateConversation } from '../conversation/ConversationService.js';
 import {
   renderNoMatches,
   renderPatientList,
+  renderPatientListFlow,
   renderPatientSummary,
   renderStepActions,
 } from '../adapter/MessageRenderer.js';
@@ -22,6 +23,8 @@ export async function handleFindCommand(
   if (matches.length === 1) {
     return handleSelectPatient(to, whatsappSenderId, actorUserId, matches[0]!.id);
   }
+  const flowId = process.env.FLOW_SELECT_ITEM_ID;
+  if (flowId) return [renderPatientListFlow(to, flowId, matches)];
   return [await renderPatientList(to, whatsappSenderId, matches)];
 }
 

@@ -14,9 +14,16 @@ import { ConversationError } from '../conversation/types.js';
 import { DomainError, type ContactOutcomeValue, type Provenance } from '../domain/types.js';
 import { handleMenuCommand } from './menuWorkflow.js';
 import { handleFindCommand, handleSelectPatient, handleSelectStep } from './findPatientWorkflow.js';
-import { handleChangeReferral, handleConfirmReferral, handleStageReferral } from './referralWorkflow.js';
+import {
+  handleAddNextStepCommand,
+  handleChangeReferral,
+  handleConfirmReferral,
+  handleFindForStageCommand,
+  handleStageReferral,
+} from './referralWorkflow.js';
 import { handleWorklistCommand } from './worklistWorkflow.js';
 import { handleConfirmArrival, handleExpectedArrivalsCommand } from './arrivalWorkflow.js';
+import { handleAlertsCommand } from './alertsHistoryWorkflow.js';
 import {
   handleCall,
   handleCloseWithProvenance,
@@ -44,27 +51,44 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   const user = await resolveSender(message.from);
   if (!user) return [renderUnregistered(to)];
 
-  const { wasExpired } = await loadOrResetConversation(to, user.id);
+  const { state, wasExpired } = await loadOrResetConversation(to, user.id);
 
   if (message.kind === 'text') {
     const text = (message.text ?? '').trim();
     const lower = text.toLowerCase();
     if (GREETINGS.has(lower)) return handleMenuCommand(to, user);
-    if (lower.startsWith('find ')) return handleFindCommand(to, to, user.id, text.slice('find '.length).trim());
+    if (lower.startsWith('find ')) {
+      const query = text.slice('find '.length).trim();
+      // "Add next step" set this state so the very next "find X" lands on
+      // staging a referral instead of the normal find-patient view.
+      if (state.currentState === 'AWAITING_PATIENT_FOR_STAGE') {
+        return handleFindForStageCommand(to, to, user.id, query);
+      }
+      return handleFindCommand(to, to, user.id, query);
+    }
     return [renderUnrecognized(to)];
   }
 
   if (message.kind === 'flow_reply') {
-    // No opaque action token here — the Flow's own screen output carries
-    // its state (see MessageRenderer.renderClosureProvenanceFlow). Shape,
-    // not flowName, discriminates which Flow this came from: Meta reports
-    // `name` as a fixed "flow" constant, not something we choose per-Flow.
-    const { provenance, step_id: stepId } = message.flowResponse ?? {};
-    if (!isProvenance(provenance) || typeof stepId !== 'string') {
-      return [renderUnrecognized(to)];
-    }
+    // No opaque action token here — a Flow's own screen output carries its
+    // state (see MessageRenderer.renderClosureProvenanceFlow /
+    // renderPatientListFlow etc.). Response shape, not flowName,
+    // discriminates which Flow this came from: Meta reports `name` as a
+    // fixed "flow" constant, not something we choose per-Flow.
+    const response = message.flowResponse ?? {};
     try {
-      return await handleCloseWithProvenance(to, user.id, stepId, provenance);
+      if (isProvenance(response.provenance) && typeof response.step_id === 'string') {
+        return await handleCloseWithProvenance(to, user.id, response.step_id, response.provenance);
+      }
+      if (response.kind === 'patient' && typeof response.selected_id === 'string') {
+        return await handleSelectPatient(to, to, user.id, response.selected_id);
+      }
+      if (response.kind === 'step' && typeof response.selected_id === 'string') {
+        const [patientId, stepId] = response.selected_id.split('::');
+        if (!patientId || !stepId) return [renderUnrecognized(to)];
+        return await handleSelectStep(to, to, user.id, patientId, stepId);
+      }
+      return [renderUnrecognized(to)];
     } catch (err) {
       if (err instanceof DomainError) return [{ kind: 'text', to, body: err.message }];
       throw err;
@@ -76,6 +100,8 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   if (replyId === CMD.FIND_PATIENT) return [renderFindPatientPrompt(to)];
   if (replyId === CMD.WORKLIST) return handleWorklistCommand(to, to, user.id);
   if (replyId === CMD.EXPECTED_ARRIVALS) return handleExpectedArrivalsCommand(to, to, user.id);
+  if (replyId === CMD.ADD_NEXT_STEP) return handleAddNextStepCommand(to, to);
+  if (replyId === CMD.ALERTS) return handleAlertsCommand(to, user.id);
 
   // Fixed commands never expire; anything else is an opaque token that must be
   // resolved against conversation state, which a reset (spec §2D) invalidates.
@@ -86,6 +112,8 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     switch (action.type) {
       case 'SELECT_PATIENT':
         return handleSelectPatient(to, to, user.id, action.patientId!);
+      case 'SELECT_PATIENT_FOR_STAGE':
+        return handleStageReferral(to, to, user.id, action.patientId!);
       case 'SELECT_STEP':
         return handleSelectStep(to, to, user.id, action.patientId!, action.stepId!);
       case 'CONFIRM_ARRIVAL':

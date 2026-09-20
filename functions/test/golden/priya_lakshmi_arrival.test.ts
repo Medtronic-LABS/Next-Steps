@@ -35,7 +35,7 @@ describe('golden: Priya confirms arrival for a referral to CHC Teonthar', () => 
     const replay = new ConversationReplay();
 
     const menu = await replay.run(turns[0]!); // menu
-    expect(bodies(menu)[0]).toContain('What would you like to do?');
+    expect(bodies(menu)[0]).toContain('What do you need?');
 
     const arrivalsList = await replay.run(turns[1]!); // Expected arrivals
     expect(bodies(arrivalsList)[0]).toContain('expected');

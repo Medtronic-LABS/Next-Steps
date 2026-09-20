@@ -27,7 +27,7 @@ describe('golden: Anita stages and confirms a referral for Lakshmi Devi', () => 
     const replay = new ConversationReplay();
 
     const menu = await replay.run(turns[0]!);
-    expect(bodies(menu)[0]).toContain('What would you like to do?');
+    expect(bodies(menu)[0]).toContain('What do you need?');
 
     const prompt = await replay.run(turns[1]!);
     expect(bodies(prompt)[0]).toContain('find <patient name>');

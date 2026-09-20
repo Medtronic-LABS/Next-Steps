@@ -33,9 +33,19 @@ export interface DailySummaryAlert {
   recipientUserId: string;
   template: DailySummaryTemplate;
   count: number;
-  sentAt: string; // ISO
+  sentAt: string;
   deliveryStatus: AlertStatus;
 }
+
+export type AnyAlert = OverdueAlert | DailySummaryAlert;
+
+/** "Alerts" menu item (read-only history) — most recent first, in memory since the alerts collection is small per user. */
+export async function getRecentAlertsForUser(userId: string, limit = 10): Promise<AnyAlert[]> {
+  const snap = await getDb().collection(Collections.alerts).where('recipientUserId', '==', userId).get();
+  const alerts = snap.docs.map((doc) => doc.data() as AnyAlert);
+  return alerts.sort((a, b) => (a.sentAt < b.sentAt ? 1 : -1)).slice(0, limit);
+}
+
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
