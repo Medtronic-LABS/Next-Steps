@@ -90,9 +90,13 @@ without change.
   remain unsent — only `care_step_overdue_v1` has a scheduled dispatcher
   (`scheduled/overdueAlerts.ts` + `AlertService.dispatchOverdueAlerts`). No CCE
   outbox consumer yet either — `cceOutbox` is written, never drained.
-- **Phase 6 (hardening)**: broader reliability edge cases beyond what Phases 0–3
-  already require (idempotency, expiry, stale actions are implemented; duplicate
-  webhook delivery and message-status logging get deeper coverage later).
+- **Rest of Phase 6**: signature validation, payload parsing, RBAC (every
+  domain service, not just closure), duplicate/stale action, conversation
+  expiry, unregistered-sender data-leakage, and message-status merge behavior
+  now each have direct unit coverage (56 tests total). Still not done:
+  observability beyond `logger.warn`/`logger.error` calls in the webhook
+  handler, and deployment documentation (there's no runbook yet — see "Real
+  Meta/WhatsApp Business credentials" above).
 - **Real Meta/WhatsApp Business credentials and a real Firebase project** — nothing
   is deployed. `GraphApiWhatsAppClient` is written but unexercised until secrets
   exist. This repo has no root `.firebaserc` yet (project selection happens via

@@ -36,7 +36,9 @@ export function parseWebhookPayload(body: unknown): {
   messages: InboundMessage[];
   statuses: InboundStatus[];
 } {
-  const payload = body as RawWebhookPayload;
+  // Spec §19 "webhook payload validation" — a malformed/empty body must never
+  // throw; it just yields no messages or statuses to process.
+  const payload = (body ?? {}) as RawWebhookPayload;
   const messages: InboundMessage[] = [];
   const statuses: InboundStatus[] = [];
 
