@@ -1,0 +1,316 @@
+import { issueActionToken, issueActionTokens } from '../conversation/ConversationService.js';
+import type { CareStep, Patient, Provenance, Role } from '../domain/types.js';
+import type { WorklistSummary } from '../domain/WorklistService.js';
+import type { OutboundMessage } from './WhatsAppClient.js';
+
+/** Fixed navigation commands never carry patient/step context (spec §9). */
+export const CMD = {
+  MENU: 'cmd:MENU',
+  FIND_PATIENT: 'cmd:FIND_PATIENT',
+  WORKLIST: 'cmd:WORKLIST',
+} as const;
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+export function renderMenu(to: string, _role: Role): OutboundMessage {
+  return {
+    kind: 'list',
+    to,
+    body: 'What would you like to do?',
+    buttonLabel: 'Menu',
+    sections: [
+      {
+        rows: [
+          { id: CMD.FIND_PATIENT, title: 'Find a patient', description: 'Search and view open steps' },
+          { id: CMD.WORKLIST, title: "Today's work", description: 'Due today and overdue' },
+        ],
+      },
+    ],
+  };
+}
+
+export function renderFindPatientPrompt(to: string): OutboundMessage {
+  return { kind: 'text', to, body: 'Type: find <patient name>' };
+}
+
+export function renderNoMatches(to: string, query: string): OutboundMessage {
+  return { kind: 'text', to, body: `No patient found matching "${query}". Try again, or type menu.` };
+}
+
+export async function renderPatientList(
+  to: string,
+  whatsappSenderId: string,
+  patients: Patient[],
+): Promise<OutboundMessage> {
+  const matches = patients.slice(0, 10);
+  const tokens = await issueActionTokens(
+    whatsappSenderId,
+    matches.map((p) => ({ type: 'SELECT_PATIENT', patientId: p.id })),
+  );
+  const rows = matches.map((p, i) => ({ id: tokens[i]!, title: p.displayName }));
+  return {
+    kind: 'list',
+    to,
+    body: `Found ${patients.length} match${patients.length === 1 ? '' : 'es'}.`,
+    buttonLabel: 'Select patient',
+    sections: [{ rows }],
+  };
+}
+
+export async function renderPatientSummary(
+  to: string,
+  whatsappSenderId: string,
+  patient: Patient,
+  openSteps: CareStep[],
+): Promise<OutboundMessage> {
+  if (openSteps.length === 0) {
+    const token = await issueActionToken(whatsappSenderId, {
+      type: 'STAGE_REFERRAL',
+      patientId: patient.id,
+    });
+    return {
+      kind: 'buttons',
+      to,
+      body: `${patient.displayName} has no open steps.`,
+      buttons: [{ id: token, title: 'Stage referral' }],
+    };
+  }
+
+  const tokens = await issueActionTokens(
+    whatsappSenderId,
+    openSteps.map((s) => ({ type: 'SELECT_STEP', patientId: patient.id, stepId: s.id })),
+  );
+  const rows = openSteps.map((s, i) => ({ id: tokens[i]!, title: `${s.kind} — due ${fmtDate(s.dueDate)}` }));
+  return {
+    kind: 'list',
+    to,
+    body: `${patient.displayName} — ${openSteps.length} open step${openSteps.length === 1 ? '' : 's'}.`,
+    buttonLabel: 'View step',
+    sections: [{ rows }],
+  };
+}
+
+export async function renderReferralConfirm(
+  to: string,
+  whatsappSenderId: string,
+  patientId: string,
+  destinationFacilityId: string,
+  destinationFacilityName: string,
+  dueDate: string,
+): Promise<OutboundMessage> {
+  const [confirmToken, changeToken] = (await issueActionTokens(whatsappSenderId, [
+    { type: 'CONFIRM_REFERRAL', patientId, data: { destinationFacilityId, dueDate } },
+    { type: 'CHANGE_REFERRAL', patientId },
+  ])) as [string, string];
+  return {
+    kind: 'buttons',
+    to,
+    body: `Refer to ${destinationFacilityName}, due ${fmtDate(dueDate)}?`,
+    buttons: [
+      { id: confirmToken, title: 'Confirm' },
+      { id: changeToken, title: 'Change' },
+    ],
+  };
+}
+
+export async function renderReferralConfirmed(
+  to: string,
+  destinationFacilityName: string,
+): Promise<OutboundMessage> {
+  return { kind: 'text', to, body: `Referral to ${destinationFacilityName} confirmed.` };
+}
+
+export async function renderStepActions(
+  to: string,
+  whatsappSenderId: string,
+  patientId: string,
+  stepId: string,
+): Promise<OutboundMessage> {
+  const [callToken, closeToken, rescheduleToken] = (await issueActionTokens(whatsappSenderId, [
+    { type: 'CALL', patientId, stepId },
+    { type: 'START_CLOSE', patientId, stepId },
+    { type: 'START_RESCHEDULE', patientId, stepId },
+  ])) as [string, string, string];
+  return {
+    kind: 'buttons',
+    to,
+    body: 'What would you like to do?',
+    buttons: [
+      { id: callToken, title: 'Call' },
+      { id: closeToken, title: 'Completed' },
+      { id: rescheduleToken, title: 'Reschedule' },
+    ],
+  };
+}
+
+export async function renderCallInitiated(
+  to: string,
+  whatsappSenderId: string,
+  patientId: string,
+  stepId: string,
+  patientDisplayName: string,
+  phoneNumber: string,
+): Promise<[OutboundMessage, OutboundMessage]> {
+  const [spoke, noAnswer, wrongNumber] = (await issueActionTokens(whatsappSenderId, [
+    { type: 'CONTACT_OUTCOME', patientId, stepId, data: { outcome: 'SPOKE_TO_PATIENT' } },
+    { type: 'CONTACT_OUTCOME', patientId, stepId, data: { outcome: 'NO_ANSWER' } },
+    { type: 'CONTACT_OUTCOME', patientId, stepId, data: { outcome: 'WRONG_NUMBER' } },
+  ])) as [string, string, string];
+  return [
+    { kind: 'text', to, body: `Calling ${patientDisplayName}: ${phoneNumber}` },
+    {
+      kind: 'buttons',
+      to,
+      body: `Were you able to reach ${patientDisplayName}?`,
+      buttons: [
+        { id: spoke, title: 'Spoke to patient' },
+        { id: noAnswer, title: 'No answer' },
+        { id: wrongNumber, title: 'Wrong number' },
+      ],
+    },
+  ];
+}
+
+export function renderContactOutcomeRecorded(to: string): OutboundMessage {
+  return { kind: 'text', to, body: 'Noted. Type menu to continue.' };
+}
+
+const PROVENANCE_LABELS: Record<Provenance, string> = {
+  AT_REFERRED_FACILITY: 'Seen at the referred facility',
+  OTHER_FACILITY: 'Seen at a different facility',
+  PRIVATE_PROVIDER: 'Seen by a private provider',
+  NOT_COMPLETED: 'Not seen anywhere',
+};
+
+export async function renderProvenancePrompt(
+  to: string,
+  whatsappSenderId: string,
+  patientId: string,
+  stepId: string,
+): Promise<OutboundMessage> {
+  const provenances = Object.keys(PROVENANCE_LABELS) as Provenance[];
+  const tokens = await issueActionTokens(
+    whatsappSenderId,
+    provenances.map((provenance) => ({ type: 'CLOSE_WITH_PROVENANCE', patientId, stepId, data: { provenance } })),
+  );
+  const rows = provenances.map((provenance, i) => ({ id: tokens[i]!, title: PROVENANCE_LABELS[provenance] }));
+  return {
+    kind: 'list',
+    to,
+    body: 'What happened with this referral?',
+    buttonLabel: 'Select outcome',
+    sections: [{ rows }],
+  };
+}
+
+export function renderStepClosed(to: string, downgraded: boolean): OutboundMessage {
+  return {
+    kind: 'text',
+    to,
+    body: downgraded
+      ? 'Closed. This did not resolve as originally referred — flagged for follow-up.'
+      : 'Closed. Referral completed as intended.',
+  };
+}
+
+const RESCHEDULE_PRESETS = [
+  { label: 'Tomorrow', days: 1 },
+  { label: 'In 3 days', days: 3 },
+  { label: 'In 1 week', days: 7 },
+] as const;
+
+export async function renderReschedulePresets(
+  to: string,
+  whatsappSenderId: string,
+  patientId: string,
+  stepId: string,
+): Promise<OutboundMessage> {
+  const presetDates = RESCHEDULE_PRESETS.map(
+    (preset) => new Date(Date.now() + preset.days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  );
+  const tokens = await issueActionTokens(whatsappSenderId, [
+    ...presetDates.map((toDate) => ({ type: 'RESCHEDULE', patientId, stepId, data: { toDate } })),
+    { type: 'RESCHEDULE_CHOOSE_ANOTHER', patientId, stepId },
+  ]);
+  const presetRows = RESCHEDULE_PRESETS.map((preset, i) => ({ id: tokens[i]!, title: preset.label }));
+  const chooseAnotherToken = tokens[tokens.length - 1]!;
+  return {
+    kind: 'list',
+    to,
+    body: 'When should this be rescheduled to?',
+    buttonLabel: 'Select date',
+    sections: [
+      {
+        rows: [...presetRows, { id: chooseAnotherToken, title: 'Choose another date' }],
+      },
+    ],
+  };
+}
+
+export function renderRescheduleChooseAnotherUnavailable(to: string): OutboundMessage {
+  return {
+    kind: 'text',
+    to,
+    body: 'Free date entry is not available yet — please pick one of the presets, or type menu.',
+  };
+}
+
+export function renderStepRescheduled(to: string, toDate: string): OutboundMessage {
+  return { kind: 'text', to, body: `Rescheduled to ${fmtDate(toDate)}.` };
+}
+
+export async function renderWorklist(
+  to: string,
+  whatsappSenderId: string,
+  patientId: string,
+  patientNamesById: Record<string, string>,
+  summary: WorklistSummary,
+): Promise<OutboundMessage> {
+  void patientId;
+  const allSteps = [...summary.overdue, ...summary.dueToday];
+  if (allSteps.length === 0) {
+    return { kind: 'text', to, body: 'Nothing overdue or due today.' };
+  }
+
+  const tokens = await issueActionTokens(
+    whatsappSenderId,
+    allSteps.map((s) => ({ type: 'SELECT_STEP', patientId: s.patientId, stepId: s.id })),
+  );
+  const tokenByStepId = new Map(allSteps.map((s, i) => [s.id, tokens[i]!]));
+  const toRow = (s: CareStep) => ({
+    id: tokenByStepId.get(s.id)!,
+    title: `${patientNamesById[s.patientId] ?? s.patientId} — ${s.kind}`,
+    description: `Due ${fmtDate(s.dueDate)}`,
+  });
+
+  const sections = [];
+  if (summary.overdue.length > 0) {
+    sections.push({ title: 'Overdue', rows: summary.overdue.map(toRow) });
+  }
+  if (summary.dueToday.length > 0) {
+    sections.push({ title: 'Due today', rows: summary.dueToday.map(toRow) });
+  }
+  return { kind: 'list', to, body: "Today's work", buttonLabel: 'View step', sections };
+}
+
+export function renderSessionExpired(to: string): OutboundMessage {
+  return {
+    kind: 'text',
+    to,
+    body: 'That session has ended to protect patient information. Please find the patient again.',
+  };
+}
+
+export function renderStaleAction(to: string): OutboundMessage {
+  return { kind: 'text', to, body: 'This action is no longer available. Please open the patient again.' };
+}
+
+export function renderUnregistered(to: string): OutboundMessage {
+  return { kind: 'text', to, body: 'You are not registered for this service.' };
+}
+
+export function renderUnrecognized(to: string): OutboundMessage {
+  return { kind: 'text', to, body: "Sorry, I didn't understand that. Type menu to see your options." };
+}

@@ -1,0 +1,7 @@
+[
+  { "kind": "text", "from": "+919800000101", "text": "hi" },
+  { "kind": "reply", "from": "+919800000101", "replyTitle": "Find a patient" },
+  { "kind": "text", "from": "+919800000101", "text": "find Lakshmi" },
+  { "kind": "reply", "from": "+919800000101", "replyTitle": "Stage referral" },
+  { "kind": "reply", "from": "+919800000101", "replyTitle": "Confirm" }
+]

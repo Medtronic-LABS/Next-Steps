@@ -1,0 +1,14 @@
+rules_version = '2';
+
+// All reads/writes for this MVP go through Cloud Functions using the Admin SDK,
+// which bypasses these rules entirely. This file exists to make the intended
+// client-access boundary explicit and to fail closed if a client SDK is ever
+// pointed at this project directly (spec §5: the WhatsApp adapter and domain
+// services are the only writers; there is no direct client access).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -63,3 +63,25 @@ count grow as you act; work the worklist to complete / cancel / decline steps.
 - Live WhatsApp Business API → DEEPLINK-style modelled reminders shown in the UI.
 - Auth / real patient identity → the seeded synthetic clinic.
 - Native Android (PRD Appendix A) → React PWAs, per project direction.
+
+## WhatsApp channel (`feature/whatsapp-channel`, `functions/`)
+
+A separate Firebase Cloud Functions backend under `functions/` implements a
+WhatsApp channel for a different set of coordination workflows — ANM/staff-nurse
+referral, closure, and worklist, for synthetic users Anita, Priya, and Lakshmi
+Devi. It does not share code or fixtures with `packages/core` or
+`cphc-next-steps-prototype/` yet. See
+[`docs/whatsapp/spec.md`](./docs/whatsapp/spec.md) for the full spec and
+[`docs/whatsapp/architecture.md`](./docs/whatsapp/architecture.md) for how it
+fits (or doesn't yet) alongside the rest of this repo.
+
+```bash
+cd functions
+npm install
+npm run typecheck
+npm test              # unit + golden conversation tests, Firestore emulator
+```
+
+No real Firebase project or Meta/WhatsApp Business credentials are wired up —
+everything runs against the Firebase Local Emulator Suite with a mock WhatsApp
+client.
