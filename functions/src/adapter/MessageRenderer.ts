@@ -354,3 +354,24 @@ export function renderUnregistered(to: string): OutboundMessage {
 export function renderUnrecognized(to: string): OutboundMessage {
   return { kind: 'text', to, body: "Sorry, I didn't understand that. Type menu to see your options." };
 }
+
+/** Approved template for a proactive overdue alert (spec §16/§17). */
+export function renderOverdueAlert(
+  to: string,
+  patientDisplayName: string,
+  stepKind: string,
+  dueDate: string,
+  overdueDays: number,
+): OutboundMessage {
+  return {
+    kind: 'template',
+    to,
+    templateName: 'care_step_overdue_v1',
+    params: {
+      patient_display: patientDisplayName,
+      step_label: stepKind,
+      due_date: fmtDate(dueDate),
+      overdue_duration: `${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue`,
+    },
+  };
+}

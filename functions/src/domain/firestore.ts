@@ -27,4 +27,5 @@ export const Collections = {
   auditEvents: 'auditEvents',
   cceOutbox: 'cceOutbox',
   whatsappMessages: 'whatsappMessages',
+  alerts: 'alerts',
 } as const;

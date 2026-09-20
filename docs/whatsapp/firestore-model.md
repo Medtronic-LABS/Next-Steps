@@ -148,6 +148,25 @@ Keyed by the WhatsApp message id (idempotency key, spec §15). Existence of the
 document means the message was already processed; the webhook checks this
 transactionally before running any domain operation.
 
+## `alerts/{alertId}`
+
+Written by `AlertService.dispatchOverdueAlerts()` (spec §17), one document per
+sent-or-attempted proactive overdue alert. Separate from `cceOutbox` — this is
+delivery bookkeeping for the scheduled function itself, not a CCE event.
+
+```jsonc
+{
+  "id": "...",
+  "stepId": "...",
+  "patientId": "LAKSHMI_DEVI",
+  "recipientUserId": "ANITA",
+  "template": "care_step_overdue_v1",
+  "sentAt": "...",
+  "deliveryStatus": "SENT"        // "SENT" | "FAILED" — a FAILED alert remains
+                                   // eligible for retry on the next scheduled run
+}
+```
+
 ## `config/{deploymentId}` (not yet used in Phases 0–3)
 
 Reserved for deployment-tunable values (reschedule presets, overdue thresholds)

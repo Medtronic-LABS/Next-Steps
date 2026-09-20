@@ -55,8 +55,9 @@ Conversation State             Workflows (functions/src/workflows/*)
                               Domain Services (functions/src/domain/*)
                               UserService, PatientService, CareStepService,
                               WorklistService, ReferralService, ClosureService,
-                              RescheduleService, ContactOutcomeService,
-                              AuditService, CCEOutboxService
+                              ArrivalService, RescheduleService,
+                              ContactOutcomeService, AuditService,
+                              CCEOutboxService, AlertService
                                      |
                        +-------------+-------------+
                        v             v             v
@@ -66,6 +67,14 @@ Conversation State             Workflows (functions/src/workflows/*)
                    users, ...)                          v
                                                   CCE system (Phase 5+,
                                                   outbox consumer not yet built)
+
+Cloud Scheduler
+        |
+        v
+Firebase Scheduled Function  (functions/src/scheduled/overdueAlerts.ts)
+  - daily: AlertService.dispatchOverdueAlerts()
+  - finds overdue OPEN steps, checks owner eligibility, sends
+    care_step_overdue_v1 via WhatsAppClient, records alerts/{id}
 ```
 
 This follows the spec's own correction in §25: `WhatsApp → Cloud Functions → Domain
@@ -77,8 +86,10 @@ without change.
 
 ## What's deferred to a later pass
 
-- **Phase 5 (proactive messaging)**: overdue-alert scheduled function, approved
-  templates, outbound dispatch/retry tracking.
+- **Rest of Phase 5**: `work_due_today_v1` and `expected_arrivals_summary_v1`
+  remain unsent — only `care_step_overdue_v1` has a scheduled dispatcher
+  (`scheduled/overdueAlerts.ts` + `AlertService.dispatchOverdueAlerts`). No CCE
+  outbox consumer yet either — `cceOutbox` is written, never drained.
 - **Phase 6 (hardening)**: broader reliability edge cases beyond what Phases 0–3
   already require (idempotency, expiry, stale actions are implemented; duplicate
   webhook delivery and message-status logging get deeper coverage later).

@@ -11,9 +11,9 @@ unless marked otherwise.
 | Stage and confirm a referral | `ReferralService.stageStep` / `confirmStep` | `careSteps`, `auditEvents`, `cceOutbox` | Built |
 | Today's work / overdue drill-down | `WorklistService.getWorklistSummary` / `getOverdueSteps` | `careSteps` | Built |
 | Closure with conditional provenance | `ClosureService.closeStep` | `careSteps`, `auditEvents`, `cceOutbox` | Built |
-| One-tap on-site closure (receiving facility) | `ClosureService.closeStep` (called from Priya's workflow) | `careSteps`, `auditEvents`, `cceOutbox` | **Deferred — Phase 4** |
-| Proactive overdue alert | `WorklistService.getOverdueSteps` + scheduled function | `careSteps`, new `alerts` collection | **Deferred — Phase 5** |
-| Expected arrivals / arrival confirmation | new `ArrivalService.recordArrival` | `careSteps` (`arrivedAt`/`arrivedByUserId`/`arrivalFacilityId`) | **Deferred — Phase 4** |
+| One-tap on-site closure (receiving facility) | `ClosureService.closeStep` (called from Priya's workflow) | `careSteps`, `auditEvents`, `cceOutbox` | Built |
+| Proactive overdue alert | `AlertService.dispatchOverdueAlerts` + scheduled function (`scheduled/overdueAlerts.ts`) | `careSteps`, `alerts` | Built |
+| Expected arrivals / arrival confirmation | `ArrivalService.getExpectedArrivals` / `recordArrival` | `careSteps` (`arrivedAt`/`arrivedByUserId`/`arrivalFacilityId`) | Built |
 | Call outcome | `ContactOutcomeService.recordContactOutcome` | `careSteps.contactOutcomes[]`, `auditEvents` | Built |
 | Rescheduling (presets) | `RescheduleService.rescheduleStep` | `careSteps.dueDate`, `careSteps.rescheduleHistory[]`, `auditEvents` | Built |
 | Audit for every relevant transition | `AuditService.recordAuditEvent` | `auditEvents` | Built |
@@ -21,11 +21,13 @@ unless marked otherwise.
 
 ## Missing backend/domain functionality carried forward
 
-- `ArrivalService` (Phase 4) — arrival is deliberately *not* the same as
-  `ClosureService.closeStep`; needs its own event and its own audit/CCE wiring.
 - CCE outbox **consumer** (background worker that flips `PENDING -> SENT`) — Phase 5+.
-  This pass only writes to the outbox; nothing drains it yet.
-- Scheduled overdue-alert function and approved WhatsApp templates — Phase 5.
+  This pass only writes to the outbox; nothing drains it yet. `alerts` documents
+  are separate from `cceOutbox` and are written/updated directly by
+  `AlertService`, not via the outbox pattern.
+- `work_due_today_v1` and `expected_arrivals_summary_v1` templates (spec §16) are
+  named but unused — only `care_step_overdue_v1` has a scheduled sender. Today's
+  work and expected arrivals remain pull-only (worker opens the menu), not pushed.
 - Number-to-user enrolment/admin tooling (spec §11) — out of scope for the synthetic
   MVP; the seed script is the only "enrolment" mechanism for now.
 
