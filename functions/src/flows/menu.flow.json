@@ -1,5 +1,5 @@
 {
-  "version": "5.0",
+  "version": "7.2",
   "screens": [
     {
       "id": "MENU",
@@ -7,7 +7,7 @@
       "terminal": true,
       "success": true,
       "data": {
-        "greeting": { "type": "string" },
+        "greeting": { "type": "string", "__example__": "What do you need?" },
         "items": {
           "type": "array",
           "items": {
@@ -16,7 +16,11 @@
               "id": { "type": "string" },
               "title": { "type": "string" }
             }
-          }
+          },
+          "__example__": [
+            { "id": "cmd:WORKLIST", "title": "Today's work" },
+            { "id": "cmd:FIND_PATIENT", "title": "Find a patient" }
+          ]
         }
       },
       "layout": {

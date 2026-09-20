@@ -1,5 +1,5 @@
 {
-  "version": "5.0",
+  "version": "7.2",
   "screens": [
     {
       "id": "SELECT",
@@ -7,7 +7,7 @@
       "terminal": true,
       "success": true,
       "data": {
-        "kind": { "type": "string" },
+        "kind": { "type": "string", "__example__": "patient" },
         "items": {
           "type": "array",
           "items": {
@@ -17,7 +17,10 @@
               "title": { "type": "string" },
               "description": { "type": "string" }
             }
-          }
+          },
+          "__example__": [
+            { "id": "LAKSHMI_DEVI", "title": "Lakshmi Devi", "description": "Referred — due 20 Sep" }
+          ]
         }
       },
       "layout": {

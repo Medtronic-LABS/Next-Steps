@@ -71,23 +71,16 @@ describe('routeInboundMessage — spec §11/§18/§19 edge cases', () => {
     ]);
   });
 
-  it('shows Priya (STAFF_NURSE) the Expected arrivals menu item but not Anita (ANM), via buttons + More', async () => {
+  it('shows Priya (STAFF_NURSE) the Expected arrivals menu item but not Anita (ANM)', async () => {
     const anitaMenu = await routeInboundMessage(textMessage(ANITA_FROM, 'menu'));
-    expect(anitaMenu[0]).toMatchObject({ kind: 'buttons' });
-    expect((anitaMenu[0] as { body: string }).body).not.toContain('Expected arrivals');
-    const anitaMore = anitaMenu[0]!.kind === 'buttons' ? anitaMenu[0]!.buttons.find((b) => b.title === 'More') : undefined;
-    expect(anitaMore).toBeDefined();
-    const anitaMoreMenu = await routeInboundMessage(interactiveMessage(ANITA_FROM, anitaMore!.id));
-    const anitaMoreButtons = anitaMoreMenu[0]!.kind === 'buttons' ? anitaMoreMenu[0]!.buttons : [];
-    expect(anitaMoreButtons.some((b) => b.title === 'Expected arrivals')).toBe(false);
-    expect(anitaMoreButtons.some((b) => b.title === 'Add next step')).toBe(true);
-    expect(anitaMoreButtons.some((b) => b.title === 'Alerts')).toBe(true);
+    const anitaRows = anitaMenu[0]!.kind === 'list' ? anitaMenu[0]!.sections.flatMap((s) => s.rows) : [];
+    expect(anitaRows.some((r) => r.title === 'Expected arrivals')).toBe(false);
+    expect(anitaRows.some((r) => r.title === 'Add next step')).toBe(true);
+    expect(anitaRows.some((r) => r.title === 'Alerts')).toBe(true);
 
     const priyaMenu = await routeInboundMessage(textMessage('919800000102', 'menu'));
-    const priyaMore = priyaMenu[0]!.kind === 'buttons' ? priyaMenu[0]!.buttons.find((b) => b.title === 'More') : undefined;
-    const priyaMoreMenu = await routeInboundMessage(interactiveMessage('919800000102', priyaMore!.id));
-    const priyaMoreButtons = priyaMoreMenu[0]!.kind === 'buttons' ? priyaMoreMenu[0]!.buttons : [];
-    expect(priyaMoreButtons.some((b) => b.title === 'Expected arrivals')).toBe(true);
+    const priyaRows = priyaMenu[0]!.kind === 'list' ? priyaMenu[0]!.sections.flatMap((s) => s.rows) : [];
+    expect(priyaRows.some((r) => r.title === 'Expected arrivals')).toBe(true);
   });
 
   it('closes a step from a completed WhatsApp Flow reply', async () => {

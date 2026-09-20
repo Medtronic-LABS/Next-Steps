@@ -1,5 +1,5 @@
 {
-  "version": "5.0",
+  "version": "7.2",
   "screens": [
     {
       "id": "PROVENANCE",
@@ -7,8 +7,8 @@
       "terminal": true,
       "success": true,
       "data": {
-        "step_id": { "type": "string" },
-        "patient_id": { "type": "string" }
+        "step_id": { "type": "string", "__example__": "step-123" },
+        "patient_id": { "type": "string", "__example__": "LAKSHMI_DEVI" }
       },
       "layout": {
         "type": "SingleColumnLayout",

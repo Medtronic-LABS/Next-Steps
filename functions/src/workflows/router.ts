@@ -2,7 +2,6 @@ import type { InboundMessage } from '../webhook/inbound.js';
 import { normalizeWhatsAppNumber, resolveSender } from '../adapter/senderResolution.js';
 import {
   CMD,
-  renderMoreMenu,
   renderSessionExpired,
   renderStaleAction,
   renderUnregistered,
@@ -64,7 +63,6 @@ async function dispatchFixedCommand(replyId: string, to: string, user: User): Pr
   if (replyId === CMD.EXPECTED_ARRIVALS) return handleExpectedArrivalsCommand(to, to, user.id);
   if (replyId === CMD.ADD_NEXT_STEP) return handleAddNextStepCommand(to, to);
   if (replyId === CMD.ALERTS) return handleAlertsCommand(to, user.id);
-  if (replyId === CMD.MORE) return [renderMoreMenu(to, user.role)];
   return null;
 }
 

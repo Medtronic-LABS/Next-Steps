@@ -37,16 +37,13 @@ describe('golden: Priya confirms arrival for a referral to CHC Teonthar', () => 
     const menu = await replay.run(turns[0]!); // menu
     expect(bodies(menu)[0]).toContain('What do you need?');
 
-    const moreMenu = await replay.run(turns[1]!); // More (5 items for STAFF_NURSE, buttons + More)
-    expect(bodies(moreMenu)[0]).toContain('More options');
-
-    const arrivalsList = await replay.run(turns[2]!); // Expected arrivals
+    const arrivalsList = await replay.run(turns[1]!); // Expected arrivals
     expect(bodies(arrivalsList)[0]).toContain('expected');
 
-    const stepActions = await replay.run(turns[3]!); // Lakshmi Devi -> her open step
+    const stepActions = await replay.run(turns[2]!); // Lakshmi Devi -> her open step
     expect(bodies(stepActions)[0]).toContain('What would you like to do?');
 
-    const confirmed = await replay.run(turns[4]!); // Confirm arrival
+    const confirmed = await replay.run(turns[3]!); // Confirm arrival
     expect(bodies(confirmed)[0]).toContain('Arrival recorded');
 
     // Expected Firebase state — arrived, but not closed (spec §2A).

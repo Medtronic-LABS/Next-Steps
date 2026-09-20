@@ -7,7 +7,6 @@ import type { OutboundMessage } from './WhatsAppClient.js';
 /** Fixed navigation commands never carry patient/step context (spec §9). */
 export const CMD = {
   MENU: 'cmd:MENU',
-  MORE: 'cmd:MORE',
   FIND_PATIENT: 'cmd:FIND_PATIENT',
   WORKLIST: 'cmd:WORKLIST',
   EXPECTED_ARRIVALS: 'cmd:EXPECTED_ARRIVALS',
@@ -48,32 +47,28 @@ function menuOptions(role: Role): { id: string; title: string; description: stri
 }
 
 /**
- * "Buttons + More" (spec's own UI mapping table) instead of a list — the
- * first 2 options plus a "More" button; tapping it reveals the rest as a
- * second buttons message (renderMoreMenu). Always fits WhatsApp's 3-button
- * cap on both messages: 4 options -> 2 + More, then 2 more; 5 (STAFF_NURSE)
- * -> 2 + More, then exactly 3 more.
+ * Buttons (max 3, shown immediately) when the menu fits; a list otherwise
+ * — spec's own UI mapping table: "Four-item main menu -> List message or
+ * buttons + More". Went through a buttons+More variant briefly; reverted
+ * back to a plain list since Flows (the other option) can't be published
+ * on this Meta app without Business Verification, and list keeps every
+ * option one tap away without paginating behind "More".
  */
 export function renderMenu(to: string, user: User, facilityName: string): OutboundMessage {
   const options = menuOptions(user.role);
   const identityLine = `${user.name} · ${ROLE_LABELS[user.role]} · ${facilityName}`;
   const greeting = `${timeOfDayGreeting()}, ${user.name}. What do you need?`;
-  const body = [identityLine, greeting, ...options.map((o) => `• ${o.title} — ${o.description}`)].join('\n');
 
-  const primary = options.slice(0, 2);
-  const buttons = primary.map((o) => ({ id: o.id, title: o.title }));
-  if (options.length > 2) buttons.push({ id: CMD.MORE, title: 'More' });
-
-  return { kind: 'buttons', to, body, buttons };
-}
-
-export function renderMoreMenu(to: string, role: Role): OutboundMessage {
-  const rest = menuOptions(role).slice(2);
+  if (options.length <= 3) {
+    const body = [identityLine, greeting, ...options.map((o) => `• ${o.title} — ${o.description}`)].join('\n');
+    return { kind: 'buttons', to, body, buttons: options.map((o) => ({ id: o.id, title: o.title })) };
+  }
   return {
-    kind: 'buttons',
+    kind: 'list',
     to,
-    body: 'More options:',
-    buttons: rest.map((o) => ({ id: o.id, title: o.title })),
+    body: `${identityLine}\n${greeting}`,
+    buttonLabel: 'Menu',
+    sections: [{ rows: options.map((o) => ({ id: o.id, title: o.title, description: o.description })) }],
   };
 }
 
