@@ -95,9 +95,12 @@ without change.
 
 ## What's deferred to a later pass
 
-- **Rest of Phase 5**: `work_due_today_v1` and `expected_arrivals_summary_v1`
-  remain unsent — only `care_step_overdue_v1` has a scheduled dispatcher
-  (`scheduled/overdueAlerts.ts` + `AlertService.dispatchOverdueAlerts`).
+- All three Phase 5 templates now have scheduled dispatchers:
+  `care_step_overdue_v1` (`scheduled/overdueAlerts.ts`, daily),
+  `work_due_today_v1` and `expected_arrivals_summary_v1`
+  (`scheduled/dailySummaries.ts`, daily — one dispatcher per template in
+  `AlertService.dispatchWorkDueTodaySummaries` /
+  `dispatchExpectedArrivalsSummaries`).
 - **Rest of Phase 6**: signature validation, payload parsing, RBAC (every
   domain service, not just closure), duplicate/stale action, conversation
   expiry, unregistered-sender data-leakage, and message-status merge behavior

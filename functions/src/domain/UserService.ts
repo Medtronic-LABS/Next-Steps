@@ -1,5 +1,5 @@
 import { getDb, Collections } from './firestore.js';
-import type { User } from './types.js';
+import type { Role, User } from './types.js';
 
 /**
  * Resolves a WhatsApp sender's phone number to a seeded Firebase user (spec §11).
@@ -24,4 +24,14 @@ export async function resolveUser(phoneNumber: string): Promise<User | null> {
 export async function getUserById(userId: string): Promise<User | null> {
   const doc = await getDb().collection(Collections.users).doc(userId).get();
   return doc.exists ? (doc.data() as User) : null;
+}
+
+/** Used by the daily summary dispatchers (spec §16/§17) to fan out per-role. */
+export async function listActiveUsersByRole(role: Role): Promise<User[]> {
+  const snap = await getDb()
+    .collection(Collections.users)
+    .where('role', '==', role)
+    .where('status', '==', 'ACTIVE')
+    .get();
+  return snap.docs.map((doc) => doc.data() as User);
 }

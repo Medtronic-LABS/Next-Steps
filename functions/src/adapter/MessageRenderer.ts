@@ -382,3 +382,28 @@ export function renderOverdueAlert(
     },
   };
 }
+
+/** Approved template for the daily "work due today" push (spec §16). */
+export function renderWorkDueTodaySummary(to: string, dueTodayCount: number): OutboundMessage {
+  return {
+    kind: 'template',
+    to,
+    templateName: 'work_due_today_v1',
+    params: {
+      due_today_count: String(dueTodayCount),
+    },
+  };
+}
+
+/** Approved template for the daily "expected arrivals" push to a receiving facility (spec §16). */
+export function renderExpectedArrivalsSummary(to: string, expectedCount: number, facilityName: string): OutboundMessage {
+  return {
+    kind: 'template',
+    to,
+    templateName: 'expected_arrivals_summary_v1',
+    params: {
+      expected_count: String(expectedCount),
+      facility_name: facilityName,
+    },
+  };
+}

@@ -28,11 +28,18 @@ unless marked otherwise.
   `WhatsAppClient` real/mock split. `alerts` documents are separate from
   `cceOutbox` and are written/updated directly by `AlertService`, not via the
   outbox pattern.
-- `work_due_today_v1` and `expected_arrivals_summary_v1` templates (spec §16) are
-  named but unused — only `care_step_overdue_v1` has a scheduled sender. Today's
-  work and expected arrivals remain pull-only (worker opens the menu), not pushed.
 - Number-to-user enrolment/admin tooling (spec §11) — out of scope for the synthetic
   MVP; the seed script is the only "enrolment" mechanism for now.
+- A pre-existing test-infrastructure issue: the Firestore emulator's
+  `clearFirestore()` intermittently fails to isolate state between tests when
+  the full suite runs together (confirmed present before today's changes via
+  `git stash`; reproduces even within a single test file run alone under
+  certain conditions; does not reproduce in a plain Node script using the
+  same calls). Root cause not yet found — tried disabling file parallelism
+  (already off), switching Vitest's pool to `forks`, and a verify-and-retry
+  wrapper around `clearFirestore()`, none of which fixed it and the `forks`
+  pool made it worse. Every new test in this codebase has been verified
+  passing when run in isolation; the flakiness only affects full-suite runs.
 
 ## Assumption flagged for review: closure provenance values
 

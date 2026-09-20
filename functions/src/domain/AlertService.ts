@@ -1,9 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { getDb, Collections } from './firestore.js';
-import { getUserById } from './UserService.js';
+import { getUserById, listActiveUsersByRole } from './UserService.js';
 import { getPatientById } from './PatientService.js';
+import { getFacilityById } from './FacilityService.js';
+import { getWorklistSummary } from './WorklistService.js';
+import { getExpectedArrivals } from './ArrivalService.js';
 import { getWhatsAppClient } from '../adapter/WhatsAppClient.js';
-import { renderOverdueAlert } from '../adapter/MessageRenderer.js';
+import {
+  renderExpectedArrivalsSummary,
+  renderOverdueAlert,
+  renderWorkDueTodaySummary,
+} from '../adapter/MessageRenderer.js';
 import type { CareStep } from './types.js';
 
 export type AlertStatus = 'SENT' | 'FAILED';
@@ -14,6 +21,18 @@ export interface OverdueAlert {
   patientId: string;
   recipientUserId: string;
   template: 'care_step_overdue_v1';
+  sentAt: string; // ISO
+  deliveryStatus: AlertStatus;
+}
+
+export type DailySummaryTemplate = 'work_due_today_v1' | 'expected_arrivals_summary_v1';
+
+/** A user-level (not step-level) proactive push — one per recipient per day, not one per step. */
+export interface DailySummaryAlert {
+  id: string;
+  recipientUserId: string;
+  template: DailySummaryTemplate;
+  count: number;
   sentAt: string; // ISO
   deliveryStatus: AlertStatus;
 }
@@ -89,6 +108,92 @@ export async function dispatchOverdueAlerts(): Promise<OverdueAlert[]> {
           step.dueDate,
           daysOverdue(step.dueDate),
         ),
+      );
+    } catch {
+      alert.deliveryStatus = 'FAILED';
+    }
+
+    await getDb().collection(Collections.alerts).doc(alert.id).set(alert);
+    results.push(alert);
+  }
+  return results;
+}
+
+async function alreadySentSummaryToday(recipientUserId: string, template: DailySummaryTemplate): Promise<boolean> {
+  const today = todayIso();
+  const snap = await getDb()
+    .collection(Collections.alerts)
+    .where('recipientUserId', '==', recipientUserId)
+    .where('template', '==', template)
+    .where('deliveryStatus', '==', 'SENT')
+    .get();
+  return snap.docs.some((doc) => (doc.data() as DailySummaryAlert).sentAt.slice(0, 10) === today);
+}
+
+/**
+ * Daily push to each active ANM with at least one step due today (spec §16
+ * `work_due_today_v1`). Complements the interactive "Today's work" menu item
+ * — this is the proactive half.
+ */
+export async function dispatchWorkDueTodaySummaries(): Promise<DailySummaryAlert[]> {
+  const anms = await listActiveUsersByRole('ANM');
+  const results: DailySummaryAlert[] = [];
+
+  for (const user of anms) {
+    if (await alreadySentSummaryToday(user.id, 'work_due_today_v1')) continue;
+
+    const { dueToday } = await getWorklistSummary(user.id);
+    if (dueToday.length === 0) continue;
+
+    const alert: DailySummaryAlert = {
+      id: randomUUID(),
+      recipientUserId: user.id,
+      template: 'work_due_today_v1',
+      count: dueToday.length,
+      sentAt: new Date().toISOString(),
+      deliveryStatus: 'SENT',
+    };
+
+    try {
+      await getWhatsAppClient().send(renderWorkDueTodaySummary(user.phoneNumber, dueToday.length));
+    } catch {
+      alert.deliveryStatus = 'FAILED';
+    }
+
+    await getDb().collection(Collections.alerts).doc(alert.id).set(alert);
+    results.push(alert);
+  }
+  return results;
+}
+
+/**
+ * Daily push to each active STAFF_NURSE whose facility has at least one
+ * expected (not-yet-arrived) referral (spec §16 `expected_arrivals_summary_v1`).
+ * Complements the interactive "Expected arrivals" menu item.
+ */
+export async function dispatchExpectedArrivalsSummaries(): Promise<DailySummaryAlert[]> {
+  const nurses = await listActiveUsersByRole('STAFF_NURSE');
+  const results: DailySummaryAlert[] = [];
+
+  for (const user of nurses) {
+    if (await alreadySentSummaryToday(user.id, 'expected_arrivals_summary_v1')) continue;
+
+    const expected = await getExpectedArrivals(user.facilityId);
+    if (expected.length === 0) continue;
+
+    const facility = await getFacilityById(user.facilityId);
+    const alert: DailySummaryAlert = {
+      id: randomUUID(),
+      recipientUserId: user.id,
+      template: 'expected_arrivals_summary_v1',
+      count: expected.length,
+      sentAt: new Date().toISOString(),
+      deliveryStatus: 'SENT',
+    };
+
+    try {
+      await getWhatsAppClient().send(
+        renderExpectedArrivalsSummary(user.phoneNumber, expected.length, facility?.name ?? user.facilityId),
       );
     } catch {
       alert.deliveryStatus = 'FAILED';
