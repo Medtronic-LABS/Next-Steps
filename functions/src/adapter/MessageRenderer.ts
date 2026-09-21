@@ -3,6 +3,7 @@ import type { CareStep, Patient, Provenance, Role, User } from '../domain/types.
 import type { WorklistSummary } from '../domain/WorklistService.js';
 import type { AnyAlert } from '../domain/AlertService.js';
 import type { StepCategoryConfig } from '../fixtures/stepCategories.js';
+import type { RegisterImportResult } from '../domain/RegisterImportService.js';
 import type { OutboundMessage } from './WhatsAppClient.js';
 
 /** Fixed navigation commands never carry patient/step context (spec §9). */
@@ -13,6 +14,7 @@ export const CMD = {
   EXPECTED_ARRIVALS: 'cmd:EXPECTED_ARRIVALS',
   ADD_NEXT_STEP: 'cmd:ADD_NEXT_STEP',
   ALERTS: 'cmd:ALERTS',
+  IMPORT_REGISTER: 'cmd:IMPORT_REGISTER',
 } as const;
 
 function fmtDate(iso: string): string {
@@ -42,6 +44,14 @@ function menuOptions(role: Role): { id: string; title: string; description: stri
       id: CMD.EXPECTED_ARRIVALS,
       title: 'Expected arrivals',
       description: 'Patients referred to your facility',
+    });
+  }
+  // Register import (addendum §11) is an ANM-facing paper-register task.
+  if (role === 'ANM') {
+    options.push({
+      id: CMD.IMPORT_REGISTER,
+      title: 'Import register',
+      description: 'Experimental — simulated extraction',
     });
   }
   return options;
@@ -663,6 +673,27 @@ export async function renderConsentPrompt(to: string, whatsappSenderId: string):
 
 export function renderPatientCreated(to: string, patient: Patient): OutboundMessage {
   return { kind: 'text', to, body: `${patient.displayName} added. Type menu to continue.` };
+}
+
+/**
+ * Fake OCR import result (addendum §11) — explicitly labeled experimental;
+ * this demonstrates the interaction model (paper register -> extraction ->
+ * matching -> human review of exceptions -> roster), not real OCR accuracy.
+ */
+export function renderRegisterImportResult(to: string, result: RegisterImportResult): OutboundMessage {
+  return {
+    kind: 'text',
+    to,
+    body: [
+      '⚠ Experimental — extraction is simulated, not a validated OCR result.',
+      'Register processed',
+      `${result.rowsFound} rows found`,
+      `${result.matched} matched to existing patients`,
+      `${result.possibleMatches} possible matches`,
+      `${result.newPatients} possible new patient${result.newPatients === 1 ? '' : 's'}`,
+      `Review ${result.needsReview}`,
+    ].join('\n'),
+  };
 }
 
 /**

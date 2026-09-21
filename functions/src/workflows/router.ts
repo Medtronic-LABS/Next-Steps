@@ -35,6 +35,7 @@ import {
 import { handleWorklistCommand } from './worklistWorkflow.js';
 import { handleConfirmArrival, handleExpectedArrivalsCommand } from './arrivalWorkflow.js';
 import { handleAlertsCommand } from './alertsHistoryWorkflow.js';
+import { handleImportRegisterCommand } from './registerImportWorkflow.js';
 import {
   handleCall,
   handleCloseWithProvenance,
@@ -70,6 +71,7 @@ async function dispatchFixedCommand(replyId: string, to: string, user: User): Pr
   if (replyId === CMD.EXPECTED_ARRIVALS) return handleExpectedArrivalsCommand(to, to, user.id);
   if (replyId === CMD.ADD_NEXT_STEP) return handleAddNextStepCommand(to, to);
   if (replyId === CMD.ALERTS) return handleAlertsCommand(to, user.id);
+  if (replyId === CMD.IMPORT_REGISTER) return handleImportRegisterCommand(to);
   return null;
 }
 
