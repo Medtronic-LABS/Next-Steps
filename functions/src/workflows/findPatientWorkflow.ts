@@ -1,5 +1,6 @@
 import { listAllPatients, searchPatients, getPatientById } from '../domain/PatientService.js';
-import { getAllStepsForPatient, getOpenSteps, getStepById } from '../domain/CareStepService.js';
+import { getOpenSteps, getStepById } from '../domain/CareStepService.js';
+import { getPatientJourney } from '../domain/PatientJourneyService.js';
 import { getUserById } from '../domain/UserService.js';
 import { DomainError } from '../domain/types.js';
 import { updateConversation } from '../conversation/ConversationService.js';
@@ -72,12 +73,11 @@ export async function handleSelectPatient(
     currentState: 'PATIENT_SELECTED',
   });
 
-  // Compact journey (addendum §4): completed-step count alongside the open
-  // ones; always derived fresh, never cached.
-  const allSteps = await getAllStepsForPatient(patientId);
-  const completedCount = allSteps.filter((s) => s.status === 'DONE').length;
+  // Dedicated journey view (addendum §4): open + recent completed steps,
+  // always derived fresh via getPatientJourney, never cached.
+  const journey = await getPatientJourney(patientId);
 
-  return [await renderPatientSummary(to, whatsappSenderId, patient, openSteps, completedCount)];
+  return [await renderPatientSummary(to, whatsappSenderId, patient, openSteps, journey.completedSteps)];
 }
 
 export async function handleSelectStep(

@@ -224,15 +224,53 @@ function journeyRiskTag(patient: Patient): string | null {
   return null;
 }
 
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function journeyStepLine(step: CareStep): string {
+  if (step.status === 'DONE') {
+    return `✓ ${step.kind}\n   Completed ${fmtDate(step.closedAt!)}`;
+  }
+  const today = todayIso();
+  if (step.dueDate < today) {
+    const days = Math.max(
+      1,
+      Math.round(
+        (new Date(`${today}T00:00:00Z`).getTime() - new Date(`${step.dueDate}T00:00:00Z`).getTime()) /
+          (24 * 60 * 60 * 1000),
+      ),
+    );
+    return `🔴 ${step.kind}\n   ${days} day${days === 1 ? '' : 's'} overdue`;
+  }
+  return `⚪ ${step.kind}\n   Due ${fmtDate(step.dueDate)}`;
+}
+
+/**
+ * Compact patient journey (addendum §4): identity, programme/risk tag, and
+ * every open step (🔴 overdue / ⚪ due) plus recent completed history (✓),
+ * in one body — not just an open-step count. Open steps stay tappable
+ * (SELECT_STEP -> renderStepActions); completed ones are read-only history,
+ * shown in the text, not as rows. Always built from the caller's freshly
+ * fetched journey — never cached.
+ */
 export async function renderPatientSummary(
   to: string,
   whatsappSenderId: string,
   patient: Patient,
   openSteps: CareStep[],
-  completedCount = 0,
+  completedSteps: CareStep[] = [],
 ): Promise<OutboundMessage> {
   const riskTag = journeyRiskTag(patient);
-  const header = riskTag ? `${patient.displayName} — ${riskTag}` : patient.displayName;
+  const identityLine = [
+    [patient.displayName, patient.age != null ? String(patient.age) : null].filter(Boolean).join(' · '),
+    [riskTag, patient.village].filter(Boolean).join(' · '),
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const recentCompleted = completedSteps.slice(0, 3);
+  const journeyLines = [...openSteps.map(journeyStepLine), ...recentCompleted.map(journeyStepLine)];
 
   if (openSteps.length === 0) {
     // Routes through the same condition-neutral category picker as "Add
@@ -244,11 +282,11 @@ export async function renderPatientSummary(
       type: 'SELECT_PATIENT_FOR_STAGE',
       patientId: patient.id,
     });
-    const completedLine = completedCount > 0 ? ` ${completedCount} completed.` : '';
+    const body = [identityLine, 'has no open steps.', ...journeyLines].filter(Boolean).join('\n\n');
     return {
       kind: 'buttons',
       to,
-      body: `${header} has no open steps.${completedLine}`,
+      body,
       buttons: [{ id: token, title: 'Add next step' }],
     };
   }
@@ -265,11 +303,11 @@ export async function renderPatientSummary(
     ...openSteps.map((s, i) => ({ id: stepTokens[i]!, title: `${s.kind} — due ${fmtDate(s.dueDate)}` })),
     { id: addStepToken, title: 'Add next step', description: 'Stage another step for this patient' },
   ];
-  const completedLine = completedCount > 0 ? ` · ${completedCount} completed` : '';
+  const body = [identityLine, ...journeyLines].filter(Boolean).join('\n\n');
   return {
     kind: 'list',
     to,
-    body: `${header} — ${openSteps.length} open step${openSteps.length === 1 ? '' : 's'}${completedLine}.`,
+    body,
     buttonLabel: 'View step',
     sections: [{ rows }],
   };
