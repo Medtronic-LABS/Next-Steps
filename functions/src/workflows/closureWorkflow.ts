@@ -2,6 +2,8 @@ import { closeStep } from '../domain/ClosureService.js';
 import { rescheduleStep } from '../domain/RescheduleService.js';
 import { recordContactOutcome } from '../domain/ContactOutcomeService.js';
 import { getPatientById } from '../domain/PatientService.js';
+import { getUserById } from '../domain/UserService.js';
+import { getStepById } from '../domain/CareStepService.js';
 import { DomainError, type ContactOutcomeValue, type Provenance } from '../domain/types.js';
 import {
   renderCallInitiated,
@@ -39,9 +41,21 @@ export async function handleContactOutcome(
 export async function handleStartClose(
   to: string,
   whatsappSenderId: string,
+  actorUserId: string,
   patientId: string,
   stepId: string,
 ): Promise<OutboundMessage[]> {
+  // One tap at the intended facility (addendum §7): the receiving
+  // facility's own staff closing a referral already routed to them don't
+  // need to answer "where did care happen" — it happened here. Anyone else
+  // closing it (the referring ANM, or staff elsewhere) still answers the
+  // provenance question below.
+  const actor = await getUserById(actorUserId);
+  const step = await getStepById(stepId);
+  if (actor && step && actor.facilityId === step.destinationFacilityId) {
+    return handleCloseWithProvenance(to, actorUserId, stepId, 'AT_REFERRED_FACILITY');
+  }
+
   // Real Flow if one's been published and its id configured; falls back to
   // the flat list otherwise (unset in tests/emulator, and until a Flow
   // exists for this project — see docs/whatsapp/flows.md).

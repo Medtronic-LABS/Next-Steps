@@ -9,6 +9,7 @@ import {
   renderReferralConfirm,
   renderReferralConfirmed,
 } from '../adapter/MessageRenderer.js';
+import { handleSelectPatientForNextStep } from './nextStepWorkflow.js';
 import type { OutboundMessage } from '../adapter/WhatsAppClient.js';
 
 /**
@@ -36,7 +37,7 @@ export async function handleFindForStageCommand(
   const matches = await searchPatients(query);
   if (matches.length === 0) return [renderNoMatches(to, query)];
   if (matches.length === 1) {
-    return handleStageReferral(to, whatsappSenderId, actorUserId, matches[0]!.id);
+    return handleSelectPatientForNextStep(to, whatsappSenderId, actorUserId, matches[0]!.id);
   }
   return [await renderPatientList(to, whatsappSenderId, matches, 'SELECT_PATIENT_FOR_STAGE')];
 }

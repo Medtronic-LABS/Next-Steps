@@ -2,6 +2,7 @@ import { issueActionToken, issueActionTokens } from '../conversation/Conversatio
 import type { CareStep, Patient, Provenance, Role, User } from '../domain/types.js';
 import type { WorklistSummary } from '../domain/WorklistService.js';
 import type { AnyAlert } from '../domain/AlertService.js';
+import type { StepCategoryConfig } from '../fixtures/stepCategories.js';
 import type { OutboundMessage } from './WhatsAppClient.js';
 
 /** Fixed navigation commands never carry patient/step context (spec §9). */
@@ -125,6 +126,46 @@ export async function renderPatientList(
     buttonLabel: 'Select patient',
     sections: [{ rows }],
   };
+}
+
+/**
+ * Condition-neutral "which kind of next step" picker (addendum §5/§17) —
+ * categories are whatever the patient's programme(s) define, buttons when
+ * they fit (<=3), a list otherwise.
+ */
+export async function renderNextStepCategoryPicker(
+  to: string,
+  whatsappSenderId: string,
+  patientId: string,
+  categories: StepCategoryConfig[],
+): Promise<OutboundMessage> {
+  const tokens = await issueActionTokens(
+    whatsappSenderId,
+    categories.map((c) => ({
+      type: 'SELECT_NEXT_STEP_CATEGORY',
+      patientId,
+      data: { programmeId: c.programmeId, categoryId: c.id },
+    })),
+  );
+  if (categories.length <= 3) {
+    return {
+      kind: 'buttons',
+      to,
+      body: 'Which step would you like to add?',
+      buttons: categories.map((c, i) => ({ id: tokens[i]!, title: c.label })),
+    };
+  }
+  return {
+    kind: 'list',
+    to,
+    body: 'Which step would you like to add?',
+    buttonLabel: 'Select step',
+    sections: [{ rows: categories.map((c, i) => ({ id: tokens[i]!, title: c.label })) }],
+  };
+}
+
+export function renderNextStepCreated(to: string, categoryLabel: string, dueDate: string): OutboundMessage {
+  return { kind: 'text', to, body: `${categoryLabel} added, due ${fmtDate(dueDate)}.` };
 }
 
 /**

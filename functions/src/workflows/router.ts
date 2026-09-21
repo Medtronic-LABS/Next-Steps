@@ -25,6 +25,7 @@ import {
   handleFindForStageCommand,
   handleStageReferral,
 } from './referralWorkflow.js';
+import { handleSelectNextStepCategory, handleSelectPatientForNextStep } from './nextStepWorkflow.js';
 import { handleWorklistCommand } from './worklistWorkflow.js';
 import { handleConfirmArrival, handleExpectedArrivalsCommand } from './arrivalWorkflow.js';
 import { handleAlertsCommand } from './alertsHistoryWorkflow.js';
@@ -133,7 +134,16 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       case 'SELECT_PATIENT':
         return handleSelectPatient(to, to, user.id, action.patientId!);
       case 'SELECT_PATIENT_FOR_STAGE':
-        return handleStageReferral(to, to, user.id, action.patientId!);
+        return handleSelectPatientForNextStep(to, to, user.id, action.patientId!);
+      case 'SELECT_NEXT_STEP_CATEGORY':
+        return handleSelectNextStepCategory(
+          to,
+          to,
+          user.id,
+          action.patientId!,
+          action.data!.programmeId!,
+          action.data!.categoryId!,
+        );
       case 'SELECT_STEP':
         return handleSelectStep(to, to, user.id, action.patientId!, action.stepId!);
       case 'CONFIRM_ARRIVAL':
@@ -152,7 +162,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       case 'CONTACT_OUTCOME':
         return handleContactOutcome(to, user.id, action.stepId!, action.data!.outcome as ContactOutcomeValue);
       case 'START_CLOSE':
-        return handleStartClose(to, to, action.patientId!, action.stepId!);
+        return handleStartClose(to, to, user.id, action.patientId!, action.stepId!);
       case 'CLOSE_WITH_PROVENANCE':
         return handleCloseWithProvenance(to, user.id, action.stepId!, action.data!.provenance as Provenance);
       case 'START_RESCHEDULE':

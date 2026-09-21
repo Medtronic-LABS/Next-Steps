@@ -21,17 +21,46 @@ export interface Facility {
   tier: FacilityTier;
 }
 
+/**
+ * Condition-neutral programme membership (prototype addendum §2). A person
+ * can belong to more than one programme; each context's `attributes` bag is
+ * whatever that programme defines (e.g. RCH's `pregnancyStatus`) — the core
+ * Patient/CareStep model never hard-codes a single programme's fields.
+ */
+export interface ProgrammeContext {
+  programmeId: string; // e.g. 'RCH', 'HYPERTENSION' — see fixtures/programmes.ts
+  attributes: Record<string, string>;
+}
+
 export interface Patient {
   id: string;
   displayName: string;
+  age: number | null;
+  village: string | null;
   /** Synthetic phone number, used only to drive the Call action (spec §2B). */
   phoneNumber: string;
+  rchId: string | null; // ABHA/RCH id or equivalent programme id — optional
+  programmeContexts: ProgrammeContext[];
+
+  // WhatsApp reminder consent (addendum §3) — belongs to contact/consent
+  // info, not to any one programme.
+  whatsappReminderConsent: boolean;
+  consentTimestamp: string | null;
+  consentCapturedByUserId: string | null;
+
   synthetic: true;
+  createdAt: string;
 }
 
 export type StepStatus = 'OPEN' | 'DONE';
 
-export type StepKind = 'REFERRAL';
+/**
+ * A step's kind is a category id from programme config (fixtures/stepCategories.ts),
+ * not a fixed literal — condition-neutrality is an acceptance criterion
+ * (addendum §17): the same mechanism must work for a REFERRAL, a LAB
+ * follow-up, or an HTN_REVIEW without touching this type or ClosureService.
+ */
+export type StepKind = string;
 
 /**
  * Closure provenance — spec §3's "four provenance answers". Exact wording is an
@@ -95,13 +124,20 @@ export type AuditEventType =
   | 'STEP_CLOSED'
   | 'STEP_RESCHEDULED'
   | 'CONTACT_OUTCOME_RECORDED'
-  | 'ARRIVAL_RECORDED';
+  | 'ARRIVAL_RECORDED'
+  | 'PATIENT_CREATED'
+  | 'PATIENT_MATCH_CONFIRMED'
+  | 'NEXT_STEP_CREATED'
+  | 'ALERT_CREATED'
+  | 'ALERT_RESOLVED';
 
 export interface AuditEvent {
   id: string;
   eventType: AuditEventType;
-  stepId: string;
-  patientId: string;
+  // null for patient- or alert-level events (PATIENT_CREATED, ALERT_*) that
+  // have no associated step.
+  stepId: string | null;
+  patientId: string | null;
   actorUserId: string;
   actorRole: Role;
   facilityId: string;

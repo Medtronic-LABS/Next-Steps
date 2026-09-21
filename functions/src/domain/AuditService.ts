@@ -5,8 +5,10 @@ import type { AuditEvent, AuditEventType, Provenance, Role } from './types.js';
 
 export interface AuditEventInput {
   eventType: AuditEventType;
-  stepId: string;
-  patientId: string;
+  // Absent for patient-/alert-level events (PATIENT_CREATED, ALERT_*) that
+  // have no associated step.
+  stepId?: string | null;
+  patientId?: string | null;
   actorUserId: string;
   actorRole: Role;
   facilityId: string;
@@ -22,8 +24,8 @@ export function recordAuditEvent(tx: Transaction, input: AuditEventInput): Audit
   const event: AuditEvent = {
     id: randomUUID(),
     eventType: input.eventType,
-    stepId: input.stepId,
-    patientId: input.patientId,
+    stepId: input.stepId ?? null,
+    patientId: input.patientId ?? null,
     actorUserId: input.actorUserId,
     actorRole: input.actorRole,
     facilityId: input.facilityId,
