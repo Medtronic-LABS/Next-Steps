@@ -312,15 +312,17 @@ export async function renderStepActions(
 ): Promise<OutboundMessage> {
   const patientId = step.patientId;
   const stepId = step.id;
+  // WhatsApp reply buttons cap at 3 — always exactly these three. Arrival
+  // is handled by Expected Arrivals' inline Arrived/Not arrived prompt
+  // (arrivalWorkflow.handleSelectExpectedArrival) instead of a 4th button
+  // here; "Completed" already one-tap-closes for destination-facility staff
+  // (closureWorkflow.handleStartClose), which covers the same ground.
+  void actor;
   const actions: { type: string; patientId: string; stepId: string }[] = [
     { type: 'CALL', patientId, stepId },
     { type: 'START_CLOSE', patientId, stepId },
     { type: 'START_RESCHEDULE', patientId, stepId },
   ];
-  // Confirm arrival is only offered to staff at the destination facility, and
-  // only once (spec §2A/§18 — arrival is a separate, single event from closure).
-  const canConfirmArrival = actor.facilityId === step.destinationFacilityId && step.arrivedAt === null;
-  if (canConfirmArrival) actions.push({ type: 'CONFIRM_ARRIVAL', patientId, stepId });
 
   const tokens = await issueActionTokens(whatsappSenderId, actions);
   const buttons = [
@@ -328,7 +330,6 @@ export async function renderStepActions(
     { id: tokens[1]!, title: 'Completed' },
     { id: tokens[2]!, title: 'Reschedule' },
   ];
-  if (canConfirmArrival) buttons.push({ id: tokens[3]!, title: 'Confirm arrival' });
 
   return { kind: 'buttons', to, body: 'What would you like to do?', buttons };
 }
