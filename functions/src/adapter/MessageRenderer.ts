@@ -235,12 +235,13 @@ export async function renderPatientSummary(
   const header = riskTag ? `${patient.displayName} — ${riskTag}` : patient.displayName;
 
   if (openSteps.length === 0) {
-    // Kept as the original STAGE_REFERRAL action/title, not the newer
-    // SELECT_PATIENT_FOR_STAGE category picker — the golden conversation
-    // fixture (anita_lakshmi_referral.json) taps this exact button title
-    // and expects the direct two-tap REFERRAL staging flow, unchanged.
+    // Routes through the same condition-neutral category picker as "Add
+    // next step" elsewhere (SELECT_PATIENT_FOR_STAGE ->
+    // handleSelectPatientForNextStep) — a patient with zero open steps
+    // shouldn't be limited to REFERRAL specifically just because they were
+    // reached via "Find a patient" instead of the menu's "Add next step".
     const token = await issueActionToken(whatsappSenderId, {
-      type: 'STAGE_REFERRAL',
+      type: 'SELECT_PATIENT_FOR_STAGE',
       patientId: patient.id,
     });
     const completedLine = completedCount > 0 ? ` ${completedCount} completed.` : '';
@@ -248,7 +249,7 @@ export async function renderPatientSummary(
       kind: 'buttons',
       to,
       body: `${header} has no open steps.${completedLine}`,
-      buttons: [{ id: token, title: 'Stage referral' }],
+      buttons: [{ id: token, title: 'Add next step' }],
     };
   }
 

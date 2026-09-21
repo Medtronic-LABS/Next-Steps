@@ -34,10 +34,15 @@ describe('golden: Anita stages and confirms a referral for Lakshmi Devi', () => 
     const summary = await replay.run(turns[1]!);
     expect(bodies(summary)[0]).toContain('has no open steps.');
 
-    const confirmPrompt = await replay.run(turns[2]!);
+    // "Add next step" -> condition-neutral category picker (4 RCH
+    // categories, so a list not buttons) -> pick Referral.
+    const categoryPicker = await replay.run(turns[2]!);
+    expect(bodies(categoryPicker)[0]).toContain('Which step would you like to add?');
+
+    const confirmPrompt = await replay.run(turns[3]!);
     expect(bodies(confirmPrompt)[0]).toContain(CHC_TEONTHAR.name);
 
-    const confirmed = await replay.run(turns[3]!);
+    const confirmed = await replay.run(turns[4]!);
     expect(bodies(confirmed)[0]).toContain(`Referral to ${CHC_TEONTHAR.name} confirmed.`);
 
     // Expected Firebase state
