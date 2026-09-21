@@ -1,5 +1,5 @@
 import { listAllPatients, searchPatients, getPatientById } from '../domain/PatientService.js';
-import { getOpenSteps, getStepById } from '../domain/CareStepService.js';
+import { getAllStepsForPatient, getOpenSteps, getStepById } from '../domain/CareStepService.js';
 import { getUserById } from '../domain/UserService.js';
 import { DomainError } from '../domain/types.js';
 import { updateConversation } from '../conversation/ConversationService.js';
@@ -23,7 +23,7 @@ export async function handleListPatientsCommand(
   actorUserId: string,
 ): Promise<OutboundMessage[]> {
   const patients = await listAllPatients();
-  if (patients.length === 0) return [renderNoMatches(to, '')];
+  if (patients.length === 0) return [await renderNoMatches(to, whatsappSenderId, '')];
   if (patients.length === 1) {
     return handleSelectPatient(to, whatsappSenderId, actorUserId, patients[0]!.id);
   }
@@ -39,7 +39,7 @@ export async function handleFindCommand(
   query: string,
 ): Promise<OutboundMessage[]> {
   const matches = await searchPatients(query);
-  if (matches.length === 0) return [renderNoMatches(to, query)];
+  if (matches.length === 0) return [await renderNoMatches(to, whatsappSenderId, query)];
   if (matches.length === 1) {
     return handleSelectPatient(to, whatsappSenderId, actorUserId, matches[0]!.id);
   }
@@ -72,7 +72,12 @@ export async function handleSelectPatient(
     currentState: 'PATIENT_SELECTED',
   });
 
-  return [await renderPatientSummary(to, whatsappSenderId, patient, openSteps)];
+  // Compact journey (addendum §4): completed-step count alongside the open
+  // ones; always derived fresh, never cached.
+  const allSteps = await getAllStepsForPatient(patientId);
+  const completedCount = allSteps.filter((s) => s.status === 'DONE').length;
+
+  return [await renderPatientSummary(to, whatsappSenderId, patient, openSteps, completedCount)];
 }
 
 export async function handleSelectStep(

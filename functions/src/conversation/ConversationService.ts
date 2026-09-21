@@ -29,6 +29,7 @@ function freshState(whatsappSenderId: string, userId: string): ConversationState
     currentState: 'MENU',
     lastAction: null,
     pendingActions: {},
+    draft: {},
     expiresAt: newExpiry(),
     lastInboundMessageId: null,
   };

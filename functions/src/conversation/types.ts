@@ -8,7 +8,8 @@ export type WorkflowName =
   | 'PATIENT_STEPS'
   | 'REFERRAL'
   | 'WORKLIST'
-  | 'CLOSURE';
+  | 'CLOSURE'
+  | 'REGISTRATION';
 
 export interface PendingAction {
   type: string;
@@ -27,6 +28,10 @@ export interface ConversationState {
   currentState: string;
   lastAction: string | null;
   pendingActions: Record<string, PendingAction>;
+  // Scratch field for any multi-step typed form (currently registration) —
+  // never authoritative, same as the rest of this state; cleared once the
+  // form completes or the conversation resets.
+  draft: Record<string, string>;
   expiresAt: string; // ISO
   lastInboundMessageId: string | null;
 }

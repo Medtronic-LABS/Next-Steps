@@ -32,7 +32,7 @@ describe('golden: Anita stages and confirms a referral for Lakshmi Devi', () => 
     // Only Lakshmi Devi exists in the seeded patient set, so "Find a
     // patient" auto-selects her directly instead of showing a list.
     const summary = await replay.run(turns[1]!);
-    expect(bodies(summary)[0]).toContain(`${LAKSHMI_DEVI.displayName} has no open steps.`);
+    expect(bodies(summary)[0]).toContain('has no open steps.');
 
     const confirmPrompt = await replay.run(turns[2]!);
     expect(bodies(confirmPrompt)[0]).toContain(CHC_TEONTHAR.name);

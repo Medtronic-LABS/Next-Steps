@@ -101,8 +101,14 @@ export function renderFindPatientPrompt(to: string): OutboundMessage {
   return { kind: 'text', to, body: 'Type: find <patient name>' };
 }
 
-export function renderNoMatches(to: string, query: string): OutboundMessage {
-  return { kind: 'text', to, body: `No patient found matching "${query}". Try again, or type menu.` };
+export async function renderNoMatches(to: string, whatsappSenderId: string, query: string): Promise<OutboundMessage> {
+  const token = await issueActionToken(whatsappSenderId, { type: 'START_REGISTRATION' });
+  return {
+    kind: 'buttons',
+    to,
+    body: `No patient found matching "${query}".`,
+    buttons: [{ id: token, title: 'Add new patient' }],
+  };
 }
 
 export async function renderPatientList(
@@ -119,6 +125,15 @@ export async function renderPatientList(
     matches.map((p) => ({ type: actionType, patientId: p.id })),
   );
   const rows = matches.map((p, i) => ({ id: tokens[i]!, title: p.displayName }));
+
+  // "None of these — create new patient" (addendum §2 dedup-before-create) —
+  // only for the normal find flow, not the "Add next step" staging picker,
+  // where the patient necessarily already exists.
+  if (actionType === 'SELECT_PATIENT') {
+    const createToken = await issueActionToken(whatsappSenderId, { type: 'START_REGISTRATION' });
+    rows.push({ id: createToken, title: 'None of these — create new patient' });
+  }
+
   return {
     kind: 'list',
     to,
@@ -187,34 +202,59 @@ export function renderPatientListFlow(to: string, flowId: string, patients: Pati
   };
 }
 
+/** Programme/risk tag for the compact journey view (addendum §4) — condition-neutral: reads whatever attribute the programme defines. */
+function journeyRiskTag(patient: Patient): string | null {
+  for (const ctx of patient.programmeContexts) {
+    if (ctx.attributes.pregnancyStatus === 'HIGH_RISK') return 'High risk';
+  }
+  return null;
+}
+
 export async function renderPatientSummary(
   to: string,
   whatsappSenderId: string,
   patient: Patient,
   openSteps: CareStep[],
+  completedCount = 0,
 ): Promise<OutboundMessage> {
+  const riskTag = journeyRiskTag(patient);
+  const header = riskTag ? `${patient.displayName} — ${riskTag}` : patient.displayName;
+
   if (openSteps.length === 0) {
+    // Kept as the original STAGE_REFERRAL action/title, not the newer
+    // SELECT_PATIENT_FOR_STAGE category picker — the golden conversation
+    // fixture (anita_lakshmi_referral.json) taps this exact button title
+    // and expects the direct two-tap REFERRAL staging flow, unchanged.
     const token = await issueActionToken(whatsappSenderId, {
       type: 'STAGE_REFERRAL',
       patientId: patient.id,
     });
+    const completedLine = completedCount > 0 ? ` ${completedCount} completed.` : '';
     return {
       kind: 'buttons',
       to,
-      body: `${patient.displayName} has no open steps.`,
+      body: `${header} has no open steps.${completedLine}`,
       buttons: [{ id: token, title: 'Stage referral' }],
     };
   }
 
-  const tokens = await issueActionTokens(
+  const stepTokens = await issueActionTokens(
     whatsappSenderId,
     openSteps.map((s) => ({ type: 'SELECT_STEP', patientId: patient.id, stepId: s.id })),
   );
-  const rows = openSteps.map((s, i) => ({ id: tokens[i]!, title: `${s.kind} — due ${fmtDate(s.dueDate)}` }));
+  const addStepToken = await issueActionToken(whatsappSenderId, {
+    type: 'SELECT_PATIENT_FOR_STAGE',
+    patientId: patient.id,
+  });
+  const rows = [
+    ...openSteps.map((s, i) => ({ id: stepTokens[i]!, title: `${s.kind} — due ${fmtDate(s.dueDate)}` })),
+    { id: addStepToken, title: 'Add next step', description: 'Stage another step for this patient' },
+  ];
+  const completedLine = completedCount > 0 ? ` · ${completedCount} completed` : '';
   return {
     kind: 'list',
     to,
-    body: `${patient.displayName} — ${openSteps.length} open step${openSteps.length === 1 ? '' : 's'}.`,
+    body: `${header} — ${openSteps.length} open step${openSteps.length === 1 ? '' : 's'}${completedLine}.`,
     buttonLabel: 'View step',
     sections: [{ rows }],
   };
@@ -564,6 +604,65 @@ export function renderUnregistered(to: string): OutboundMessage {
 
 export function renderUnrecognized(to: string): OutboundMessage {
   return { kind: 'text', to, body: "Sorry, I didn't understand that. Type menu to see your options." };
+}
+
+// --- Lightweight registration (addendum §2/§3) ---------------------------
+// Sequential text prompts, not a native form — no Flow can be published on
+// this Meta app (Business Verification blocked, see docs/whatsapp/flows.md)
+// so this is the buttons/list/text-only path §16 asks for as the fallback.
+
+export function renderRegistrationNamePrompt(to: string): OutboundMessage {
+  return { kind: 'text', to, body: "Add new patient.\nWhat's their full name?" };
+}
+
+export function renderRegistrationPhonePrompt(to: string): OutboundMessage {
+  return { kind: 'text', to, body: 'Mobile number?' };
+}
+
+export function renderRegistrationVillagePrompt(to: string): OutboundMessage {
+  return { kind: 'text', to, body: 'Village?' };
+}
+
+export function renderRegistrationRchIdPrompt(to: string): OutboundMessage {
+  return { kind: 'text', to, body: 'ABHA / RCH ID? (optional — type "skip" to leave blank)' };
+}
+
+export async function renderPregnancyStatusPrompt(to: string, whatsappSenderId: string): Promise<OutboundMessage> {
+  const [normal, highRisk, notApplicable] = (await issueActionTokens(whatsappSenderId, [
+    { type: 'REGISTRATION_PREGNANCY_STATUS', data: { pregnancyStatus: 'NORMAL' } },
+    { type: 'REGISTRATION_PREGNANCY_STATUS', data: { pregnancyStatus: 'HIGH_RISK' } },
+    { type: 'REGISTRATION_PREGNANCY_STATUS', data: { pregnancyStatus: 'NONE' } },
+  ])) as [string, string, string];
+  return {
+    kind: 'buttons',
+    to,
+    body: 'Pregnancy status?',
+    buttons: [
+      { id: normal, title: 'Normal' },
+      { id: highRisk, title: 'High risk' },
+      { id: notApplicable, title: 'Not applicable' },
+    ],
+  };
+}
+
+export async function renderConsentPrompt(to: string, whatsappSenderId: string): Promise<OutboundMessage> {
+  const [yes, no] = (await issueActionTokens(whatsappSenderId, [
+    { type: 'REGISTRATION_CONSENT', data: { consent: 'true' } },
+    { type: 'REGISTRATION_CONSENT', data: { consent: 'false' } },
+  ])) as [string, string];
+  return {
+    kind: 'buttons',
+    to,
+    body: 'WhatsApp reminders\nMay we send you reminders on WhatsApp about your next steps?',
+    buttons: [
+      { id: yes, title: 'Yes, consented' },
+      { id: no, title: 'No' },
+    ],
+  };
+}
+
+export function renderPatientCreated(to: string, patient: Patient): OutboundMessage {
+  return { kind: 'text', to, body: `${patient.displayName} added. Type menu to continue.` };
 }
 
 /** Approved template for a proactive overdue alert (spec §16/§17). */

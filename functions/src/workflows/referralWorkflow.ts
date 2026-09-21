@@ -35,7 +35,7 @@ export async function handleFindForStageCommand(
   query: string,
 ): Promise<OutboundMessage[]> {
   const matches = await searchPatients(query);
-  if (matches.length === 0) return [renderNoMatches(to, query)];
+  if (matches.length === 0) return [await renderNoMatches(to, whatsappSenderId, query)];
   if (matches.length === 1) {
     return handleSelectPatientForNextStep(to, whatsappSenderId, actorUserId, matches[0]!.id);
   }

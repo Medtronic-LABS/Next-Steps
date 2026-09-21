@@ -26,6 +26,12 @@ import {
   handleStageReferral,
 } from './referralWorkflow.js';
 import { handleSelectNextStepCategory, handleSelectPatientForNextStep } from './nextStepWorkflow.js';
+import {
+  handleRegistrationConsent,
+  handleRegistrationPregnancyStatus,
+  handleRegistrationText,
+  handleStartRegistration,
+} from './registrationWorkflow.js';
 import { handleWorklistCommand } from './worklistWorkflow.js';
 import { handleConfirmArrival, handleExpectedArrivalsCommand } from './arrivalWorkflow.js';
 import { handleAlertsCommand } from './alertsHistoryWorkflow.js';
@@ -74,9 +80,19 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
 
   const { state, wasExpired } = await loadOrResetConversation(to, user.id);
 
+  const REGISTRATION_TEXT_STATES = new Set([
+    'AWAITING_REG_NAME',
+    'AWAITING_REG_PHONE',
+    'AWAITING_REG_VILLAGE',
+    'AWAITING_REG_RCH_ID',
+  ]);
+
   if (message.kind === 'text') {
     const text = (message.text ?? '').trim();
     const lower = text.toLowerCase();
+    if (REGISTRATION_TEXT_STATES.has(state.currentState)) {
+      return handleRegistrationText(to, to, state, text);
+    }
     if (GREETINGS.has(lower)) return handleMenuCommand(to, user);
     if (lower.startsWith('find ')) {
       const query = text.slice('find '.length).trim();
@@ -129,8 +145,14 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   if (wasExpired) return [renderSessionExpired(to)];
 
   try {
-    const { action } = await resolveActionToken(to, replyId);
+    const { action, state: resolvedState } = await resolveActionToken(to, replyId);
     switch (action.type) {
+      case 'START_REGISTRATION':
+        return handleStartRegistration(to, to);
+      case 'REGISTRATION_PREGNANCY_STATUS':
+        return handleRegistrationPregnancyStatus(to, to, resolvedState.draft, action.data!.pregnancyStatus!);
+      case 'REGISTRATION_CONSENT':
+        return handleRegistrationConsent(to, to, user.id, resolvedState.draft, action.data!.consent === 'true');
       case 'SELECT_PATIENT':
         return handleSelectPatient(to, to, user.id, action.patientId!);
       case 'SELECT_PATIENT_FOR_STAGE':
