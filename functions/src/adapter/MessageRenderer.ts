@@ -665,6 +665,46 @@ export function renderPatientCreated(to: string, patient: Patient): OutboundMess
   return { kind: 'text', to, body: `${patient.displayName} added. Type menu to continue.` };
 }
 
+/**
+ * In-conversation alert card shown when opening the demo (addendum §10) —
+ * interactive (View/Call/Completed), unlike the approved-template push
+ * below which Meta requires for true outbound-initiated messages. This one
+ * fires as part of a reply the user already triggered (opening the menu),
+ * so it's not subject to the 24h/template restriction.
+ */
+export async function renderOpenAlertCard(
+  to: string,
+  whatsappSenderId: string,
+  patientId: string,
+  stepId: string,
+  patientDisplayName: string,
+  stepKind: string,
+  dueDate: string,
+  overdueDays: number,
+): Promise<OutboundMessage> {
+  const [viewToken, callToken, completeToken] = (await issueActionTokens(whatsappSenderId, [
+    { type: 'SELECT_STEP', patientId, stepId },
+    { type: 'CALL', patientId, stepId },
+    { type: 'START_CLOSE', patientId, stepId },
+  ])) as [string, string, string];
+  return {
+    kind: 'buttons',
+    to,
+    body: [
+      '🔔 A patient in your care needs attention.',
+      patientDisplayName,
+      stepKind,
+      `Due: ${fmtDate(dueDate)}`,
+      `Status: ${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue`,
+    ].join('\n'),
+    buttons: [
+      { id: viewToken, title: 'View' },
+      { id: callToken, title: 'Call' },
+      { id: completeToken, title: 'Completed' },
+    ],
+  };
+}
+
 /** Approved template for a proactive overdue alert (spec §16/§17). */
 export function renderOverdueAlert(
   to: string,

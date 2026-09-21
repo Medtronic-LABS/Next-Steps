@@ -3,7 +3,7 @@ import { getDb, Collections } from './firestore.js';
 import { getUserById, listActiveUsersByRole } from './UserService.js';
 import { getPatientById } from './PatientService.js';
 import { getFacilityById } from './FacilityService.js';
-import { getWorklistSummary } from './WorklistService.js';
+import { getWorklistSummary, getOverdueSteps } from './WorklistService.js';
 import { getExpectedArrivals } from './ArrivalService.js';
 import { getWhatsAppClient } from '../adapter/WhatsAppClient.js';
 import {
@@ -11,7 +11,7 @@ import {
   renderOverdueAlert,
   renderWorkDueTodaySummary,
 } from '../adapter/MessageRenderer.js';
-import type { CareStep } from './types.js';
+import type { CareStep, Patient } from './types.js';
 
 export type AlertStatus = 'SENT' | 'FAILED';
 
@@ -46,12 +46,33 @@ export async function getRecentAlertsForUser(userId: string, limit = 10): Promis
   return alerts.sort((a, b) => (a.sentAt < b.sentAt ? 1 : -1)).slice(0, limit);
 }
 
+/**
+ * Proactive alert shown "as though OpenPHC has proactively messaged them"
+ * when the user opens the demo (addendum §10). Deliberately not read from
+ * the `alerts` collection — whether an alert is still active is derived
+ * from the step's current status (still OPEN and overdue), so it
+ * automatically disappears the moment the underlying step is closed,
+ * without needing a separate resolve-the-alert step anywhere.
+ */
+export async function getActiveOverdueAlertForUser(
+  userId: string,
+): Promise<{ step: CareStep; patient: Patient } | null> {
+  const overdueSteps = await getOverdueSteps(userId);
+  if (overdueSteps.length === 0) return null;
+
+  const step = overdueSteps[0]!;
+  const patient = await getPatientById(step.patientId);
+  if (!patient) return null;
+
+  return { step, patient };
+}
+
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function daysOverdue(dueDate: string): number {
+export function daysOverdue(dueDate: string): number {
   const due = new Date(`${dueDate}T00:00:00Z`).getTime();
   const today = new Date(`${todayIso()}T00:00:00Z`).getTime();
   return Math.max(1, Math.round((today - due) / (24 * 60 * 60 * 1000)));

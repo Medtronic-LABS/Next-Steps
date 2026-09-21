@@ -11,3 +11,5 @@ export const whatsappPhoneNumberId = defineSecret('WHATSAPP_PHONE_NUMBER_ID');
 export const whatsappAccessToken = defineSecret('WHATSAPP_ACCESS_TOKEN');
 export const metaAppSecret = defineSecret('META_APP_SECRET');
 export const whatsappVerifyToken = defineSecret('WHATSAPP_VERIFY_TOKEN');
+/** Admin token for the Reset Demo endpoint (addendum §14) — required header/query value, not a WhatsApp/Meta credential. */
+export const resetDemoToken = defineSecret('RESET_DEMO_TOKEN');
