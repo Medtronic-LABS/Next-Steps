@@ -67,13 +67,16 @@ count grow as you act; work the worklist to complete / cancel / decline steps.
 ## WhatsApp channel (`feature/whatsapp-channel`, `functions/`)
 
 A separate Firebase Cloud Functions backend under `functions/` implements a
-WhatsApp channel for a different set of coordination workflows — ANM/staff-nurse
-referral, closure, and worklist, for synthetic users Anita, Priya, and Lakshmi
-Devi. It does not share code or fixtures with `packages/core` or
-`cphc-next-steps-prototype/` yet. See
-[`docs/whatsapp/spec.md`](./docs/whatsapp/spec.md) for the full spec and
+condition-neutral coordination channel over WhatsApp — patient search/create
+with dedup, next steps for any programme (referral, ANC, follow-up, review,
+...), role-aware menus for ANM / CHC Staff Nurse, proactive alerts, and a
+Reset Demo endpoint. It does not share code or fixtures with `packages/core`
+or `cphc-next-steps-prototype/` yet. See
+[`docs/whatsapp/spec.md`](./docs/whatsapp/spec.md) for the original spec,
 [`docs/whatsapp/architecture.md`](./docs/whatsapp/architecture.md) for how it
-fits (or doesn't yet) alongside the rest of this repo.
+fits (or doesn't yet) alongside the rest of this repo, and
+[`docs/whatsapp/deployment.md`](./docs/whatsapp/deployment.md) for the full
+step-by-step Firebase + Meta setup below.
 
 ```bash
 cd functions
@@ -82,6 +85,53 @@ npm run typecheck
 npm test              # unit + golden conversation tests, Firestore emulator
 ```
 
-No real Firebase project or Meta/WhatsApp Business credentials are wired up —
-everything runs against the Firebase Local Emulator Suite with a mock WhatsApp
-client.
+The test suite above runs entirely against the Firebase Local Emulator Suite
+with a mock WhatsApp client — no external accounts needed. To actually send
+and receive on real WhatsApp, you need your own Firebase project and Meta
+WhatsApp Business app; nothing in this repo is tied to any specific one.
+
+### Setting up your own Firebase + Meta WhatsApp deployment
+
+Every value below is something **you** create and supply — nothing is
+hardcoded in this repo, and none of it should ever be committed.
+
+1. **Firebase project** (yours): create one at console.firebase.google.com,
+   enable Firestore (Native mode), upgrade to the Blaze plan (required for
+   Cloud Functions v2 / Secret Manager / Cloud Scheduler — usage stays in
+   the free tier), then link it locally:
+   ```bash
+   firebase use --add <your-project-id>   # writes .firebaserc, gitignored per-checkout intent
+   ```
+2. **Meta developer app + WhatsApp test number** (yours): create at
+   developers.facebook.com, add the WhatsApp product, claim a free test
+   number. This gives you a Phone Number ID and WABA ID.
+3. **Secrets** (yours — never hardcode these anywhere, always via Secret
+   Manager):
+   ```bash
+   firebase functions:secrets:set WHATSAPP_PHONE_NUMBER_ID
+   firebase functions:secrets:set WHATSAPP_ACCESS_TOKEN
+   firebase functions:secrets:set META_APP_SECRET
+   firebase functions:secrets:set WHATSAPP_VERIFY_TOKEN   # any string you invent
+   firebase functions:secrets:set RESET_DEMO_TOKEN        # any string you invent
+   ```
+   Each prompts interactively — the value is never typed into a command
+   line or committed to a file. `functions/.env.example` documents every
+   variable name (with blank values) for local `functions/.env` dev use;
+   copy it, fill in your own values, never commit the copy (it's
+   gitignored).
+4. **Deploy**: `firebase deploy --only functions`.
+5. **Seed + bind your test users**: `functions/src/fixtures/seed.ts` ships
+   fixture phone numbers (`+9198000001xx`) that won't match your real
+   WhatsApp number — see deployment.md §5 for how to point a seeded user at
+   a real number you control.
+6. **Webhook config on Meta's side**: Callback URL = your deployed
+   `whatsappWebhook` URL, verify token = the string from step 3, subscribe
+   to the `messages` field, and — the one non-obvious step — subscribe your
+   WABA to the app via the Graph API (`/subscribed_apps`); the guided setup
+   wizard doesn't do this for you. Full detail, including the exact
+   symptoms of skipping each step, in
+   [`docs/whatsapp/deployment.md`](./docs/whatsapp/deployment.md).
+
+Every placeholder above (`<your-project-id>`, phone number IDs, tokens) is
+something you generate for your own accounts — this repo's history and
+current state contain no live credentials for any deployment.
