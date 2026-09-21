@@ -141,7 +141,8 @@ export async function renderPatientList(
   // where the patient necessarily already exists.
   if (actionType === 'SELECT_PATIENT') {
     const createToken = await issueActionToken(whatsappSenderId, { type: 'START_REGISTRATION' });
-    rows.push({ id: createToken, title: 'None of these — create new patient' });
+    // WhatsApp list row titles cap at 24 characters.
+    rows.push({ id: createToken, title: 'None — add new patient' });
   }
 
   return {
@@ -172,7 +173,10 @@ export async function renderNextStepCategoryPicker(
       data: { programmeId: c.programmeId, categoryId: c.id },
     })),
   );
-  if (categories.length <= 3) {
+  // WhatsApp reply buttons require 1-3 — 0 would happen only for a
+  // programme id not configured in stepCategories.ts, which shouldn't occur
+  // given the caller's ['RCH'] fallback, but never send a 0-button message.
+  if (categories.length >= 1 && categories.length <= 3) {
     return {
       kind: 'buttons',
       to,
@@ -340,7 +344,7 @@ export async function renderExpectedArrivals(
   }
   const tokens = await issueActionTokens(
     whatsappSenderId,
-    steps.map((s) => ({ type: 'SELECT_STEP', patientId: s.patientId, stepId: s.id })),
+    steps.map((s) => ({ type: 'SELECT_EXPECTED_ARRIVAL', patientId: s.patientId, stepId: s.id })),
   );
   const rows = steps.map((s, i) => ({
     id: tokens[i]!,
@@ -353,6 +357,37 @@ export async function renderExpectedArrivals(
     body: `${steps.length} patient${steps.length === 1 ? '' : 's'} expected.`,
     buttonLabel: 'View patient',
     sections: [{ rows }],
+  };
+}
+
+/**
+ * Inline Arrived/Not arrived (addendum §8) — selecting a patient from
+ * Expected Arrivals goes straight here, not the generic Call/Completed/
+ * Reschedule step-actions menu WhatsApp lists can't attach per-row buttons
+ * to, so this is the closest native fidelity to the mockup's inline
+ * buttons: one extra tap to open, then the same two choices.
+ */
+export async function renderArrivalPrompt(
+  to: string,
+  whatsappSenderId: string,
+  patientId: string,
+  stepId: string,
+  patientDisplayName: string,
+  originFacilityName: string,
+  dueDate: string,
+): Promise<OutboundMessage> {
+  const [arrivedToken, notArrivedToken] = (await issueActionTokens(whatsappSenderId, [
+    { type: 'ARRIVAL_CONFIRMED', patientId, stepId },
+    { type: 'ARRIVAL_NOT_YET', patientId, stepId },
+  ])) as [string, string];
+  return {
+    kind: 'buttons',
+    to,
+    body: `${patientDisplayName}\nReferral from ${originFacilityName}\nDue ${fmtDate(dueDate)}`,
+    buttons: [
+      { id: arrivedToken, title: 'Arrived' },
+      { id: notArrivedToken, title: 'Not arrived' },
+    ],
   };
 }
 
@@ -424,10 +459,11 @@ export function renderContactOutcomeRecorded(to: string): OutboundMessage {
   return { kind: 'text', to, body: 'Noted. Type menu to continue.' };
 }
 
+// WhatsApp list row titles cap at 24 characters — these must stay short.
 const PROVENANCE_LABELS: Record<Provenance, string> = {
-  AT_REFERRED_FACILITY: 'Seen at the referred facility',
-  OTHER_FACILITY: 'Seen at a different facility',
-  PRIVATE_PROVIDER: 'Seen by a private provider',
+  AT_REFERRED_FACILITY: 'At referred facility',
+  OTHER_FACILITY: 'At another facility',
+  PRIVATE_PROVIDER: 'Private provider',
   NOT_COMPLETED: 'Not seen anywhere',
 };
 

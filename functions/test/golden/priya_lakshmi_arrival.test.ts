@@ -18,13 +18,13 @@ function bodies(messages: OutboundMessage[]): string[] {
   return messages.flatMap((m) => (m.kind === 'template' ? [] : [m.body]));
 }
 
-describe('golden: Priya confirms arrival for a referral to CHC Teonthar', () => {
+describe('golden: Priya marks a referral to CHC Teonthar as Arrived', () => {
   beforeEach(async () => {
     await clearFirestore();
     await loadFixtures();
   });
 
-  it('replays the full conversation, recording arrival without closing the step', async () => {
+  it('replays the full conversation — Arrived from Expected Arrivals records arrival and closes the step in one tap (addendum §8)', async () => {
     const existingStep = await confirmStep({
       actorUserId: ANITA.id,
       patientId: LAKSHMI_DEVI.id,
@@ -40,35 +40,36 @@ describe('golden: Priya confirms arrival for a referral to CHC Teonthar', () => 
     const arrivalsList = await replay.run(turns[1]!); // Expected arrivals
     expect(bodies(arrivalsList)[0]).toContain('expected');
 
-    const stepActions = await replay.run(turns[2]!); // Lakshmi Devi -> her open step
-    expect(bodies(stepActions)[0]).toContain('What would you like to do?');
+    const arrivalPrompt = await replay.run(turns[2]!); // Lakshmi Devi -> inline Arrived/Not arrived
+    expect(bodies(arrivalPrompt)[0]).toContain('Referral from');
 
-    const confirmed = await replay.run(turns[3]!); // Confirm arrival
-    expect(bodies(confirmed)[0]).toContain('Arrival recorded');
+    const closed = await replay.run(turns[3]!); // Arrived
+    expect(bodies(closed)[0]).toContain('Referral completed as intended');
 
-    // Expected Firebase state — arrived, but not closed (spec §2A).
+    // Expected Firebase state — arrived AND closed, both fields set by one tap.
     const stepDoc = await getDb().collection(Collections.careSteps).doc(existingStep.id).get();
     const step = stepDoc.data()!;
-    expect(step.status).toBe('OPEN');
+    expect(step.status).toBe('DONE');
     expect(step.arrivedByUserId).toBe(PRIYA.id);
     expect(step.arrivalFacilityId).toBe(CHC_TEONTHAR.id);
     expect(step.arrivedAt).not.toBeNull();
+    expect(step.provenance).toBe('AT_REFERRED_FACILITY');
+    expect(step.closedByUserId).toBe(PRIYA.id);
 
-    // Expected audit event
+    // Expected audit events — REFERRAL_CONFIRMED from setup, then arrival
+    // and closure both recorded by the single "Arrived" tap.
     const auditSnap = await getDb()
       .collection(Collections.auditEvents)
       .where('stepId', '==', existingStep.id)
-      .where('eventType', '==', 'ARRIVAL_RECORDED')
       .get();
-    expect(auditSnap.size).toBe(1);
-    expect(auditSnap.docs[0]!.data().actorUserId).toBe(PRIYA.id);
+    const eventTypes = auditSnap.docs.map((d) => d.data().eventType).sort();
+    expect(eventTypes).toEqual(['ARRIVAL_RECORDED', 'REFERRAL_CONFIRMED', 'STEP_CLOSED']);
 
-    // Expected CCE outbox event
+    // Expected CCE outbox events — one per transition (setup's confirmStep + arrival + closure).
     const cceSnap = await getDb()
       .collection(Collections.cceOutbox)
       .where('payload.stepId', '==', existingStep.id)
-      .where('payload.eventType', '==', 'ARRIVAL_RECORDED')
       .get();
-    expect(cceSnap.size).toBe(1);
+    expect(cceSnap.size).toBe(3);
   });
 });

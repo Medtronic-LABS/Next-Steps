@@ -33,7 +33,13 @@ import {
   handleStartRegistration,
 } from './registrationWorkflow.js';
 import { handleWorklistCommand } from './worklistWorkflow.js';
-import { handleConfirmArrival, handleExpectedArrivalsCommand } from './arrivalWorkflow.js';
+import {
+  handleArrivalConfirmed,
+  handleArrivalNotYet,
+  handleConfirmArrival,
+  handleExpectedArrivalsCommand,
+  handleSelectExpectedArrival,
+} from './arrivalWorkflow.js';
 import { handleAlertsCommand } from './alertsHistoryWorkflow.js';
 import { handleImportRegisterCommand } from './registerImportWorkflow.js';
 import {
@@ -170,6 +176,12 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
         );
       case 'SELECT_STEP':
         return handleSelectStep(to, to, user.id, action.patientId!, action.stepId!);
+      case 'SELECT_EXPECTED_ARRIVAL':
+        return handleSelectExpectedArrival(to, to, action.patientId!, action.stepId!);
+      case 'ARRIVAL_CONFIRMED':
+        return handleArrivalConfirmed(to, user.id, action.stepId!);
+      case 'ARRIVAL_NOT_YET':
+        return handleArrivalNotYet(to);
       case 'CONFIRM_ARRIVAL':
         return handleConfirmArrival(to, user.id, action.stepId!);
       case 'STAGE_REFERRAL':

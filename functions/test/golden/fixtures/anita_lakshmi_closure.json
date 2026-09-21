@@ -2,5 +2,5 @@
   { "kind": "text", "from": "+919800000101", "text": "menu" },
   { "kind": "reply", "from": "+919800000101", "replyTitle": "Find a patient" },
   { "kind": "reply", "from": "+919800000101", "replyTitle": "Completed" },
-  { "kind": "reply", "from": "+919800000101", "replyTitle": "Seen at the referred facility" }
+  { "kind": "reply", "from": "+919800000101", "replyTitle": "At referred facility" }
 ]

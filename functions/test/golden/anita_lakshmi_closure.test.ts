@@ -43,7 +43,7 @@ describe('golden: Anita closes an already-open referral for Lakshmi Devi', () =>
     const provenancePrompt = await replay.run(turns[2]!); // Completed
     expect(bodies(provenancePrompt)[0]).toContain('What happened with this referral?');
 
-    const closed = await replay.run(turns[3]!); // Seen at the referred facility
+    const closed = await replay.run(turns[3]!); // At referred facility
     expect(bodies(closed)[0]).toContain('Referral completed as intended');
 
     // Expected Firebase state
