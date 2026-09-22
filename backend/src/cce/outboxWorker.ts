@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
 import { config } from '../config.js';
-import { NextStepRecord, transformStepToCloudEvent, CloudEventPayload } from './cceTransformer.js';
+import { NextStepRecord, transformStepToCloudEvent, transformPatientToCloudEvent, CloudEventPayload } from './cceTransformer.js';
 import { publishEventToCce } from './ccePublisher.js';
 
 let isRunning = false;
@@ -35,6 +35,37 @@ export function enqueueStepEvent(step: NextStepRecord, patientUpid?: string): st
   );
 
   console.log(`[Outbox] Enqueued event ${cloudEvent.id} for ${cloudEvent.subject} (${step.cat} -> ${step.level})`);
+  return outboxId;
+}
+
+/**
+ * Enqueues a patient creation event into the transactional outbox.
+ */
+export function enqueuePatientEvent(patient: any): string {
+  const cloudEvent = transformPatientToCloudEvent(patient);
+  const outboxId = uuidv4();
+  const now = new Date().toISOString();
+
+  const stmt = db.prepare(`
+    INSERT INTO cce_event_outbox (
+      id, event_id, cloud_events_id, event_type, subject, facility_id,
+      correlation_id, payload, status, attempts, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 0, ?)
+  `);
+
+  stmt.run(
+    outboxId,
+    cloudEvent.id,
+    cloudEvent.id,
+    cloudEvent.type,
+    cloudEvent.subject,
+    cloudEvent.facilityid,
+    cloudEvent.correlationid,
+    JSON.stringify(cloudEvent),
+    now
+  );
+
+  console.log(`[Outbox] Enqueued patient event ${cloudEvent.id} for ${cloudEvent.subject} (${patient.name})`);
   return outboxId;
 }
 

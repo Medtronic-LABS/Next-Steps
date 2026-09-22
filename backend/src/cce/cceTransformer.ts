@@ -117,3 +117,38 @@ function getCategoryDisplay(cat: string): string {
   };
   return displays[cat] || cat;
 }
+
+export function transformPatientToCloudEvent(patient: any): CloudEventPayload {
+  const eventId = `evt-pat-${patient.id.slice(0, 20)}-${Date.now().toString(36)}`;
+  const correlationId = `corr-${uuidv4().slice(0, 16)}`;
+  const nowIso = new Date().toISOString();
+  const upid = `Patient/${patient.id}`;
+
+  const fhirPatient = {
+    resourceType: 'Patient',
+    id: patient.id,
+    active: true,
+    name: [{ text: patient.name }],
+    telecom: patient.phone ? [{ system: 'phone', value: patient.phone }] : undefined,
+    address: [{ city: patient.village_name, state: 'Madhya Pradesh' }],
+    extension: [
+      { url: 'http://openphc.org/fhir/service', valueString: patient.service },
+      { url: 'http://openphc.org/fhir/risk-status', valueString: patient.status },
+      { url: 'http://openphc.org/fhir/consent-whatsapp', valueBoolean: Boolean(patient.consent_whatsapp) },
+    ],
+  };
+
+  return {
+    specversion: '1.0',
+    id: eventId,
+    source: config.cce.sourceSystem,
+    type: 'org.openphc.cce.patient.created',
+    subject: upid,
+    time: nowIso,
+    datacontenttype: 'application/json',
+    facilityid: `facility/${patient.subcentre_id || 'SUBCENTRE'}`,
+    correlationid: correlationId,
+    data: fhirPatient,
+  };
+}
+

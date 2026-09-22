@@ -8,6 +8,7 @@ import {
 } from './data/constants';
 import { compileTemplate } from './runtime/renderer';
 import templateHtml from './data/template.raw.html?raw';
+import { InsightsRagCopilot } from './components/InsightsRagCopilot';
 
 const renderTemplate = compileTemplate(templateHtml);
 
@@ -357,6 +358,27 @@ export default class App extends React.Component<any, any> {
     const bars=(l)=>l.map(x=>{ const p=this.insPair(x.num,x.den); return {label:x.label, pct:p.pct+'%', frac:p.frac, w:p.w, color:p.color}; });
     const track=this.insPair(B.track.num, B.track.den);
 
+    const roleObj = ROLES[st.role] || ROLES.ins_aam;
+    const copilotData = {
+      roleName: roleObj.name || 'Staff',
+      facilityName: roleObj.facility || 'Facility',
+      roleLevel: roleObj.level || 'SUBCENTRE',
+      service: S.name || svcKey,
+      scope: (sc.id==='all' ? sc.label : (INS_SCOPES[st.role] ? sc.label : 'SC-HWC '+sc.label)),
+      village: st.insVil || 'All villages',
+      registered,
+      hrp,
+      hrpPct,
+      actionRows: rows.map(r=>({key:r.key, label:r.label, value:r.value, color:r.color, sub:r.sub})),
+      trackingRate: track.pct,
+      lowerTierRate: Math.round(lowerNum/lowerDen*100)+'%',
+      women: st.women || [],
+    };
+    const copilotNode = React.createElement(InsightsRagCopilot, {
+      key: `copilot-${st.role}-${sc.id}-${st.insVil||'all'}-${st.svc||'ANC'}`,
+      data: copilotData
+    });
+
     return {
       hasScopes: this.insScList().length>1,
       scChips: this.insScList().map(s=>({label:s.label, ...chip((st.insSc||'all')===s.id, ac), onTap:()=>this.setState({insSc:s.id, insVil:null, insOpen:null})})),
@@ -367,11 +389,18 @@ export default class App extends React.Component<any, any> {
         + (['ins_dh','ins_tert'].indexOf(st.role)>-1 ? ' · services at this facility' : ''),
       hrpPct: hrpPct+'%', hrp:hrp+'', registered:registered+'',
       hrpBar: Math.min(100, Math.round(hrpPct*3))+'%',
-      seg:[{label:'Needs action', k:'actions'},{label:'Quality', k:'quality'}].map(s=>({label:s.label,
+      seg:[
+        {label:'Needs action', k:'actions'},
+        {label:'Quality', k:'quality'},
+        {label:'✦ Copilot', k:'copilot'}
+      ].map(s=>({label:s.label,
         bg:(st.insSeg||'actions')===s.k?'#fff':'transparent', fg:(st.insSeg||'actions')===s.k?ac:'#70706E',
         sh:(st.insSeg||'actions')===s.k?'0 1px 3px rgba(30,20,190,.14)':'none',
         onTap:()=>this.setState({insSeg:s.k})})),
-      isActions:(st.insSeg||'actions')==='actions', isQuality:(st.insSeg||'actions')==='quality',
+      isActions:(st.insSeg||'actions')==='actions',
+      isQuality:(st.insSeg||'actions')==='quality',
+      isCopilot:(st.insSeg||'actions')==='copilot',
+      copilotNode,
       metricLabel: facilityOnly? S.metricFac : S.metric,
       headLine: facilityOnly? S.denLineFac(hrp, registered) : S.denLine(hrp, registered), unit:S.unit, refTitle:S.refTitle,
       secs:S.secs.map(x=>{
@@ -391,11 +420,11 @@ export default class App extends React.Component<any, any> {
   }
 
   // ---------- nav ----------
-  pickRole(r){ const t=(ROLES[r].tabs||['lookup','worklist','alerts'])[0]; this.setState({role:r, screen:t, tab:t, selId:null, query:'', dialog:null, filter:'ALL'}); }
+  pickRole(r){ const t=(ROLES[r].tabs||['lookup','worklist','alerts','insights'])[0]; this.setState({role:r, screen:t, tab:t, selId:null, query:'', dialog:null, filter:'ALL'}); }
   switchRole(){ this.setState({screen:'launcher', role:null, dialog:null, cap:null}); }
   pickUser(u){
     const r=ROLES[u.k];
-    const scr=u.screen||(r.tabs||['lookup','worklist','alerts'])[0];
+    const scr=u.screen||(r.tabs||['lookup','worklist','alerts','insights'])[0];
     this.setState({role:u.k, screen:scr, tab:scr, svc:u.svc||'ANC', selId:null, query:'', dialog:null,
       filter:'ALL', riskFilter:'ALL', insSeg:'actions'});
   }
@@ -578,6 +607,8 @@ export default class App extends React.Component<any, any> {
           steps: [{
             id: d.stepId,
             patient_id: stepFound ? stepFound.w.id : 'Patient/w1',
+            cat: stepFound?.s?.cat || 'REFERRAL',
+            level: stepFound?.s?.level || (clev || 'CHC'),
             status: done ? 'DONE' : 'OPEN',
             closed_at: done ? TODAY_ISO : null,
             closed_source: d.src || d.outcome,
@@ -1053,15 +1084,15 @@ export default class App extends React.Component<any, any> {
   jumpFolder(fk, sk){ this.setState({screen:'launcher', role:null, folder:fk, sub:sk||null, dialog:null, cap:null, selId:null, query:''}); }
   quickNavVM(){
     const st=this.state, keys=['ANC','PNC','NCD','CANCER'];
-    const insMode = st.folder==='insights';
+    const insMode = st.screen==='insights' || st.folder==='insights';
     const subs = FOLDERS.capture.subs;
     return keys.map(k=>{
-      const M=SVC[k], on = insMode ? (st.svc||'ANC')===k : (st.folder==='capture' && st.sub===k);
-      const label = insMode ? M.label : subs[k].name, accent = insMode ? M.ac : subs[k].accent;
+      const M=SVC[k], on = (st.svc||'ANC')===k;
+      const label = subs[k]?.name || M.label, accent = subs[k]?.accent || M.ac;
       return {label, ac:accent, on,
         onTap: insMode
           ? ()=>this.setState({svc:k, selId:null, dialog:null, cap:null, filter:'ALL', riskFilter:'ALL', insOpen:null, insLowerOpen:false})
-          : ()=>this.jumpFolder('capture',k),
+          : ()=>this.setState({svc:k, selId:null, dialog:null, cap:null, filter:'ALL', riskFilter:'ALL'}),
         bg:on?accent:'var(--surface-card)', fg:on?'#fff':'var(--text-body)', bd:on?accent:'var(--border-default)'};
     });
   }
@@ -1170,7 +1201,7 @@ export default class App extends React.Component<any, any> {
     }
 
     const alertCount=this.alertsVM().length;
-    base.tabs=(role.tabs||['lookup','worklist','alerts']).map(k=>({label:TABMETA[k].label, icon:TABMETA[k].icon,
+    base.tabs=(role.tabs||['lookup','worklist','alerts','insights']).map(k=>({label:TABMETA[k].label, icon:TABMETA[k].icon,
       color: st.tab===k?role.accent:'#909090', badge:(k==='alerts'&&alertCount)?(alertCount+''):'', onTap:()=>this.setTab(k)}));
 
     if(scr==='lookup'){

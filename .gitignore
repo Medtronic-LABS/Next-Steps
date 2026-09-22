@@ -45,3 +45,6 @@ backend/data/
 *.zip
 __pycache__/
 .tempmediaStorage/
+whatsapp-channel/
+deploy/next_steps_ec2_deployment/
+reference/

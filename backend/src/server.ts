@@ -5,6 +5,7 @@ import { initDatabase } from './db/index.js';
 import { startOutboxWorker } from './cce/outboxWorker.js';
 import { syncRouter } from './routes/syncRoutes.js';
 import { adminRouter } from './routes/adminRoutes.js';
+import { whatsappRouter } from './whatsapp/webhook.js';
 
 const app = express();
 
@@ -19,6 +20,8 @@ app.use(express.json({ limit: '10mb' }));
 // Mount routes
 app.use('/api/sync', syncRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/whatsapp', whatsappRouter);
+app.use('/webhook', whatsappRouter);
 
 app.get('/health', (req, res) => {
   res.json({

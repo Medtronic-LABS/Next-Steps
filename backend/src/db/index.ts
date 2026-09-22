@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
 import { config } from '../config.js';
 
 
@@ -141,13 +142,68 @@ export function initDatabase() {
   `);
 
   seedInitialData();
+  syncTestPhoneNumbers();
 }
 
-function seedInitialData() {
-  const facilityCount = db.prepare('SELECT COUNT(*) as count FROM facilities').get() as { count: number };
-  if (facilityCount.count > 0) return;
+export function syncTestPhoneNumbers() {
+  try {
+    let anm = process.env.TEST_ANM_PHONE || config.whatsapp?.testAnmPhone;
+    let phc = process.env.TEST_PHC_PHONE || config.whatsapp?.testPhcPhone;
+    let chc = process.env.TEST_CHC_PHONE || config.whatsapp?.testChcPhone;
+
+    try {
+      const envPath = fs.existsSync(path.resolve(process.cwd(), '.env'))
+        ? path.resolve(process.cwd(), '.env')
+        : path.resolve(process.cwd(), 'backend', '.env');
+      if (fs.existsSync(envPath)) {
+        const envConfig = dotenv.parse(fs.readFileSync(envPath));
+        if (envConfig.TEST_ANM_PHONE) anm = envConfig.TEST_ANM_PHONE;
+        if (envConfig.TEST_PHC_PHONE) phc = envConfig.TEST_PHC_PHONE;
+        if (envConfig.TEST_CHC_PHONE) chc = envConfig.TEST_CHC_PHONE;
+      }
+    } catch {}
+
+    if (anm && anm.replace(/\D/g, '').length >= 10) {
+      db.prepare(`UPDATE users SET phone = ? WHERE id = 'USR-ANM-01'`).run(anm);
+    }
+    if (phc && phc.replace(/\D/g, '').length >= 10) {
+      db.prepare(`UPDATE users SET phone = ? WHERE id = 'USR-PHC-SN'`).run(phc);
+    }
+    if (chc && chc.replace(/\D/g, '').length >= 10) {
+      db.prepare(`UPDATE users SET phone = ? WHERE id = 'USR-CHC-SN'`).run(chc);
+    }
+  } catch (err: any) {
+    console.warn('[Database] syncTestPhoneNumbers note:', err?.message || err);
+  }
+}
+
+export function resetDatabaseToSeed() {
+  db.exec(`
+    DELETE FROM steps;
+    DELETE FROM patients;
+    DELETE FROM villages;
+    DELETE FROM facilities;
+    DELETE FROM users;
+    DELETE FROM cce_event_outbox;
+    DELETE FROM audit_logs;
+    DELETE FROM deployment_config;
+  `);
+  seedInitialData(true);
+  syncTestPhoneNumbers();
+}
+
+function seedInitialData(force = false) {
+  if (!force) {
+    const facilityCount = db.prepare('SELECT COUNT(*) as count FROM facilities').get() as { count: number };
+    if (facilityCount.count > 0) return;
+  }
 
   const now = new Date().toISOString();
+  const today = new Date();
+  const twoDaysAgo = new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const fiveDaysAgo = new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const tenDaysAgo = new Date(today.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const twoDaysLater = new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   // 1. Seed Facilities
   const facilities = [
@@ -169,6 +225,7 @@ function seedInitialData() {
 
   // 2. Seed Villages
   const villages = [
+    { id: 'VIL-RAM', name: 'Rampur', subcentre_id: 'FAC-SC-GHU', asha_name: 'ASHA Samta', asha_phone: '+919812345001' },
     { id: 'VIL-GHU', name: 'Ghurehta', subcentre_id: 'FAC-SC-GHU', asha_name: 'ASHA Samta', asha_phone: '+919812345001' },
     { id: 'VIL-AMI', name: 'Amiliya', subcentre_id: 'FAC-SC-GHU', asha_name: 'ASHA Shanti', asha_phone: '+919812345002' },
     { id: 'VIL-SIR', name: 'Sirmour', subcentre_id: 'FAC-SC-SIR', asha_name: 'ASHA Meena', asha_phone: '+919812345003' },
@@ -208,7 +265,8 @@ function seedInitialData() {
   // 4. Seed Patients & Care Steps
   const patients = [
     { id: 'w1', name: 'Sunita Devi', name_hi: 'सुनीता देवी', phone: '+919812345011', service: 'ANC', village_id: 'VIL-GHU', village_name: 'Ghurehta', subcentre_id: 'FAC-SC-GHU', asha_name: 'ASHA Samta', status: 'HRP', age: 29, lmp: '2026-01-08', edd: '2026-10-15', consent_whatsapp: 1, abha_id: 'ABHA-9812-3450-1100' },
-    { id: 'w2', name: 'Lakshmi Bai', name_hi: 'लक्ष्मी बाई', phone: '+919812345022', service: 'ANC', village_id: 'VIL-SIR', village_name: 'Sirmour', subcentre_id: 'FAC-SC-SIR', asha_name: 'ASHA Meena', status: 'NORMAL', age: 34, lmp: '2026-02-19', edd: '2026-11-26', consent_whatsapp: 1, abha_id: 'ABHA-9812-3450-2200' },
+    { id: 'w2', name: 'Lakshmi Devi', name_hi: 'लक्ष्मी देवी', phone: '+919812342814', service: 'ANC', village_id: 'VIL-RAM', village_name: 'Rampur', subcentre_id: 'FAC-SC-GHU', asha_name: 'ASHA Samta', status: 'HRP', age: 28, lmp: '2026-02-19', edd: '2026-11-26', consent_whatsapp: 1, abha_id: 'ABHA-9812-3450-2814' },
+    { id: 'w3', name: 'Lakshmi Devi', name_hi: 'लक्ष्मी देवी', phone: '+919812347732', service: 'ANC', village_id: 'VIL-RAM', village_name: 'Rampur', subcentre_id: 'FAC-SC-GHU', asha_name: 'ASHA Samta', status: 'NORMAL', age: 31, lmp: '2026-03-01', edd: '2026-12-06', consent_whatsapp: 1, abha_id: 'ABHA-9812-3450-7732' },
     { id: 'p1', name: 'Kamla Yadav', name_hi: 'कमला यादव', phone: '+919812345101', service: 'PNC', village_id: 'VIL-GHU', village_name: 'Ghurehta', subcentre_id: 'FAC-SC-GHU', asha_name: 'ASHA Samta', status: 'BOTH_WELL', age: 24, dod: '2026-07-30', consent_whatsapp: 1, abha_id: null },
     { id: 'n1', name: 'Ramesh Patel', name_hi: 'रमेश पटेल', phone: '+919812345201', service: 'NCD', village_id: 'VIL-AMI', village_name: 'Amiliya', subcentre_id: 'FAC-SC-GHU', asha_name: 'ASHA Shanti', status: 'UNCONTROLLED', age: 52, consent_whatsapp: 1, abha_id: 'ABHA-9812-3450-9901' },
     { id: 'c1', name: 'Radha Bai', name_hi: 'राधा बाई', phone: '+919812345301', service: 'CANCER', village_id: 'VIL-BAG', village_name: 'Baghwar', subcentre_id: 'FAC-SC-SIR', asha_name: 'ASHA Kamla', status: 'SCREEN_POSITIVE', age: 46, consent_whatsapp: 1, abha_id: 'ABHA-9812-3450-8801' }
@@ -224,10 +282,21 @@ function seedInitialData() {
 
   // 5. Seed Steps
   const steps = [
-    { id: 'step-1', patient_id: 'w1', cat: 'REFERRAL', level: 'CHC', sent_at: '2026-07-28', status: 'OPEN', owner_role: 'anm' },
-    { id: 'step-2', patient_id: 'w1', cat: 'ANC_VISIT', level: 'SUBCENTRE', due: '2026-07-24', status: 'OPEN', owner_role: 'anm' },
+    // w2: Lakshmi Devi (Matches PRD Section 4 & 18 exactly)
+    { id: 'step-lakshmi-ref', patient_id: 'w2', cat: 'REFERRAL', level: 'CHC', due: twoDaysAgo, sent_at: fiveDaysAgo, status: 'OPEN', owner_role: 'anm' },
+    { id: 'step-lakshmi-fu', patient_id: 'w2', cat: 'FOLLOW_UP', level: 'SUBCENTRE', due: twoDaysLater, sent_at: now.slice(0, 10), status: 'OPEN', owner_role: 'anm' },
+    { id: 'step-lakshmi-lab', patient_id: 'w2', cat: 'LAB', level: 'PHC', due: tenDaysAgo, sent_at: tenDaysAgo, status: 'DONE', owner_role: 'anm', closed_at: tenDaysAgo, closed_by: 'PHC Staff Nurse Suman', closed_source: 'AT_FACILITY', closed_level: 'PHC' },
+
+    // w1: Sunita Devi
+    { id: 'step-1', patient_id: 'w1', cat: 'REFERRAL', level: 'CHC', sent_at: fiveDaysAgo, status: 'OPEN', owner_role: 'anm' },
+    { id: 'step-2', patient_id: 'w1', cat: 'ANC_VISIT', level: 'SUBCENTRE', due: twoDaysAgo, status: 'OPEN', owner_role: 'anm' },
     { id: 'step-3', patient_id: 'w1', cat: 'PMSMA_VISIT', level: 'PHC', due: '2026-07-09', status: 'DONE', owner_role: 'anm', closed_at: '2026-07-09', closed_by: 'PHC Staff Nurse Suman', closed_source: 'AT_FACILITY', closed_level: 'PHC' },
-    { id: 'step-4', patient_id: 'w2', cat: 'LAB', level: 'DH', due: '2026-08-04', status: 'OPEN', owner_role: 'dh_sn' },
+
+    // n1: Ramesh Patel (Hypertension / NCD Cohort)
+    { id: 'step-ramesh-bp', patient_id: 'n1', cat: 'BP_SUGAR_CHECK', level: 'SUBCENTRE', due: twoDaysAgo, sent_at: fiveDaysAgo, status: 'OPEN', owner_role: 'anm' },
+    { id: 'step-ramesh-med', patient_id: 'n1', cat: 'MED_REFILL', level: 'SUBCENTRE', due: twoDaysLater, sent_at: now.slice(0, 10), status: 'OPEN', owner_role: 'anm' },
+
+    // c1: Radha Bai
     { id: 'step-5', patient_id: 'c1', cat: 'IMAGING', level: 'DH', due: '2026-08-15', status: 'OPEN', owner_role: 'dh_sn' },
   ];
 

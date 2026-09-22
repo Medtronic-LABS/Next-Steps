@@ -71,16 +71,25 @@ syncRouter.post('/push', (req: Request, res: Response) => {
       `);
 
       for (const s of steps) {
+        const existing = db.prepare('SELECT cat, level, due, sent_at, owner_role, created_by, created_at FROM steps WHERE id = ?').get(s.id) as any;
+        const resolvedCat = s.cat || existing?.cat || 'REFERRAL';
+        const resolvedLevel = s.level || existing?.level || 'CHC';
+        const resolvedDue = s.due || existing?.due || null;
+        const resolvedSent = s.sent_at || existing?.sent_at || null;
+        const resolvedOwner = s.owner_role || existing?.owner_role || 'anm';
+        const resolvedCreatedBy = s.created_by || existing?.created_by || actorName || null;
+        const resolvedCreatedAt = s.created_at || existing?.created_at || now;
+
         stepStmt.run(
           s.id,
           s.patient_id,
-          s.cat,
-          s.level,
-          s.due || null,
-          s.sent_at || null,
+          resolvedCat,
+          resolvedLevel,
+          resolvedDue,
+          resolvedSent,
           s.status || 'OPEN',
-          s.owner_role || 'anm',
-          s.created_by || actorName || null,
+          resolvedOwner,
+          resolvedCreatedBy,
           s.closed_at || null,
           s.closed_by || null,
           s.closed_source || null,
@@ -88,7 +97,7 @@ syncRouter.post('/push', (req: Request, res: Response) => {
           s.downgraded ? 1 : 0,
           s.reminder_state || null,
           s.unreach_count || 0,
-          s.created_at || now,
+          resolvedCreatedAt,
           now
         );
 
@@ -96,12 +105,12 @@ syncRouter.post('/push', (req: Request, res: Response) => {
         enqueueStepEvent({
           id: s.id,
           patient_id: s.patient_id,
-          cat: s.cat,
-          level: s.level,
-          due: s.due,
-          sent_at: s.sent_at,
+          cat: resolvedCat,
+          level: resolvedLevel,
+          due: resolvedDue,
+          sent_at: resolvedSent,
           status: s.status || 'OPEN',
-          owner_role: s.owner_role || 'anm',
+          owner_role: resolvedOwner,
           closed_at: s.closed_at,
           closed_by: s.closed_by,
           closed_source: s.closed_source,

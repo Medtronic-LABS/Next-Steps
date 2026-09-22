@@ -1,224 +1,106 @@
-# Next Steps: Frontline Care Coordination Application
+# Next Steps: Frontline Care Coordination & WhatsApp Platform
 
-A cross-platform mobile and web application built on top of the **[OpenPHC](https://github.com/orgs/openphc/repositories)** infrastructure specifications, designed to close the loop on frontline maternal and public health coordination across village, sub-centre, primary health centre (PHC), and secondary/tertiary facilities.
+Next Steps is an enterprise care coordination platform designed to close the loop on frontline maternal, child, and chronic health coordination across village, sub-centre (HWC), primary health centre (PHC), and community/district hospital facilities.
 
-Packaged for **Android (APK)**, **iOS**, and **Web (PWA)** using **React 18 + Vite + TypeScript + Capacitor** and styled with authentic **Medtronic LABS Design System tokens**.
-
----
-
-## Table of Contents
-
-- [Overview & Problem Statement](#overview--problem-statement)
-- [Architecture & OpenPHC Layer](#architecture--openphc-layer)
-- [Key Features](#key-features)
-- [Design System & Aesthetics](#design-system--aesthetics)
-- [Tech Stack](#tech-stack)
-- [Directory Structure](#directory-structure)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [1. Running the Web App](#1-running-the-web-app)
-  - [2. Running the OpenPHC Mock Collector](#2-running-the-openphc-mock-collector)
-  - [3. Building the Native Android APK](#3-building-the-native-android-apk)
-  - [4. Installing the APK](#4-installing-the-apk)
-- [OpenPHC CloudEvents & FHIR Specification](#openphc-cloudevants--fhir-specification)
-- [Testing & Verification](#testing--verification)
+Built on the **[OpenPHC](https://github.com/orgs/openphc/repositories)** infrastructure specifications and integrated with the live **Medtronic LABS Care Coordination Engine (CCE)**, Next Steps provides a unified coordination layer accessible through:
+1. **WhatsApp Care Coordination Bot**: Zero-install frontline chatbot for ASHAs, ANMs, and PHC/CHC Nurses with interactive lists and quick action buttons.
+2. **Next Steps Frontline Web & Mobile App**: 4-tab responsive web application (Lookup, Worklist, Alerts, Insights with AI Copilot) packaged for Android and Mobile Web.
+3. **Supervisory Admin & Telemetry Portal**: Web dashboard for facility management, SLA rules, persona assignments, and CCE outbox telemetry.
 
 ---
 
-## Overview & Problem Statement
-
-In maternal healthcare across rural and semi-urban health systems (such as in Madhya Pradesh, India), pregnant women encounter high dropout rates along the referral and care continuum. Although antenatal care (ANC), ultrasound (USG), and high-risk pregnancy (HRP) specialist evaluations are advised, coordination between community health workers (**ASHAs**), village clinics (**Sub-centres / HWCs**), and referral hospitals (**PHC / CHC / District Hospitals**) is often fragmented on paper slips.
-
-**Next Steps** is a lightweight care coordination solution that:
-1. **Prescribes Next Steps in < 30 seconds** at the conclusion of an encounter.
-2. **Eliminates redundant clinical data entry** (focuses strictly on coordination metadata: *Who, Where, When, What Step, Risk Tier* per **BR-017**).
-3. **Guarantees offline-first durability** for remote frontline workers with zero network connectivity.
-4. **Emits standard CloudEvents v1.0 and FHIR R4 Task payloads** directly compatible with the OpenPHC protocol engine (`cce-collector-service`).
-
----
-
-## Architecture & OpenPHC Layer
+## Architecture Overview
 
 ```
-+-------------------------------------------------------------------------------+
-|                    NEXT STEPS MOBILE & WEB APPLICATION                       |
-|         (React 18 + TypeScript + Medtronic LABS Design System + Capacitor)    |
-+-------------------------------------------------------------------------------+
-       |                                                    |
-       v                                                    v
-[Frontline Roles & UI]                               [Local OpenPHC Bridge]
-• ASHA (Village level)                               • CloudEvents v1.0 Outbox Queue
-• ANM / CHO (Sub-centre)                             • FHIR R4 Task Generator
-• PHC & DH Staff Nurses                              • OpenPHC SLA Evaluator
-• PHC Medical Officer (Insights)                     • Zero-Server Mock (cce-local-mock.cjs)
-       |                                                    |
-       +---------------------> [Dexie.js DB] <--------------+
-                               (Offline Store)
-```
-
-### Local OpenPHC Bridge (Zero-Server Footprint)
-- **Local Outbox Queue**: All care events are written atomically to an IndexedDB outbox table (`outboxEvents`) via Dexie.js before attempting network transmission.
-- **CloudEvents v1.0 Spec**: Standardized event envelopes (`type: org.openphc.task.created`, `subject: Patient/...`, `source: org.openphc.nextsteps.<role>`).
-- **FHIR R4 `Task` Resources**: Translates care steps into standard FHIR resources with coding, restrictions, intent, and priorities.
-- **OpenPHC Event Inspector Drawer**: An in-app debug/audit drawer (accessible via the `CCE` status badge in the header) enabling real-time inspection and dispatch of emitted CloudEvents.
-- **Standalone Mock Server (`cce-local-mock.cjs`)**: A zero-dependency Node.js HTTP server simulating OpenPHC's `POST /v1/events` ingestion endpoint.
-
----
-
-## Key Features
-
-### 1. Rapid Patient Lookup & Registration
-- Instant lookup by **Mobile Number**, **ABHA / RCH ID**, or simulated **QR Code Token**.
-- Pre-populated master village directory that **automatically links the corresponding ASHA** and her contact number (NS-3, NS-8).
-- High-Risk Pregnancy tag is recorded as a simple routing priority: **`NORMAL`** vs **`HRP`** (NS-12).
-
-### 2. 30-Second Next Steps Prescription Grid
-- One-tap staging for critical next steps:
-  - **Specialist Referral**: Facility tier selector (PHC, CHC, District Hospital Rewa, Tertiary).
-  - **ANC Visit**: Interval proposals (`+2w`, `+4w`, or custom date picker).
-  - **PMSMA Session**: Automated calculation to the **9th of next month** (NS-10).
-  - **Diagnostics**: Ultrasound (USG) and laboratory investigations.
-
-### 3. Frontline Role Switcher
-- Fast role switching in the header between frontline personas:
-  - **ANM / CHO** (Sub-centre / Health & Wellness Centre)
-  - **ASHA** (Village Community Level)
-  - **Staff Nurse** (PHC / CHC)
-  - **DH Staff** (District Hospital Rewa)
-  - **Medical Officer** (PHC In-Charge)
-
-### 4. Supervisory Insights Dashboard
-- **Woman-wise deduplication**: Unique pregnant woman counts (never inflated by individual test events).
-- **Care Cascade Visualization**: Tracks drop-offs between referral issued, arrived at recommended facility, arrived at lower tier, or dropped out.
-- **Simulated OpenPHC AI Insights Q&A**: Natural-language analytical queries (e.g., *"Show high-risk dropout rates by village"*).
-
----
-
-## Design System & Aesthetics
-
-The application uses design tokens from the **Medtronic LABS Design System**:
-- **Palette**: Deep Navy (`#0f172a`), Clinical Teal (`#0d9488`), Alert Amber (`#f59e0b`), and High-Risk Rose (`#e11d48`).
-- **Typography**: Clean system typography with accessible contrast and touch-target standards (min 44px for field hands).
-- **Glassmorphic Accents**: Subtle backdrops, rounded cards, and smooth micro-animations for high-end feel.
-- **Compact Footprint**: Web bundle is only **~114 kB gzipped**, loading instantly even on 2G/3G connections.
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-| :--- | :--- |
-| **Frontend Framework** | React 18 / 19, TypeScript, Vite |
-| **Mobile Runtime** | Capacitor 8 (`@capacitor/core`, `@capacitor/android`, `@capacitor/network`, `@capacitor/status-bar`) |
-| **Offline Storage** | Dexie.js (IndexedDB wrapper with live reactive hooks) |
-| **Icons** | Lucide React |
-| **OpenPHC Protocol** | CloudEvents v1.0, FHIR R4 (`Task`, `Patient`), Node.js mock collector |
-| **Android Build** | Gradle 8.14.3, OpenJDK 22, Android SDK 36 (minSdk 24) |
-
----
-
-## Directory Structure
-
-```
-next-steps-app/
-├── android/                   # Native Android Capacitor Project (Gradle)
-│   ├── app/
-│   │   ├── build/outputs/apk/debug/app-debug.apk   # Compiled Debug APK
-│   │   └── src/main/
-│   └── local.properties       # Android SDK location
-├── src/
-│   ├── components/            # UI components (Header, Modals, Event Drawer, etc.)
-│   │   ├── common/
-│   │   ├── forms/
-│   │   └── layout/
-│   ├── db/                    # Dexie.js offline database & sample seeds
-│   │   ├── index.ts
-│   │   └── seedData.ts
-│   ├── openphc/               # OpenPHC bridge implementation
-│   │   ├── cloudEventSchema.ts # CloudEvents v1.0 & FHIR R4 Task interfaces
-│   │   ├── outboxManager.ts   # Outbox queue & sync manager
-│   │   └── slaEvaluator.ts    # Escalation & deadline tracker
-│   ├── views/                 # Core screen views
-│   │   ├── AlertsView.tsx     # Overdue & SLA breaches
-│   │   ├── FindAddView.tsx    # Patient search & registration
-│   │   ├── InsightsView.tsx   # Supervisory MO metrics & AI insights
-│   │   ├── PrescribeView.tsx  # Next Steps 30s prescription grid
-│   │   └── RegisterView.tsx   # Woman registration modal
-│   ├── App.tsx                # Main application coordinator
-│   ├── index.css              # Medtronic LABS Design System stylesheet
-│   └── main.tsx
-├── cce-local-mock.cjs         # Full OpenPHC CCE microservice suite mock server (Port 8080)
-├── next-steps-debug.apk       # Ready-to-install Android Debug APK (4.59 MB)
-├── capacitor.config.json      # Capacitor native configuration
-└── package.json
++----------------------------------------------------------------------------------------------------+
+|                                    NEXT STEPS CARE COORDINATION                                   |
++----------------------------------------------------------------------------------------------------+
+           |                                                                 |
+           v                                                                 v
++-----------------------+   Deep-Links (Register / Charts)       +-----------------------+
+|  WhatsApp Cloud API   | <====================================> | Frontline Web App     |
+|  (Meta Graph API v21) |                                        | (React 18 + TS + Vite)|
++-----------------------+                                        +-----------------------+
+           |                                                                 |
+           | Webhook & Interactive Action Buttons                            | REST / Synchronous
+           v                                                                 v
++----------------------------------------------------------------------------------------------------+
+|                                   NEXT STEPS BACKEND ENGINE                                        |
+|                          (Node.js / Express + TypeScript + SQLite / Postgres)                      |
+|                                                                                                    |
+| • WhatsApp Workflow Router (Worklist, Arrivals, Prescriptions, Closures, OCR, Demo Resets)         |
+| • OpenPHC CloudEvents v1.0 & FHIR R4 Task Generator                                                |
+| • Reliable Outbox Worker (Exponential Backoff, In-Memory/DB Persistence)                           |
+| • Keycloak OAuth2 Client Manager (Auto Token Rotation)                                             |
++----------------------------------------------------------------------------------------------------+
+           |                                                                 |
+           v                                                                 v
++-----------------------------------+                       +-----------------------------------+
+|      Live Keycloak Auth Server    |                       |    Live OpenPHC CCE Gateway       |
+| keycloak.cce.mdtlabs.org/realms/cce|                       |   api.cce.mdtlabs.org/v1/events   |
++-----------------------------------+                       +-----------------------------------+
 ```
 
 ---
 
-## Getting Started
+## 1. WhatsApp Care Coordination Bot
 
-### Prerequisites
-- **Node.js** 18+ and **npm**
-- *(Optional for Android build)* **Java 17 or 22** and **Android SDK 34+**
+The WhatsApp Bot provides an accessible, zero-install interface for frontline community health workers and facility nurses.
 
-### 1. Running the Web App
+### Key Capabilities
+- **Worklist Management (`Worklist`)**: Instant access to overdue and due-today patient visits tailored to the worker's facility catchment.
+- **30-Second Care Step Prescription**:
+  - Referrals to Primary Health Centres (PHC), Community Health Centres (CHC), and District Hospitals (DH).
+  - Antenatal Care (ANC) checkups (`+2w`, `+4w`, or custom dates).
+  - Diagnostic orders (Ultrasound USG, Hemoglobin, Urine Albumin).
+  - Postnatal (PNC) and Home-Based Newborn Care (HBNC) protocols.
+- **Inbound Expected Arrivals**:
+  - Staff nurses at PHC and CHC receive real-time notifications of incoming referrals from sub-centres.
+  - One-tap arrival confirmation (`✅ Confirm Arrived`).
+- **Care Step Closure**: Select specific open steps and record outcomes (Completed, Escalated, Cancelled) with immediate worklist updates.
+- **Secure Web App Deep-Links**:
+  - 🔒 *Patient Registration Form*: Opens the responsive registration view with pre-selected catchment without requiring user login.
+  - 👤 *Medical Chart Link*: Direct deep-link to the patient's longitudinal care timeline.
+- **Privacy-First & Clean Messaging**: Frontline workers see clear, human-readable medical coordination messages; technical CCE database outbox sync occurs silently in the background.
 
-```bash
-# Install dependencies
-npm install
-
-# Start the Vite development server
-npm run dev
-```
-Open your browser at **`http://localhost:5173/`**.
-
-### 2. Running the OpenPHC Mock Collector
-
-In a separate terminal, launch the local event collector to receive and inspect dispatched CloudEvents:
-
-```bash
-npm run mock:cce
-```
-This starts an HTTP server on **`http://localhost:8080`** that logs incoming CloudEvents envelopes and FHIR `Task` payloads.
-
-### 3. Building the Native Android APK
-
-To bundle the web app, sync native assets, and build the APK:
-
-```powershell
-# 1. Build web assets and sync to native Android
-npm run cap:sync
-
-# 2. Compile debug APK with Gradle
-cd android
-$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
-.\gradlew.bat assembleDebug
-```
-
-The compiled APK will be located at:
-- Standard Path: `android/app/build/outputs/apk/debug/app-debug.apk`
-- Convenience Copy: `next-steps-debug.apk` in project root
-
-### 4. Installing the APK
-
-#### Via ADB (USB Debugging / Emulator):
-```powershell
-adb install -r next-steps-debug.apk
-```
-
-#### Via Android Studio:
-```bash
-npx cap open android
-```
-
-#### Sideload on Physical Phone:
-Transfer `next-steps-debug.apk` to your phone (via USB cable, Google Drive, WhatsApp, etc.) and tap to install.
+### Supported Personas & Commands
+| Role | Facility Level | Core Workflows | Quick Commands |
+| :--- | :--- | :--- | :--- |
+| **ANM / CHO** | Sub-centre / HWC | Patient Intake, Worklist, Prescribe Next Steps, OCR Import | `menu`, `worklist`, `alerts`, `register`, `ocr` |
+| **Staff Nurse** | PHC (Sirmour) | Expected Arrivals, Inbound Referrals, Worklist, Doctor Consult | `arrivals`, `worklist`, `alerts`, `menu` |
+| **Staff Nurse** | CHC (Teonthar) | High-Risk Specialist Arrivals, Ultrasound Intake, Secondary Worklist | `arrivals`, `worklist`, `menu` |
 
 ---
 
-## OpenPHC CloudEvents & FHIR Specification
+## 2. Next Steps Frontline Web & Mobile App (`/mobile-app`)
 
-Every Next Step action recorded in the app is packaged into a **CloudEvents v1.0** envelope wrapping a **FHIR R4 `Task`**:
+A responsive, touch-optimized web application using the Medtronic LABS Design System:
+- **4-Tab Navigation**:
+  - `Lookup`: Quick search by name, phone, or ABHA/RCH ID, with instant deep-linking.
+  - `Worklist`: Categorized patient lists (Overdue, Due Today, Upcoming) with one-tap status actions.
+  - `Alerts`: Escalated overdue referrals and high-risk pregnancy notifications.
+  - `Insights`: Real-time catchment metrics, care cascade charts, and an **AI RAG Copilot**.
+- **AI Insights Copilot**:
+  - Role-specific contextual answering (scoped strictly to the worker's facility and service).
+  - Markdown-rendered responses with clean tables and bullet points.
+  - One-tap question bubbles (e.g., *"Show HRP dropouts"*, *"ANC visit completion rate"*, *"Top overdue villages"*).
+- **Multi-Service Switching**: Maternal Health (ANC/PNC), Child Health (Immunization/HBNC), and Chronic Disease (NCD Hypertension/Diabetes).
+
+---
+
+## 3. Supervisory Admin & Telemetry Portal (`/admin-panel`)
+
+A web-based administration cockpit:
+- **Live CCE Cockpit**: Real-time Keycloak token status, CCE API latency, and live outbox event feeds.
+- **Role & Access Management**: 7 role tiers (ASHA, ANM, Staff Nurse, MO, Specialist, Care Coordinator, Nodal).
+- **Catchment Hierarchy**: Blocks, PHCs, Sub-centres, and village mapping with CSV onboarding.
+- **Care Cascade Analytics**: Visual funnel analysis tracking referral drop-offs across tiers.
+
+---
+
+## 4. OpenPHC CCE Integration Specifications
+
+All care steps and encounter closures automatically generate **CloudEvents v1.0** payloads wrapping **FHIR R4 `Task`** resources:
 
 ```json
 {
@@ -228,17 +110,14 @@ Every Next Step action recorded in the app is packaged into a **CloudEvents v1.0
   "type": "org.openphc.task.created",
   "subject": "Patient/pw_01",
   "datacontenttype": "application/json",
-  "time": "2026-09-05T19:49:18.027Z",
-  "facilityid": "SUBCENTRE",
+  "time": "2026-09-22T18:00:00.000Z",
+  "facilityid": "FAC-SC-GHU",
   "protocolinstanceid": "proto_pw_01",
   "protocoldefinitionid": "cce-maternal-v1",
   "actionid": "referral",
   "data": {
     "resourceType": "Task",
     "id": "step_1788637758027_8dhd",
-    "identifier": [
-      { "system": "urn:openphc:step-id", "value": "step_1788637758027_8dhd" }
-    ],
     "status": "requested",
     "intent": "order",
     "priority": "routine",
@@ -246,137 +125,151 @@ Every Next Step action recorded in the app is packaged into a **CloudEvents v1.0
       "coding": [
         {
           "system": "http://openphc.org/fhir/CodeSystem/task-category",
-          "code": "specialist-referral",
-          "display": "Specialist Referral"
+          "code": "phc-referral",
+          "display": "PHC Referral"
         }
-      ],
-      "text": "Specialist Referral"
+      ]
     },
     "for": {
       "reference": "Patient/pw_01",
       "display": "Sunita Devi"
-    },
-    "restriction": {
-      "period": {
-        "end": "2026-09-19"
-      }
     }
   }
 }
 ```
 
----
-
-## Testing & Verification
-
-Run the automated integration test script to verify local OpenPHC event emission and mock collector ingestion:
-
-```bash
-node test-openphc-flow.cjs
-```
-
-Expected result:
-```
-==================================================
-OPENPHC INGESTION FLOW TEST
-==================================================
-[1] Connecting to Local CCE Collector at http://localhost:8080/v1/events...
-[2] Submitting CloudEvents v1.0 payload for Sunita Devi (Specialist Referral)...
---> HTTP Response Status: 200 OK
---> Ingestion Response: { status: 'ACCEPTED', eventId: 'evt_test_...' }
-[SUCCESS] OpenPHC Collector successfully processed the CloudEvents v1.0 Task!
-```
-
----
-
-
----
-
-## Live Deployed CCE Integration & Architecture
-
-This repository is integrated with the live deployed **OpenPHC Care Coordination Engine (CCE)** environment and contains a complete enterprise multi-tier architecture:
-
-```
-                                +-----------------------------------+
-                                |    Live Keycloak (MDT LABS CCE)   |
-                                | keycloak.cce.mdtlabs.org/realms/cce|
-                                +-----------------+-----------------+
-                                                  | OAuth2 Client Credentials
-                                                  v
-+-----------------------+               +-------------------+               +------------------------------+
-| Next-Steps Mobile /   |  /api/sync/   | Next-Steps Backend| CloudEvents   | Live CCE Event Gateway       |
-| Frontline PWA Client  | ------------> | (Express + TS)    | ------------> | api.cce.mdtlabs.org/v1/events|
-+-----------------------+    Push/Pull  | Reliable Outbox   | 1.0 (HTTP 202)| (Collector Service)          |
-                                        +---------+---------+               +------------------------------+
-+-----------------------+                         |
-| Next-Steps Admin &    |   /api/admin/           |
-| Supervisory Portal    | ------------------------+
-| (React 18 + Vite)     |
-+-----------------------+
-```
-
-### 1. Live CCE Endpoints & Credentials
+### Live CCE Authentication & Endpoints
 - **Keycloak Token Endpoint**: `https://keycloak.cce.mdtlabs.org/realms/cce/protocol/openid-connect/token`
-  - Grant Type: `client_credentials`
-  - Client ID: `nextstep-emitter`
-  - Client Secret: `ZsFq3nfpMefiN82WteylKeLECwS3Z4sw`
-- **CCE Gateway Ingestion Endpoint**: `POST https://api.cce.mdtlabs.org/v1/events`
-  - Content-Type: `application/cloudevents+json`
-  - Format: CloudEvents 1.0 wrapping FHIR R4 `Task` resources
-  - Contract: OpenPHC `cce-collector-service` v2.0 API reference
+- **CCE Collector Ingestion Endpoint**: `POST https://api.cce.mdtlabs.org/v1/events`
 
-### 2. Multi-Tier Directory Layout
-- **`/` (Root)**: Frontline mobile & web application with offline Dexie.js store and in-app OpenPHC Event Inspector drawer.
-- **`/backend`**: Express + TypeScript service handling:
-  - Keycloak OAuth2 token management with automatic proactive refresh
-  - Reliable DB Outbox table with exponential backoff retry worker
-  - Frontline sync APIs (`/api/sync/push`, `/api/sync/pull`)
-  - Admin & Telemetry APIs (`/api/cce/status`, `/api/admin/...`)
-  - PostgreSQL & SQLite dual database support
-- **`/admin-panel`**: React 18 + Vite Care Coordination Admin & Supervisory Portal:
-  - CCE Telemetry Cockpit (Keycloak token status, CCE API latency, live outbox feed)
-  - 7 Personas & Permissions matrix (ASHA, ANM, Staff Nurse, MO, High-Risk Specialist, Care Coordinator, Nodal)
-  - Facilities & Catchment hierarchy with bulk CSV onboarding
-  - SLA Configuration per catchment level (Sub-centre, PHC, CHC, DH)
-  - Care Cascade & Supervisory drop-off analytics
-  - Immutable Audit Logs
-- **`/mobile-app`**: Native Android / Capacitor packaged frontline client.
-- **`/docs`**: Personas, permissions, and admin panel requirements documentation.
-- **`docker-compose.yml`**: Full-stack container orchestration for PostgreSQL, Backend, and Admin Panel.
+---
 
-### 3. Quickstart with Docker Compose
-```bash
-# Start PostgreSQL, Backend, and Admin Panel
-docker compose up -d
+## Directory Structure
 
-# Verify services:
-# - Admin Panel: http://localhost:5174
-# - Backend API & Health: http://localhost:4000/api/cce/status
+```
+next-steps/
+├── backend/                  # Express + TypeScript backend service
+│   ├── src/
+│   │   ├── whatsapp/         # WhatsApp bot router, webhook, & workflows
+│   │   │   ├── webhook.ts    # Meta verification & incoming message handler
+│   │   │   ├── router.ts     # Session state & keyword dispatch
+│   │   │   ├── client.ts     # WhatsApp Cloud API HTTP client
+│   │   │   └── workflows/    # Worklist, referral, arrival, closure, OCR workflows
+│   │   ├── cce/              # CloudEvents & FHIR R4 transformer, outbox worker
+│   │   ├── db/               # SQLite database schemas and migrations
+│   │   └── routes/           # REST APIs for sync, telemetry, and admin
+│   └── package.json
+├── mobile-app/               # Frontline Responsive Web App (4-tab interface)
+│   ├── src/
+│   │   ├── App.tsx           # Main application coordinator & RAG Copilot
+│   │   ├── data/             # State machine, tokens, & HTML template
+│   │   └── components/       # UI subcomponents
+│   └── package.json
+├── admin-panel/              # Supervisory desktop portal
+│   ├── src/
+│   └── package.json
+├── deploy/                   # EC2 and production deployment artifacts
+│   ├── nginx.conf            # Reverse proxy config (Admin, Mobile Web, Backend)
+│   ├── setup-ec2.sh          # Server provisioner
+│   └── create_deployment_zip.py # Packaging utility for EC2 bundles
+└── docker-compose.yml        # Container orchestration
 ```
 
-### 4. Running Backend & Admin Locally
+---
+
+## Getting Started Locally
+
+### Prerequisites
+- Node.js 18+ and npm
+- (Optional) Meta WhatsApp Business Cloud API App credentials
+
+### 1. Environment Configuration
+Create or update `backend/.env`:
+```env
+PORT=4000
+NODE_ENV=development
+
+# WhatsApp Cloud API
+WHATSAPP_TOKEN=EAAG...
+WHATSAPP_PHONE_NUMBER_ID=108...
+WHATSAPP_VERIFY_TOKEN=nextsteps_webhook_verify_2026
+
+# Public App Base URL (Used for WhatsApp deep-links)
+FRONTEND_URL=http://localhost:3000
+
+# OpenPHC CCE Integration
+CCE_KEYCLOAK_URL=https://keycloak.cce.mdtlabs.org/realms/cce/protocol/openid-connect/token
+CCE_CLIENT_ID=nextstep-emitter
+CCE_CLIENT_SECRET=ZsFq...
+CCE_GATEWAY_URL=https://api.cce.mdtlabs.org/v1/events
+```
+
+### 2. Start the Backend Service
 ```bash
-# Backend (Port 4000)
 cd backend
 npm install
 npm run dev
+```
+Backend runs at `http://localhost:4000`.
 
-# Admin Panel (Port 5174)
+### 3. Start the Frontline Web App
+```bash
+cd mobile-app
+npm install
+npm run dev
+```
+Frontline app runs at `http://localhost:3000`.
+
+### 4. Start the Admin Panel
+```bash
 cd admin-panel
 npm install
 npm run dev
 ```
+Admin portal runs at `http://localhost:5174`.
 
-### 5. Verified Live Event Ingestion
-Live ingestion into `https://api.cce.mdtlabs.org/v1/events` was verified with real tokens:
-```json
-{
-  "status": "ACCEPTED",
-  "ackEventId": "01a09a7c-1f41-755e-9ad1-95da2987e62d",
-  "httpStatus": 202
-}
+---
+
+## WhatsApp Bot Setup & Testing
+
+### 1. Webhook Verification
+In your Meta App Dashboard under WhatsApp > Configuration:
+- **Callback URL**: `https://<YOUR_DOMAIN>/api/whatsapp/webhook`
+- **Verify Token**: Match the value in `WHATSAPP_VERIFY_TOKEN` (e.g. `nextsteps_webhook_verify_2026`)
+- **Webhook Fields**: Subscribe to `messages`.
+
+### 2. Testing Bot Interactions
+Send a WhatsApp message from a registered test phone:
+- Type **`menu`** to view your persona dashboard.
+- Tap **`Worklist`** to inspect pending patients.
+- Type **`role anm`**, **`role phc`**, or **`role chc`** to switch between frontline personas.
+- Type **`demo reset`** to restore the initial test scenario.
+
+---
+
+## Deployment to AWS EC2
+
+Next Steps is configured to run alongside existing services on AWS EC2 (`13.232.251.63`) using Nginx:
+- **Admin Panel**: `https://nextsteps-admin.mdtlabs.org`
+- **Mobile Web App**: `https://nextsteps-admin.mdtlabs.org/app/`
+- **Backend API & Webhooks**: `https://nextsteps-admin.mdtlabs.org/api/`
+
+To package and upload updates:
+```bash
+# 1. Build and package the bundle
+python deploy/create_deployment_zip.py
+
+# 2. Upload to EC2
+scp deploy/next_steps_ec2_deployment.zip ubuntu@13.232.251.63:/home/ubuntu/
+
+# 3. Extract and restart on EC2
+ssh ubuntu@13.232.251.63
+sudo unzip -o /home/ubuntu/next_steps_ec2_deployment.zip -d /var/www/next-steps
+sudo systemctl restart nextsteps-backend
 ```
+
+---
 
 ## License
 
-MIT
+MIT © Medtronic LABS

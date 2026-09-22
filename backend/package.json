@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "set-test-users": "node scripts/set-test-numbers.mjs"
   },
   "dependencies": {
     "@types/better-sqlite3": "^9.6.0",

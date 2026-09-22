@@ -55,26 +55,32 @@ export const OPTMETA = {
 
 export const ROLES = {
   asha:{name:'ASHA Samta', short:'ASHA Samta', facility:'Village Gharonda', accent:'#C35721', level:'SUBCENTRE',
+    tabs:['lookup','worklist','alerts','insights'],
     options:[], refUp:[], refDown:[],
     icon:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z'},
   anm:{name:'AAM', short:'AAM', facility:'Sub-centre Ghurehta', accent:'#2E9E6B', level:'SUBCENTRE',
+    tabs:['lookup','worklist','alerts','insights'],
     options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT'], refUp:['PHC','CHC','DH','TERTIARY'], refDown:[],
     icon:'M12 2l2.4 5 5.6.5-4.3 3.7 1.4 5.5L12 19l-5.1 2.7 1.4-5.5L4 12.5 9.6 12z'},
   phc_sn:{name:'PHC Staff Nurse', short:'PHC SN', facility:'PHC Sirmour', accent:'#6165DE', level:'PHC',
+    tabs:['lookup','worklist','alerts','insights'],
     options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT','LAB','IMAGING'], refUp:['CHC','DH','TERTIARY'], refDown:['SUBCENTRE'],
     icon:'M12 3a6 6 0 0 0-6 6c0 5-2 6-2 6h16s-2-1-2-6a6 6 0 0 0-6-6zM10 20a2 2 0 0 0 4 0'},
   chc_sn:{name:'CHC Staff Nurse', short:'CHC SN', facility:'CHC Teonthar', accent:'#1E14BE', level:'CHC',
+    tabs:['lookup','worklist','alerts','insights'],
     options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT','LAB','IMAGING'], refUp:['DH','TERTIARY'], refDown:['PHC','SUBCENTRE'],
     icon:'M12 5v14M5 12h14'},
   dh_sn:{name:'DH Staff Nurse', short:'DH SN', facility:'District Hospital, Rewa', accent:'#994242', level:'DH',
+    tabs:['lookup','worklist','alerts','insights'],
     options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT','LAB','IMAGING'], refUp:['TERTIARY'], refDown:['CHC','PHC','SUBCENTRE'],
     icon:'M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3'},
   tert_sn:{name:'Tertiary Staff Nurse', short:'TER SN', facility:'Medical College, Jabalpur', accent:'#C35721', level:'TERTIARY',
+    tabs:['lookup','worklist','alerts','insights'],
     options:['REFERRAL','FOLLOW_UP','LAB','IMAGING'], refUp:[], refDown:['DH','CHC','PHC','SUBCENTRE'],
     icon:'M4 21V8l8-5 8 5v13M9 21v-6h6v6M9 12h.01M15 12h.01'},
 };
 ROLES.phc_mo = {name:'PHC Medical Officer', short:'PHC MO', facility:'PHC Sirmour', accent:'#655AD0', level:'PHC',
-  tabs:['worklist','insights','lookup','alerts'],
+  tabs:['lookup','worklist','alerts','insights'],
   options:[], refUp:['CHC','DH','TERTIARY'], refDown:['SUBCENTRE'],
   icon:'M3 20V10l9-6 9 6v10M9 20v-6h6v6M12 7v0'};
 ROLES.chc_mo = {...ROLES.phc_mo, name:'CHC Medical Officer', short:'CHC MO', facility:'CHC Teonthar', level:'CHC',
@@ -82,7 +88,7 @@ ROLES.chc_mo = {...ROLES.phc_mo, name:'CHC Medical Officer', short:'CHC MO', fac
 ROLES.dh_mo = {...ROLES.phc_mo, name:'District Programme Officer', short:'DPO', facility:'District Hospital, Rewa', level:'DH',
   refUp:['TERTIARY'], refDown:['CHC','PHC','SUBCENTRE']};
 ROLES.phc_nurse = {name:'PHC Nurse — all services', short:'SN', facility:'PHC Sirmour', sub:'PHC Sirmour · ANC · PNC & newborn · NCD', accent:'#1E14BE', level:'PHC',
-  services:true, tabs:['home','worklist','lookup','alerts'],
+  services:true, tabs:['home','lookup','worklist','alerts','insights'],
   options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT','LAB','IMAGING'], refUp:['CHC','DH','TERTIARY'], refDown:['SUBCENTRE'],
   icon:'M4 7h16v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM9 4h6l1 3H8zM12 11v6M9 14h6'};
 
@@ -134,9 +140,9 @@ export const MC_LOGINS = [
 ].map(u=>({...u, screen:'mcdash', svc:'ANC'}));
 
 export const FOLDERS = {
-  capture:{name:'NS Capture', hi:'नेक्स्ट स्टेप्स दर्ज करें', sub:'Record & close next steps', accent:'#1E14BE',
+  capture:{name:'Next Steps', hi:'नेक्स्ट स्टेप्स दर्ज करें', sub:'Record & close next steps', accent:'#1E14BE',
     icon:'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9',
-    title:'NS Capture', tagline:'Pick the care register you are working in today.',
+    title:'Next Steps', tagline:'Pick the care register you are working in today.',
     subs:{
       ANC:{name:'ANC', hi:'गर्भावस्था की देखफ़ाल', sub:'Pregnancy · ANC, PMSMA, referrals', accent:'#1E14BE',
         icon:'M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10z',
@@ -151,10 +157,6 @@ export const FOLDERS = {
         icon:'M12 3a4 4 0 0 1 4 4c2.5 0 4 1.8 4 4s-1.8 4-4 4a4 4 0 0 1-8 0c-2.2 0-4-1.8-4-4s1.5-4 4-4a4 4 0 0 1 4-4z',
         title:'Cancer', tagline:'Screening positives — confirm, treat and follow up.', users:capUsers('ANM','CANCER')},
     }},
-  insights:{name:'NS Insights', hi:'रिपोर्ट और आँकड़े', sub:'Dashboard & indicators', accent:'#2E9E6B',
-    icon:'M4 20V10M10 20V4M16 20v-7M22 20H2',
-    title:'NS Insights', tagline:'Pick your facility. Switch between services from the top bar.',
-    users:INS_LOGINS},
   coach:{name:'Microcoach', hi:'छोटे-छोटे प्रशिक्षण', sub:'Bite-size refreshers & training', accent:'#655AD0',
     icon:'M12 3l9 4.5-9 4.5L3 7.5zM7 10.5V16c0 1.7 2.2 3 5 3s5-1.3 5-3v-5.5',
     title:'Microcoach', tagline:'Two minutes at a time. Refresher cards from your own data, plus state training.',
@@ -191,7 +193,7 @@ SVC.CANCER = {key:'CANCER', label:'Cancer', full:'Cancer screening & care', line
 export const SVC_KEYS = ['ANC','PNC','NCD'];
 export const DATED = ['ANC_VISIT','PNC_VISIT','NB_CHECK','BP_CHECK','SUGAR_TEST','REFILL','HOME_VISIT'];
 
-export const INS_SCOPES = {
+export const INS_SCOPES: Record<string, any> = {
   ins_asha:{mul:.085, list:[{id:'all', label:'Village Ghurehta', f:1, q:1.04, villages:[]}]},
   ins_aam:{mul:.3, list:[{id:'all', label:'Sub-centre Ghurehta', f:1, q:1.02, villages:['Ghurehta','Gharonda','Semri']}]},
   ins_chc:{mul:2.6, list:[
@@ -201,6 +203,29 @@ export const INS_SCOPES = {
     {id:'cha', label:'PHC Chakghat', f:.28, q:.88, villages:[]}]},
   ins_dh:{mul:.55, list:[{id:'all', label:'District Hospital, Rewa', f:1, q:1, villages:[]}]},
   ins_tert:{mul:.32, list:[{id:'all', label:'Medical College, Jabalpur', f:1, q:1, villages:[]}]},
+  asha:{mul:.085, list:[{id:'all', label:'Village Ghurehta', f:1, q:1.04, villages:[]}]},
+  anm:{mul:.3, list:[{id:'all', label:'Sub-centre Ghurehta', f:1, q:1.02, villages:['Ghurehta','Gharonda','Semri']}]},
+  phc_sn:{mul:1, list:[
+    {id:'all', label:'All SC-HWCs', f:1, q:1, villages:[]},
+    {id:'ghu', label:'Ghurehta', f:.32, q:1.06, villages:['Ghurehta','Gharonda','Semri']},
+    {id:'bha', label:'Bhanpur', f:.27, q:.90, villages:['Bhanpur','Rampur Kothi']},
+    {id:'dih', label:'Dihiya', f:.23, q:1.0, villages:['Dihiya','Pipra']},
+    {id:'kat', label:'Katra', f:.18, q:.82, villages:['Katra','Baraon','Naugaon']},
+  ]},
+  chc_sn:{mul:2.6, list:[
+    {id:'all', label:'All PHCs', f:1, q:1, villages:[]},
+    {id:'sir', label:'PHC Sirmour', f:.38, q:1.04, villages:[]},
+    {id:'bai', label:'PHC Baikunthpur', f:.34, q:.94, villages:[]},
+    {id:'cha', label:'PHC Chakghat', f:.28, q:.88, villages:[]}]},
+  dh_sn:{mul:.55, list:[{id:'all', label:'District Hospital, Rewa', f:1, q:1, villages:[]}]},
+  tert_sn:{mul:.32, list:[{id:'all', label:'Medical College, Jabalpur', f:1, q:1, villages:[]}]},
+  phc_nurse:{mul:1, list:[
+    {id:'all', label:'All SC-HWCs', f:1, q:1, villages:[]},
+    {id:'ghu', label:'Ghurehta', f:.32, q:1.06, villages:['Ghurehta','Gharonda','Semri']},
+    {id:'bha', label:'Bhanpur', f:.27, q:.90, villages:['Bhanpur','Rampur Kothi']},
+    {id:'dih', label:'Dihiya', f:.23, q:1.0, villages:['Dihiya','Pipra']},
+    {id:'kat', label:'Katra', f:.18, q:.82, villages:['Katra','Baraon','Naugaon']},
+  ]},
 };
 export const INS_SC = [
   {id:'all', label:'All SC-HWCs', f:1, q:1, villages:[]},
