@@ -75,8 +75,8 @@ export function promptArrivalAction(to: string, user: WhatsAppUser, stepId: stri
       `• *रेफरल स्तर:* ${step.level}\n\n` +
       `${user.facility_name || step.level} पर मरीज़ के पहुँचने की पुष्टि करने के लिए नीचे टैप करें:`,
     buttons: [
-      { id: `DO_CARE_DELIVERED_${step.id}`, title: '✅ उपस्थिति दर्ज करें' },
-      { id: 'CMD_ARRIVALS', title: 'सूची पर वापस जाएँ' },
+      { id: `DO_CARE_DELIVERED_${step.id}`, title: 'उपस्थिति दर्ज' },
+      { id: 'CMD_ARRIVALS', title: 'वापस सूची' },
     ],
   };
 }
