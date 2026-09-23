@@ -31,11 +31,11 @@ export function handleWorklist(to: string, user: WhatsAppUser): OutboundMessage 
       kind: 'buttons',
       to,
       header: 'Worklist',
-      body: `🎉 *All clear!* No pending care steps for ${user.facility_name || 'your centre'}.\n\nWhat would you like to do next?`,
+      body: `🎉 *सब काम पूरा है!* ${user.facility_name || 'आपके सेंटर'} के लिए कोई पेंडिंग स्टेप्स नहीं हैं।\n\nआप आगे क्या करना चाहते हैं?`,
       buttons: [
-        { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
-        { id: 'CMD_ADD_STEP', title: 'Add Next Step' },
-        { id: 'CMD_MENU', title: 'Main Menu' },
+        { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
+        { id: 'CMD_ADD_STEP', title: '➕ नया स्टेप' },
+        { id: 'CMD_MENU', title: 'मुख्य मेनू' },
       ],
     };
   }
@@ -44,10 +44,10 @@ export function handleWorklist(to: string, user: WhatsAppUser): OutboundMessage 
   const dueToday = steps.filter((s) => s.due && s.due === todayIso);
   const upcoming = steps.filter((s) => !s.due || s.due > todayIso);
 
-  let body = `📋 *${user.facility_name || 'Worklist'} (${steps.length} open)*\n\n`;
+  let body = `📋 *${user.facility_name || 'Worklist'} (${steps.length} पेंडिंग)*\n\n`;
 
   if (overdue.length > 0) {
-    body += `🔴 *OVERDUE (${overdue.length}):*\n`;
+    body += `🔴 *समय बीता (OVERDUE - ${overdue.length}):*\n`;
     overdue.forEach((s) => {
       body += `• *${s.patient_name}* — ${s.cat} (${s.due})\n`;
     });
@@ -55,7 +55,7 @@ export function handleWorklist(to: string, user: WhatsAppUser): OutboundMessage 
   }
 
   if (dueToday.length > 0) {
-    body += `🟡 *DUE TODAY (${dueToday.length}):*\n`;
+    body += `🟡 *आज देय (DUE TODAY - ${dueToday.length}):*\n`;
     dueToday.forEach((s) => {
       body += `• *${s.patient_name}* — ${s.cat}\n`;
     });
@@ -63,9 +63,9 @@ export function handleWorklist(to: string, user: WhatsAppUser): OutboundMessage 
   }
 
   if (upcoming.length > 0) {
-    body += `🟢 *UPCOMING (${upcoming.length}):*\n`;
+    body += `🟢 *आने वाले (UPCOMING - ${upcoming.length}):*\n`;
     upcoming.slice(0, 3).forEach((s) => {
-      body += `• *${s.patient_name}* — ${s.cat} (${s.due || 'Scheduled'})\n`;
+      body += `• *${s.patient_name}* — ${s.cat} (${s.due || 'निर्धारित'})\n`;
     });
   }
 
@@ -75,14 +75,14 @@ export function handleWorklist(to: string, user: WhatsAppUser): OutboundMessage 
     to,
     header: 'Worklist',
     body: body.trim(),
-    buttonText: 'Select Patient to Act',
+    buttonText: 'मरीज़ चुनें',
     sections: [
       {
-        title: 'Worklist Patients',
+        title: 'वर्कलिस्ट के मरीज़',
         rows: steps.slice(0, 10).map((s) => ({
           id: `SEL_PATIENT_${s.patient_id}_${s.id}`,
           title: `${s.patient_name} — ${s.cat}`.slice(0, 24),
-          description: `Due: ${s.due || 'Scheduled'} · ${s.village_name}`.slice(0, 72),
+          description: `तारीख: ${s.due || 'निर्धारित'} · ${s.village_name}`.slice(0, 72),
         })),
       },
     ],

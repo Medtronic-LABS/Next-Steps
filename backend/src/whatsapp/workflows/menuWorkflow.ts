@@ -9,14 +9,14 @@ export function handleMenu(to: string, user: WhatsAppUser): OutboundMessage {
       to,
       header: `Sub-centre ${facilityLabel}`,
       body:
-        `Namaste ${user.name}!\n\n` +
-        `Welcome to Next Steps. Select an action below, or type a patient's name or phone number:\n\n` +
-        `💡 _Quick tip: Type "alerts" for overdue visits, "register" for new intake, or "ocr" to import register._`,
-      footer: 'Next Steps Care Coordination',
+        `नमस्ते ${user.name}!\n\n` +
+        `Next Steps में आपका स्वागत है। नीचे दिए गए विकल्पों में से चुनें, या मरीज़ का नाम या मोबाइल नंबर टाइप करें:\n\n` +
+        `💡 _सुझाव: ओवरड्यू विज़िट्स के लिए "alerts", नए मरीज़ के लिए "register", या रजिस्टर की फ़ोटो के लिए "ocr" लिखें।_`,
+      footer: 'Next Steps केयर कोऑर्डिनेशन',
       buttons: [
         { id: 'CMD_WORKLIST', title: 'Worklist' },
-        { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
-        { id: 'CMD_REGISTER_START', title: '➕ Register Patient' },
+        { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
+        { id: 'CMD_REGISTER_START', title: '➕ नया मरीज़' },
       ],
     };
   }
@@ -25,16 +25,16 @@ export function handleMenu(to: string, user: WhatsAppUser): OutboundMessage {
     return {
       kind: 'buttons',
       to,
-      header: `CHC ${facilityLabel} — Secondary Care`,
+      header: `CHC ${facilityLabel}`,
       body:
-        `Namaste ${user.name}!\n\n` +
-        `Welcome to Next Steps. Coordinate specialist referrals and ultrasound arrivals for your block:\n\n` +
-        `💡 _Quick tip: Type "arrivals" for expected patients, or "worklist" anytime._`,
-      footer: 'Next Steps Care Coordination',
+        `नमस्ते ${user.name}!\n\n` +
+        `Next Steps में आपका स्वागत है। अपने ब्लॉक के लिए विशेषज्ञ रेफरल और अल्ट्रासाउंड अराइवल्स की निगरानी करें:\n\n` +
+        `💡 _सुझाव: आने वाले मरीज़ों के लिए "arrivals", या अपनी "worklist" देखें।_`,
+      footer: 'Next Steps केयर कोऑर्डिनेशन',
       buttons: [
         { id: 'CMD_ARRIVALS', title: 'Expected Arrivals' },
         { id: 'CMD_WORKLIST', title: 'CHC Worklist' },
-        { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
+        { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
       ],
     };
   }
@@ -43,16 +43,16 @@ export function handleMenu(to: string, user: WhatsAppUser): OutboundMessage {
   return {
     kind: 'buttons',
     to,
-    header: `PHC ${facilityLabel} — Primary Care`,
+    header: `PHC ${facilityLabel}`,
     body:
-      `Namaste ${user.name}!\n\n` +
-      `Welcome to Next Steps. Manage inbound referrals, PMSMA sessions, and sub-centre follow-through:\n\n` +
-      `💡 _Quick tip: Type "arrivals" for inbound visits, or "alerts" for stale referrals._`,
-    footer: 'Next Steps Care Coordination',
+      `नमस्ते ${user.name}!\n\n` +
+      `Next Steps में आपका स्वागत है। सब-सेंटर से आने वाले रेफरल, PMSMA और डॉक्टर चेकअप की निगरानी करें:\n\n` +
+      `💡 _सुझाव: आने वाले मरीज़ों के लिए "arrivals", या ओवरड्यू रेफरल के लिए "alerts" टाइप करें।_`,
+    footer: 'Next Steps केयर कोऑर्डिनेशन',
     buttons: [
       { id: 'CMD_ARRIVALS', title: 'Expected Arrivals' },
       { id: 'CMD_WORKLIST', title: 'PHC Worklist' },
-      { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
+      { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
     ],
   };
 }

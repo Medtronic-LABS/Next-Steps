@@ -49,17 +49,17 @@ export function startRegistration(to: string, user?: WhatsAppUser, initialQuery?
   return {
     kind: 'buttons',
     to,
-    header: 'Secure Patient Intake',
+    header: 'सुरक्षित मरीज़ पंजीकरण',
     body:
-      `🔒 *Next Steps Patient Registration*\n\n` +
-      `To ensure patient data privacy, sensitive personal and clinical data is entered directly into the secure Next Steps app:\n\n` +
-      `🌐 *Open Secure Registration Form:*\n${registerDeepLink}\n\n` +
-      `_No login required. Once saved in the app, the patient will immediately appear in your WhatsApp worklist._`,
-    footer: 'Privacy-First Care Coordination',
+      `🔒 *Next Steps सुरक्षित मरीज़ पंजीकरण*\n\n` +
+      `मरीज़ की व्यक्तिगत और नैदानिक जानकारी की सुरक्षा के लिए, रजिस्ट्रेशन सीधे Next Steps सुरक्षित ऐप में दर्ज किया जाता है:\n\n` +
+      `🌐 *पंजीकरण फॉर्म खोलें:*\n${registerDeepLink}\n\n` +
+      `_लॉगिन की आवश्यकता नहीं है। फॉर्म सबमिट करते ही मरीज़ आपकी WhatsApp वर्कलिस्ट में तुरंत दिखाई देगा।_`,
+    footer: 'Next Steps डेटा सुरक्षा',
     buttons: [
-      { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
+      { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
       { id: 'CMD_WORKLIST', title: 'Worklist' },
-      { id: 'CMD_MENU', title: 'Main Menu' },
+      { id: 'CMD_MENU', title: 'मुख्य मेनू' },
     ],
   };
 }
@@ -396,18 +396,18 @@ export function handleRegistrationStep(
     return {
       kind: 'buttons',
       to,
-      header: 'Registration Complete',
+      header: 'पंजीकरण पूर्ण',
       body:
-        `🎉 *Patient Registered Successfully!*\n\n` +
-        `• *Name:* ${patientRecord.name} (26y)\n` +
-        `• *Mobile:* ${patientRecord.phone}\n` +
-        `• *Village:* ${patientRecord.village_name} (ASHA: ${patientRecord.asha_name})\n` +
-        `• *Program:* ${patientRecord.service} · ${riskLabel}\n` +
-        `• *WhatsApp Reminders:* ${consented ? '✅ Consented' : '❌ Declined'}\n\n` +
-        `Prescribe the first care step or view the patient journey:`,
+        `🎉 *मरीज़ का पंजीकरण सफलतापूर्वक हो गया!*\n\n` +
+        `• *नाम:* ${patientRecord.name} (26y)\n` +
+        `• *मोबाइल:* ${patientRecord.phone}\n` +
+        `• *गाँव:* ${patientRecord.village_name} (ASHA: ${patientRecord.asha_name})\n` +
+        `• *प्रोग्राम:* ${patientRecord.service} · ${riskLabel}\n` +
+        `• *WhatsApp रिमाइंडर:* ${consented ? '✅ सहमति दी गई' : '❌ अस्वीकार'}\n\n` +
+        `पहला केयर स्टेप दर्ज करें या मरीज़ की जानकारी देखें:`,
       buttons: [
-        { id: `ACTION_ADD_STEP_${patientId}`, title: '➕ Add Next Step' },
-        { id: `SEL_PATIENT_${patientId}`, title: '👤 View Patient' },
+        { id: `ACTION_ADD_STEP_${patientId}`, title: '➕ नया स्टेप' },
+        { id: `SEL_PATIENT_${patientId}`, title: '👤 प्रोफाइल देखें' },
         { id: 'CMD_WORKLIST', title: 'Worklist' },
       ],
     };

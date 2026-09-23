@@ -20,11 +20,11 @@ export function handleExpectedArrivals(to: string, user: WhatsAppUser): Outbound
       kind: 'buttons',
       to,
       header: 'Expected Arrivals',
-      body: `🏥 *No inbound referrals pending at ${user.facility_name || facilityLevel}.*\n\nAll referred patients have either completed care or no referrals are scheduled today.`,
+      body: `🏥 *${user.facility_name || facilityLevel} पर कोई पेंडिंग रेफरल नहीं है।*\n\nसभी रेफर किए गए मरीज़ों की सेवा पूरी हो चुकी है या आज के लिए कोई रेफरल निर्धारित नहीं है।`,
       buttons: [
         { id: 'CMD_WORKLIST', title: `${facilityLevel} Worklist` },
-        { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
-        { id: 'CMD_MENU', title: 'Main Menu' },
+        { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
+        { id: 'CMD_MENU', title: 'मुख्य मेनू' },
       ],
     };
   }
@@ -32,16 +32,16 @@ export function handleExpectedArrivals(to: string, user: WhatsAppUser): Outbound
   return {
     kind: 'list',
     to,
-    header: 'Expected Inbound Arrivals',
-    body: `Found ${referrals.length} referred patients expected at ${user.facility_name || facilityLevel}. Select a patient to record arrival or care completion:`,
-    buttonText: 'Select Arriving Patient',
+    header: 'Expected Arrivals',
+    body: `${user.facility_name || facilityLevel} पर ${referrals.length} रेफर किए गए मरीज़ों के आने की उम्मीद है। अराइवल दर्ज करने के लिए मरीज़ चुनें:`,
+    buttonText: 'मरीज़ चुनें',
     sections: [
       {
-        title: 'Expected Inbound Referrals',
+        title: 'आने वाले रेफरल (Arrivals)',
         rows: referrals.map((r) => ({
           id: `ARRIVE_PICK_${r.id}`,
-          title: `${r.patient_name} (${r.patient_risk === 'HRP' ? '🔴 HRP' : '🟢 Normal'})`.slice(0, 24),
-          description: `From: ${r.village_name} · Due: ${r.due || 'ASAP'}`.slice(0, 72),
+          title: `${r.patient_name} (${r.patient_risk === 'HRP' ? '🔴 हाई-रिस्क' : '🟢 सामान्य'})`.slice(0, 24),
+          description: `गाँव: ${r.village_name} · देय: ${r.due || 'जल्द से जल्द'}`.slice(0, 72),
         })),
       },
     ],
@@ -60,23 +60,23 @@ export function promptArrivalAction(to: string, user: WhatsAppUser, stepId: stri
     return {
       kind: 'text',
       to,
-      body: '❌ Step not found or already closed.',
+      body: '❌ स्टेप नहीं मिला या पहले ही बंद हो चुका है।',
     };
   }
 
   return {
     kind: 'buttons',
     to,
-    header: `Intake: ${step.patient_name}`,
+    header: `अराइवल: ${step.patient_name}`.slice(0, 24),
     body:
-      `🏥 *Inbound Referral Intake*\n\n` +
-      `• *Patient:* ${step.patient_name} (${step.patient_risk === 'HRP' ? '🔴 High-Risk' : '🟢 Normal'})\n` +
-      `• *From:* ${step.village_name}\n` +
-      `• *Referral Target:* ${step.level}\n\n` +
-      `Tap below to confirm arrival and complete the referral at ${user.facility_name || step.level}:`,
+      `🏥 *रेफरल मरीज़ का आगमन*\n\n` +
+      `• *मरीज़:* ${step.patient_name} (${step.patient_risk === 'HRP' ? '🔴 हाई-रिस्क (HRP)' : '🟢 सामान्य'})\n` +
+      `• *गाँव:* ${step.village_name}\n` +
+      `• *रेफरल स्तर:* ${step.level}\n\n` +
+      `${user.facility_name || step.level} पर मरीज़ के पहुँचने की पुष्टि करने के लिए नीचे टैप करें:`,
     buttons: [
-      { id: `DO_CARE_DELIVERED_${step.id}`, title: '✅ Confirm Arrived' },
-      { id: 'CMD_ARRIVALS', title: 'Back to Arrivals' },
+      { id: `DO_CARE_DELIVERED_${step.id}`, title: '✅ उपस्थिति दर्ज करें' },
+      { id: 'CMD_ARRIVALS', title: 'सूची पर वापस जाएँ' },
     ],
   };
 }
@@ -101,14 +101,14 @@ export function handleMarkArrived(to: string, user: WhatsAppUser, stepId: string
     to,
     header: 'Arrival Recorded',
     body:
-      `📍 *Arrival Confirmed for ${step?.patient_name || 'Patient'}!*\n\n` +
-      `• Status: *Arrived at ${user.facility_name || user.facility_level}*\n` +
-      `• Care Step: *Remains OPEN until doctor delivers care.*\n\n` +
-      `When the patient finishes consultation/treatment, tap "Care Delivered" to close the referral.`,
+      `📍 *${step?.patient_name || 'मरीज़'} का अराइवल दर्ज हो गया!*\n\n` +
+      `• स्थिति: *${user.facility_name || user.facility_level} पर उपस्थित*\n` +
+      `• केयर स्टेप: *डॉक्टर द्वारा सेवा देने तक OPEN रहेगा।*\n\n` +
+      `परामर्श / उपचार पूरा होने के बाद, रेफरल बंद करने के लिए "सेवा पूरी हुई" पर टैप करें।`,
     buttons: [
-      { id: `DO_CARE_DELIVERED_${stepId}`, title: '✅ Care Delivered' },
-      { id: 'CMD_ARRIVALS', title: 'Arrivals List' },
-      { id: 'CMD_MENU', title: 'Main Menu' },
+      { id: `DO_CARE_DELIVERED_${stepId}`, title: '✅ सेवा पूरी हुई' },
+      { id: 'CMD_ARRIVALS', title: 'Expected Arrivals' },
+      { id: 'CMD_MENU', title: 'मुख्य मेनू' },
     ],
   };
 }
@@ -143,15 +143,15 @@ export function handleCareDelivered(to: string, user: WhatsAppUser, stepId: stri
     to,
     header: 'Care Completed',
     body:
-      `🎉 *Referral Closed Successfully!*\n\n` +
-      `• *Patient:* ${step?.patient_name || 'Patient'}\n` +
-      `• *Facility:* ${user.facility_name || user.facility_level}\n` +
-      `• *Closed By:* ${user.name}\n\n` +
-      `The referring ANM has been updated automatically.`,
+      `🎉 *रेफरल सफलतापूर्वक पूर्ण हुआ!*\n\n` +
+      `• *मरीज़:* ${step?.patient_name || 'मरीज़'}\n` +
+      `• *अस्पताल:* ${user.facility_name || user.facility_level}\n` +
+      `• *सत्यापित कर्ता:* ${user.name}\n\n` +
+      `सब-सेंटर की ANM को सिस्टम द्वारा सूचित कर दिया गया है।`,
     buttons: [
-      { id: 'CMD_ARRIVALS', title: 'Arrivals Queue' },
-      { id: 'CMD_WORKLIST', title: 'Facility Worklist' },
-      { id: 'CMD_MENU', title: 'Main Menu' },
+      { id: 'CMD_ARRIVALS', title: 'Expected Arrivals' },
+      { id: 'CMD_WORKLIST', title: 'Worklist' },
+      { id: 'CMD_MENU', title: 'मुख्य मेनू' },
     ],
   };
 }

@@ -20,10 +20,10 @@ export function promptChooseStepToClose(to: string, patientId: string): Outbound
       kind: 'buttons',
       to,
       header: 'No Open Steps',
-      body: `There are currently no open care steps for *${name}*.`,
+      body: `*${name}* के लिए अभी कोई पेंडिंग केयर स्टेप्स नहीं हैं।`,
       buttons: [
-        { id: `ACTION_ADD_STEP_${patientId}`, title: '➕ Add Next Step' },
-        { id: `SEL_PATIENT_${patientId}`, title: '👤 View Patient' },
+        { id: `ACTION_ADD_STEP_${patientId}`, title: '➕ नया स्टेप' },
+        { id: `SEL_PATIENT_${patientId}`, title: '👤 प्रोफाइल देखें' },
         { id: 'CMD_WORKLIST', title: 'Worklist' },
       ],
     };
@@ -33,19 +33,19 @@ export function promptChooseStepToClose(to: string, patientId: string): Outbound
     kind: 'list',
     to,
     header: 'Select Step to Close',
-    body: `Multiple care steps are currently open for *${name}*.\n\nSelect the exact step you wish to close:`,
-    buttonText: 'Choose Step',
+    body: `*${name}* के लिए एक से अधिक केयर स्टेप्स खुले हैं।\n\nआप कौन सा स्टेप पूरा या बंद करना चाहते हैं? चुनें:`,
+    buttonText: 'स्टेप चुनें',
     sections: [
       {
-        title: `Open Steps (${openSteps.length})`,
+        title: `पेंडिंग स्टेप्स (${openSteps.length})`,
         rows: openSteps.map((s) => {
           const catLabel = s.cat.replace(/_/g, ' ');
           const levelLabel = s.level ? ` (${s.level})` : '';
-          const dueLabel = s.due ? `Due: ${s.due}` : 'Scheduled';
+          const dueLabel = s.due ? `तारीख: ${s.due}` : 'निर्धारित';
           return {
             id: `ACTION_CLOSE_STEP_${s.id}`,
             title: `${catLabel}${levelLabel}`.slice(0, 24),
-            description: `${dueLabel} · Facility: ${s.level || 'Subcentre'}`.slice(0, 72),
+            description: `${dueLabel} · अस्पताल: ${s.level || 'Subcentre'}`.slice(0, 72),
           };
         }),
       },
@@ -61,41 +61,41 @@ export function promptClosureProvenance(to: string, stepId: string): OutboundMes
   const patientName = step ? step.patient_name : 'Patient';
   const stepCat = step ? step.cat.replace(/_/g, ' ') : 'Care Step';
   const stepLevel = step ? ` (${step.level})` : '';
-  const dueInfo = step?.due ? ` · Due: ${step.due}` : '';
+  const dueInfo = step?.due ? ` · तारीख: ${step.due}` : '';
 
   return {
     kind: 'list',
     to,
-    header: `Close: ${stepCat}`.slice(0, 24),
+    header: `बंद करें: ${stepCat}`.slice(0, 24),
     body:
-      `Confirm care completion for *${patientName}*:\n\n` +
-      `• *Closing Step:* ${stepCat}${stepLevel}\n` +
-      `• *Schedule:* ${dueInfo || 'Active step'}\n\n` +
-      `Where was this care delivered? Select provenance below:`,
-    buttonText: 'Select Reason',
+      `*${patientName}* के लिए सेवा पूर्णता की पुष्टि करें:\n\n` +
+      `• *केयर स्टेप:* ${stepCat}${stepLevel}\n` +
+      `• *तारीख:* ${dueInfo || 'सक्रिय स्टेप'}\n\n` +
+      `यह सेवा कहाँ पूरी हुई? नीचे से चुनें:`,
+    buttonText: 'स्थान / कारण चुनें',
     sections: [
       {
-        title: 'Completion Location',
+        title: 'सेवा का स्थान (Provenance)',
         rows: [
           {
             id: `PROV_${stepId}_AT_FACILITY`,
-            title: 'At Recommended Facility',
-            description: `Care completed as recommended at ${step?.level || 'facility'}`,
+            title: 'निर्धारित अस्पताल में',
+            description: `${step?.level || 'अस्पताल'} पर सलाह के अनुसार सेवा पूरी हुई`,
           },
           {
             id: `PROV_${stepId}_OTHER_FACILITY`,
-            title: 'Other Public Facility',
-            description: 'Care delivered at another public facility',
+            title: 'अन्य सरकारी अस्पताल',
+            description: 'किसी अन्य सरकारी स्वास्थ्य केंद्र पर सेवा ली',
           },
           {
             id: `PROV_${stepId}_PRIVATE_FACILITY`,
-            title: 'Private Clinic / Hospital',
-            description: 'Patient consulted a private facility',
+            title: 'निजी क्लिनिक / अस्पताल',
+            description: 'मरीज़ ने प्राइवेट डॉक्टर / अस्पताल में दिखाया',
           },
           {
             id: `PROV_${stepId}_NOT_COMPLETED`,
-            title: 'Declined / Not Done',
-            description: 'Patient missed or declined the care step',
+            title: 'सेवा नहीं ली / अस्वीकार',
+            description: 'मरीज़ नहीं गया या सेवा लेने से मना किया',
           },
         ],
       },
@@ -146,12 +146,12 @@ export function handleCloseWithProvenance(
 
   const provLabel =
     provenance === 'AT_FACILITY'
-      ? 'At Recommended Facility'
+      ? 'निर्धारित अस्पताल में'
       : provenance === 'OTHER_FACILITY'
-      ? 'Other Public Facility'
+      ? 'अन्य सरकारी अस्पताल'
       : provenance === 'PRIVATE_FACILITY'
-      ? 'Private Clinic / Hospital'
-      : 'Declined / Not Done';
+      ? 'निजी क्लिनिक / अस्पताल'
+      : 'सेवा नहीं ली / अस्वीकार';
 
   const stepCat = step ? step.cat.replace(/_/g, ' ') : 'Care Step';
   const patientName = step ? step.patient_name : 'Patient';
@@ -161,19 +161,19 @@ export function handleCloseWithProvenance(
     to,
     header: 'Step Closed',
     body:
-      `✅ *${stepCat} Closed Successfully!*\n\n` +
-      `• *Patient:* ${patientName}\n` +
-      `• *Closed Step:* ${stepCat} (${step?.level || 'Facility'})\n` +
-      `• *Completion:* ${provLabel}\n` +
-      `• *Closed By:* ${user.name} (${user.role.toUpperCase()})\n\n` +
-      `The patient's care journey and worklist have been updated:`,
+      `✅ *${stepCat} सफलतापूर्वक बंद हो गया!*\n\n` +
+      `• *मरीज़:* ${patientName}\n` +
+      `• *स्टेप:* ${stepCat} (${step?.level || 'Facility'})\n` +
+      `• *सेवा स्थान:* ${provLabel}\n` +
+      `• *सत्यापित कर्ता:* ${user.name}\n\n` +
+      `मरीज़ की केयर जर्नी और वर्कलिस्ट अपडेट हो गई है:`,
     buttons: [
       step
-        ? { id: `SEL_PATIENT_${step.patient_id}`, title: `👤 View ${patientName.slice(0, 10)}`.slice(0, 20) }
+        ? { id: `SEL_PATIENT_${step.patient_id}`, title: `👤 प्रोफाइल देखें`.slice(0, 20) }
         : { id: 'CMD_WORKLIST', title: 'Worklist' },
       step
-        ? { id: `ACTION_ADD_STEP_${step.patient_id}`, title: '➕ Add Next Step' }
-        : { id: 'CMD_MENU', title: 'Main Menu' },
+        ? { id: `ACTION_ADD_STEP_${step.patient_id}`, title: '➕ नया स्टेप' }
+        : { id: 'CMD_MENU', title: 'मुख्य मेनू' },
       { id: 'CMD_WORKLIST', title: 'Worklist' },
     ],
   };

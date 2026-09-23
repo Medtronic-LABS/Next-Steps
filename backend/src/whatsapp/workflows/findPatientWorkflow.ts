@@ -6,7 +6,7 @@ export function handleFindPrompt(to: string): OutboundMessage {
   return {
     kind: 'text',
     to,
-    body: `🔍 *Find a Patient*\n\nPlease reply with the patient's name, phone number, or ID.\n\n_Example: "Sunita" or "9812345011"_`,
+    body: `🔍 *मरीज़ खोजें*\n\nकृपया मरीज़ का नाम, मोबाइल नंबर या ID लिखकर भेजें।\n\n_उदाहरण: "Sunita" या "9812345011"_`,
   };
 }
 
@@ -27,14 +27,14 @@ export function handlePatientSearchResults(to: string, user: WhatsAppUser, query
     return {
       kind: 'buttons',
       to,
-      header: 'No Patients Found',
+      header: 'मरीज़ नहीं मिला',
       body:
-        `❌ No patients found matching "${query}".\n\n` +
-        `Would you like to register this person as a new patient, or try searching again?`,
+        `❌ "${query}" से मेल खाता कोई मरीज़ नहीं मिला।\n\n` +
+        `क्या आप नया मरीज़ पंजीकृत करना चाहते हैं या दोबारा खोजना चाहते हैं?`,
       buttons: [
-        { id: 'CMD_REGISTER_START', title: '➕ Register Patient' },
-        { id: 'CMD_FIND_PATIENT', title: 'Search Again' },
-        { id: 'CMD_WORKLIST', title: 'View Worklist' },
+        { id: 'CMD_REGISTER_START', title: '➕ नया मरीज़' },
+        { id: 'CMD_FIND_PATIENT', title: 'दोबारा खोजें' },
+        { id: 'CMD_WORKLIST', title: 'Worklist' },
       ],
     };
   }
@@ -47,22 +47,22 @@ export function handlePatientSearchResults(to: string, user: WhatsAppUser, query
   return {
     kind: 'list',
     to,
-    header: 'Possible Matches Found',
-    body: `Found ${results.length} patients matching "${query}". Select one to view, or choose "Create New Patient" if none match:`,
-    buttonText: 'Select Patient',
+    header: 'मरीज़ के परिणाम',
+    body: `"${query}" से मेल खाते ${results.length} मरीज़ मिले। देखने के लिए चुनें, या नया मरीज़ जोड़ें:`,
+    buttonText: 'मरीज़ चुनें',
     sections: [
       {
-        title: 'Possible Matches',
+        title: 'मिले हुए परिणाम',
         rows: [
           ...results.map((p) => {
             const riskBadge =
               p.status === 'HRP'
-                ? '🔴 High-Risk'
+                ? '🔴 हाई-रिस्क'
                 : p.status === 'UNCONTROLLED'
-                ? '🔴 Uncontrolled'
+                ? '🔴 अनियंत्रित'
                 : p.status === 'SCREEN_POSITIVE'
-                ? '🔴 Screen Positive'
-                : '🟢 Normal';
+                ? '🔴 पॉज़िटिव'
+                : '🟢 सामान्य';
             const phoneMask = p.phone ? ' · ****' + p.phone.slice(-4) : '';
             return {
               id: `SEL_PATIENT_${p.id}`,
@@ -72,8 +72,8 @@ export function handlePatientSearchResults(to: string, user: WhatsAppUser, query
           }),
           {
             id: 'CMD_REGISTER_START',
-            title: '➕ Create New Patient',
-            description: 'None of these — register as new patient',
+            title: '➕ नया मरीज़ जोड़ें',
+            description: 'इनमें से कोई नहीं — नया पंजीकरण करें',
           },
         ],
       },
@@ -93,15 +93,15 @@ export function renderPatientDetail(to: string, user: WhatsAppUser, patient: any
   const openChcReferral = openSteps.find((s) => s.cat === 'REFERRAL' && s.level === 'CHC');
 
   // Condition-neutral risk badge (PRD Section 4 & 17)
-  let riskBadge = '🟢 Normal';
+  let riskBadge = '🟢 सामान्य';
   if (patient.service === 'NCD') {
-    riskBadge = patient.status === 'UNCONTROLLED' ? '🔴 Uncontrolled BP/Sugar' : '🟢 Controlled';
+    riskBadge = patient.status === 'UNCONTROLLED' ? '🔴 अनियंत्रित BP/शुगर' : '🟢 नियंत्रित';
   } else if (patient.service === 'CANCER') {
-    riskBadge = patient.status === 'SCREEN_POSITIVE' ? '🔴 Screen Positive' : '🟢 Screen Negative';
+    riskBadge = patient.status === 'SCREEN_POSITIVE' ? '🔴 स्क्रीनिंग पॉज़िटिव' : '🟢 सामान्य';
   } else if (patient.service === 'PNC') {
-    riskBadge = patient.status === 'COMPLICATION' ? '🔴 Complication' : '🟢 Mother & Baby Well';
+    riskBadge = patient.status === 'COMPLICATION' ? '🔴 जटिलता' : '🟢 माँ व बच्चा स्वस्थ';
   } else {
-    riskBadge = patient.status === 'HRP' ? '🔴 High Risk' : '🟢 Normal';
+    riskBadge = patient.status === 'HRP' ? '🔴 हाई-रिस्क (HRP)' : '🟢 सामान्य';
   }
 
   const deepLink = generatePatientDeepLink(patient.id, user.id, user.role);
@@ -110,51 +110,50 @@ export function renderPatientDetail(to: string, user: WhatsAppUser, patient: any
   let body = `👤 *${patient.name}* · ${patient.age || '—'}y\n`;
   body += `${riskBadge} · ${patient.village_name}\n\n`;
 
-  body += `🪜 *Care Journey (${allSteps.length} steps):*\n`;
+  body += `🪜 *केयर जर्नी (${allSteps.length} स्टेप्स):*\n`;
   if (allSteps.length === 0) {
-    body += `_No care steps recorded yet._\n`;
+    body += `_अभी कोई केयर स्टेप दर्ज नहीं है।_\n`;
   } else {
     allSteps.forEach((s) => {
       const stepName = s.cat.replace(/_/g, ' ');
       const targetLevel = s.level ? ` → ${s.level}` : '';
 
       if (s.status === 'DONE') {
-        const atFacility = s.closed_level ? ` at ${s.closed_level}` : '';
-        body += `✅ *${stepName}${targetLevel}*\nCompleted ${s.closed_at || ''}${atFacility}\n\n`;
+        const atFacility = s.closed_level ? ` (${s.closed_level})` : '';
+        body += `✅ *${stepName}${targetLevel}*\nपूर्ण हुआ ${s.closed_at || ''}${atFacility}\n\n`;
       } else if (s.status === 'CANCELLED') {
-        body += `⚪ *${stepName}${targetLevel}*\nMissed / Declined\n\n`;
+        body += `⚪ *${stepName}${targetLevel}*\nनहीं हुआ / अस्वीकार\n\n`;
       } else if (s.due && s.due < todayIso) {
-        body += `🔴 *${stepName}${targetLevel}*\n${s.due} (Overdue)\n\n`;
+        body += `🔴 *${stepName}${targetLevel}*\nतारीख: ${s.due} (समय बीता)\n\n`;
       } else if (s.due && s.due === todayIso) {
-        body += `🟡 *${stepName}${targetLevel}*\nDue Today (${s.due})\n\n`;
+        body += `🟡 *${stepName}${targetLevel}*\nआज देय (${s.due})\n\n`;
       } else if (s.closed_source === 'AT_FACILITY') {
-        body += `📍 *${stepName}${targetLevel}*\nArrived on-site at ${s.level}\n\n`;
+        body += `📍 *${stepName}${targetLevel}*\nअस्पताल पहुँच गए (${s.level})\n\n`;
       } else {
-        body += `⚪ *${stepName}${targetLevel}*\nDue ${s.due || s.sent_at || 'Scheduled'}\n\n`;
+        body += `⚪ *${stepName}${targetLevel}*\nतारीख: ${s.due || s.sent_at || 'निर्धारित'}\n\n`;
       }
     });
   }
 
-  body += `🔒 *Full Medical Chart (15-min access):*\n${deepLink}`;
+  body += `🔒 *मेडिकल रिकॉर्ड (15 मिनट लिंक):*\n${deepLink}`;
 
   const buttons: any[] = [];
 
   // If user is CHC Staff Nurse/MO and there is an open CHC referral, prioritize 1-tap arrival/closure
   if ((user.role === 'chc_sn' || user.role === 'chc_mo') && openChcReferral) {
-    buttons.push({ id: `DO_CARE_DELIVERED_${openChcReferral.id}`, title: '✅ Confirm Arrived' });
-    buttons.push({ id: `ACTION_ADD_STEP_${patient.id}`, title: '➕ Add Next Step' });
+    buttons.push({ id: `DO_CARE_DELIVERED_${openChcReferral.id}`, title: '✅ उपस्थिति दर्ज' });
+    buttons.push({ id: `ACTION_ADD_STEP_${patient.id}`, title: '➕ नया स्टेप' });
     buttons.push({ id: 'CMD_ARRIVALS', title: 'Expected Arrivals' });
   } else {
-    buttons.push({ id: `ACTION_ADD_STEP_${patient.id}`, title: '➕ Add Next Step' });
+    buttons.push({ id: `ACTION_ADD_STEP_${patient.id}`, title: '➕ नया स्टेप' });
     if (openSteps.length === 1) {
-      const stepName = openSteps[0].cat.replace(/_/g, ' ');
-      buttons.push({ id: `ACTION_CLOSE_STEP_${openSteps[0].id}`, title: `✅ Close: ${stepName}`.slice(0, 20) });
+      buttons.push({ id: `ACTION_CLOSE_STEP_${openSteps[0].id}`, title: `✅ स्टेप पूरा करें`.slice(0, 20) });
     } else if (openSteps.length > 1) {
-      buttons.push({ id: `ACTION_CHOOSE_CLOSE_${patient.id}`, title: `✅ Close Step (${openSteps.length})`.slice(0, 20) });
+      buttons.push({ id: `ACTION_CHOOSE_CLOSE_${patient.id}`, title: `✅ स्टेप बंद करें (${openSteps.length})`.slice(0, 20) });
     } else {
       buttons.push({ id: 'CMD_WORKLIST', title: 'Worklist' });
     }
-    buttons.push({ id: 'CMD_MENU', title: 'Main Menu' });
+    buttons.push({ id: 'CMD_MENU', title: 'मुख्य मेनू' });
   }
 
   return {
@@ -162,7 +161,6 @@ export function renderPatientDetail(to: string, user: WhatsAppUser, patient: any
     to,
     header: `Patient: ${patient.name}`.slice(0, 24),
     body: body.trim(),
-    footer: 'Select an action below:',
     buttons: buttons.slice(0, 3), // WhatsApp allows max 3 buttons
   };
 }

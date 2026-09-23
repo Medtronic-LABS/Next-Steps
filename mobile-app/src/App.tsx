@@ -25,7 +25,18 @@ const getSyncEndpoint = () => {
 
 export default class App extends React.Component<any, any> {
   state = { screen:'launcher', role:null, folder:null, tab:null, svc:'ANC', selId:null, query:'', filter:'ALL', scopeFilter:'FACILITY', dialog:null, cap:null, toast:null, women:null, acked:null,
+    lang: (typeof window !== 'undefined' && window.localStorage?.getItem('ns_lang')) || 'hi',
     reg:{name:'', phone:'', village:VILLAGES[0].name, abha:'', status:'HIGH', wa:true} };
+
+  toggleLang(){
+    const next = (this.state.lang || 'hi') === 'hi' ? 'en' : 'hi';
+    this.setState({ lang: next });
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('ns_lang', next);
+      }
+    } catch(e){}
+  }
 
   componentDidMount(){ if(!this.state.women) this.setState({women:this.seed()}); }
 
@@ -260,12 +271,32 @@ export default class App extends React.Component<any, any> {
   nextPmsma(){ const day=this.pmsmaDay(); let d=new Date(TODAY.getFullYear(), TODAY.getMonth(), day);
     if(d < TODAY) d=new Date(TODAY.getFullYear(), TODAY.getMonth()+1, day); return this.iso(d); }
   catLabel(cat, level){
-    if(cat==='FOLLOW_UP'||cat==='TREATMENT') return 'Follow up at '+(FUP[level]||'facility');
-    if(cat==='HBNC') return 'HBNC visit';
-    if(cat==='PNC_VISIT') return 'PNC follow up at '+(FUP[level]||'facility');
-    if(cat==='NB_CHECK') return 'Newborn follow up at '+(FUP[level]||'facility');
-    if(cat==='IMAGING' && this.svc()==='CANCER') return 'Imaging';
-    return CAT[cat].label;
+    const isHi = (this.state?.lang || 'hi') === 'hi';
+    if(cat==='FOLLOW_UP'||cat==='TREATMENT') return isHi ? ((FUP[level]||'अस्पताल') + ' में फॉलो-अप') : ('Follow up at '+(FUP[level]||'facility'));
+    if(cat==='HBNC') return isHi ? 'HBNC विज़िट' : 'HBNC visit';
+    if(cat==='PNC_VISIT') return isHi ? ((FUP[level]||'अस्पताल') + ' में PNC फॉलो-अप') : ('PNC follow up at '+(FUP[level]||'facility'));
+    if(cat==='NB_CHECK') return isHi ? ((FUP[level]||'अस्पताल') + ' में नवजात फॉलो-अप') : ('Newborn follow up at '+(FUP[level]||'facility'));
+    if(cat==='IMAGING' && this.svc()==='CANCER') return isHi ? 'इमेजिंग' : 'Imaging';
+    const HI_CAT = {
+      REFERRAL: 'रेफ़रल',
+      ANC_VISIT: 'ANC विज़िट',
+      PMSMA_VISIT: 'PMSMA विज़िट',
+      FOLLOW_UP: 'फॉलो-अप',
+      LAB: 'लैब जांच',
+      IMAGING: 'सोनोग्राफ़ी (USG)',
+      TREATMENT: 'उपचार फॉलो-अप',
+      HOME_VISIT: 'गृह भेंट',
+      HBNC: 'HBNC विज़िट',
+      REF_PW: 'रेफ़रल · प्रसूता',
+      REF_NB: 'रेफ़रल · नवजात',
+      PNC_VISIT: 'PNC फॉलो-अप',
+      NB_CHECK: 'नवजात फॉलो-अप',
+      BP_CHECK: 'BP जांच',
+      SUGAR_TEST: 'शुगर जांच',
+      REFILL: 'दवा रिफ़िल',
+    };
+    if (isHi && HI_CAT[cat]) return HI_CAT[cat];
+    return CAT[cat]?.label || cat;
   }
   ord(n){ const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
   toast(t){ this.setState({toast:t}); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({toast:null}),2600); }
@@ -374,25 +405,27 @@ export default class App extends React.Component<any, any> {
       lowerTierRate: Math.round(lowerNum/lowerDen*100)+'%',
       women: st.women || [],
     };
+    const isHi = (st.lang || 'hi') === 'hi';
     const copilotNode = React.createElement(InsightsRagCopilot, {
-      key: `copilot-${st.role}-${sc.id}-${st.insVil||'all'}-${st.svc||'ANC'}`,
-      data: copilotData
+      key: `copilot-${st.role}-${sc.id}-${st.insVil||'all'}-${st.svc||'ANC'}-${st.lang||'hi'}`,
+      data: copilotData,
+      lang: st.lang || 'hi'
     });
 
     return {
       hasScopes: this.insScList().length>1,
       scChips: this.insScList().map(s=>({label:s.label, ...chip((st.insSc||'all')===s.id, ac), onTap:()=>this.setState({insSc:s.id, insVil:null, insOpen:null})})),
       hasVillages: sc.villages.length>0,
-      vilChips: sc.villages.length? [{label:'All villages', ...chip(!st.insVil, '#655AD0'), onTap:()=>this.setState({insVil:null})}].concat(
+      vilChips: sc.villages.length? [{label: isHi ? 'सभी गाँव' : 'All villages', ...chip(!st.insVil, '#655AD0'), onTap:()=>this.setState({insVil:null})}].concat(
         sc.villages.map(v=>({label:v, ...chip(st.insVil===v, '#655AD0'), onTap:()=>this.setState({insVil:v})}))) : [],
       scopeLine: (sc.id==='all' ? sc.label : (INS_SCOPES[st.role] ? sc.label : 'SC-HWC '+sc.label)) + (st.insVil?(' · '+st.insVil):'')
         + (['ins_dh','ins_tert'].indexOf(st.role)>-1 ? ' · services at this facility' : ''),
       hrpPct: hrpPct+'%', hrp:hrp+'', registered:registered+'',
       hrpBar: Math.min(100, Math.round(hrpPct*3))+'%',
       seg:[
-        {label:'Needs action', k:'actions'},
-        {label:'Quality', k:'quality'},
-        {label:'✦ Copilot', k:'copilot'}
+        {label: isHi ? 'कार्यवाही आवश्यक' : 'Needs action', k:'actions'},
+        {label: isHi ? 'गुणवत्ता' : 'Quality', k:'quality'},
+        {label: isHi ? '✦ AI सहायक' : '✦ Copilot', k:'copilot'}
       ].map(s=>({label:s.label,
         bg:(st.insSeg||'actions')===s.k?'#fff':'transparent', fg:(st.insSeg||'actions')===s.k?ac:'#70706E',
         sh:(st.insSeg||'actions')===s.k?'0 1px 3px rgba(30,20,190,.14)':'none',
@@ -739,43 +772,50 @@ export default class App extends React.Component<any, any> {
 
   stepVM(s, w){
     const role = ROLES[this.state.role] || {};
+    const isHi = (this.state.lang || 'hi') === 'hi';
     const cm=CAT[s.cat], lm=LVL[s.level];
     const open=s.status==='OPEN';
     const isRef=s.cat==='REFERRAL';
     let title=this.catLabel(s.cat, s.level), dueColor='#70706E', dueLabel='';
-    if(isRef) title='Referral to '+lm.label;
-    if(isRef && s.who) title='Referral · '+(s.who==='PW'?'PN woman':'Newborn')+' → '+lm.label;
-    if(s.session) title='PMSMA session · '+lm.facility;
-    if(s.hbnc) title='HBNC visit · Day '+s.hday;
+    if(isRef) title = isHi ? (lm.label + ' रेफ़रल') : ('Referral to '+lm.label);
+    if(isRef && s.who) title = isHi ? ((s.who==='PW'?'प्रसूता':'नवजात') + ' रेफ़रल → ' + lm.label) : ('Referral · '+(s.who==='PW'?'PN woman':'Newborn')+' → '+lm.label);
+    if(s.session) title = isHi ? ('PMSMA सत्र · ' + lm.facility) : ('PMSMA session · '+lm.facility);
+    if(s.hbnc) title = isHi ? ('HBNC विज़िट · दिन ' + s.hday) : ('HBNC visit · Day '+s.hday);
     if(!open){
-      dueLabel='Completed '+this.fmt(s.cdate);
+      dueLabel = isHi ? ('पूर्ण: ' + this.fmt(s.cdate)) : ('Completed '+this.fmt(s.cdate));
       dueColor='#1B6B47';
     } else if(isRef){
       const isTarget = s.level === role.level && s.owner !== this.state.role;
       const d = this.diff(s.sent);
       if(isTarget){
         const fromRole = s.owner ? (ROLES[s.owner]?.short || this.facShort(ROLES[s.owner]?.level) || 'frontline') : 'frontline';
-        dueLabel = 'Referred from ' + fromRole + (d>0 ? (' · ' + d + 'd ago') : ' · today');
+        dueLabel = isHi
+          ? (fromRole + ' से भेजा गया' + (d>0 ? (' · ' + d + ' दिन पहले') : ' · आज'))
+          : ('Referred from ' + fromRole + (d>0 ? (' · ' + d + 'd ago') : ' · today'));
         dueColor = '#1E14BE';
       } else {
-        dueLabel = d>=7 ? ('Awaiting '+lm.label+' · '+d+' days') : ('Sent '+this.fmt(s.sent)+' · awaiting '+lm.label);
+        dueLabel = d>=7
+          ? (isHi ? (lm.label + ' में प्रतीक्षारत · ' + d + ' दिन') : ('Awaiting '+lm.label+' · '+d+' days'))
+          : (isHi ? (this.fmt(s.sent) + ' को भेजा गया · प्रतीक्षारत ' + lm.label) : ('Sent '+this.fmt(s.sent)+' · awaiting '+lm.label));
         dueColor = d>=7 ? '#994242' : '#6165DE';
       }
     } else if(!s.due){
       const d=this.diff(s.sent||TODAY_ISO);
-      dueLabel = d>=7 ? ('Not done yet · '+d+' days at '+lm.label) : ('Added '+this.fmt(s.sent||TODAY_ISO)+' · at '+lm.label);
+      dueLabel = d>=7
+        ? (isHi ? ('अभी बाकी है · ' + d + ' दिन से ' + lm.label + ' में') : ('Not done yet · '+d+' days at '+lm.label))
+        : (isHi ? (this.fmt(s.sent||TODAY_ISO) + ' को जोड़ा गया · ' + lm.label) : ('Added '+this.fmt(s.sent||TODAY_ISO)+' · at '+lm.label));
       dueColor = d>=7 ? '#994242' : '#6165DE';
     } else {
       const d=this.diff(s.due);
-      if(d>0){ dueColor='#994242'; dueLabel=d+' day'+(d>1?'s':'')+' overdue'; }
-      else if(d===0){ dueColor='#C35721'; dueLabel='Due today'; }
-      else { dueColor='#2E9E6B'; dueLabel='Due '+this.fmt(s.due); }
-      if(s.rem==='failed') dueLabel+=' · unreachable';
+      if(d>0){ dueColor='#994242'; dueLabel = isHi ? (d + ' दिन समय बीता') : (d+' day'+(d>1?'s':'')+' overdue'); }
+      else if(d===0){ dueColor='#C35721'; dueLabel = isHi ? 'आज देय' : 'Due today'; }
+      else { dueColor='#2E9E6B'; dueLabel = isHi ? (this.fmt(s.due) + ' को देय') : ('Due '+this.fmt(s.due)); }
+      if(s.rem==='failed') dueLabel += isHi ? ' · संपर्क नहीं हुआ' : ' · unreachable';
     }
     const cl = s.clevel || null;
     const downgraded = !open && !!cl && LADDER.indexOf(cl) < LADDER.indexOf(s.level);
     return {icon:cm.icon, title, catLabel:this.catLabel(s.cat, s.level), lc:lm.c, lsoft:lm.s, levelLabel:lm.label, open, dueColor, dueLabel,
-      downgraded, downNote:downgraded?('Closed at '+this.facShort(cl)+' in place of '+this.facShort(s.level)):''};
+      downgraded, downNote:downgraded?(isHi ? (this.facShort(s.level) + ' के स्थान पर ' + this.facShort(cl) + ' में पूर्ण') : ('Closed at '+this.facShort(cl)+' in place of '+this.facShort(s.level))):''};
   }
 
   hasScope(){ return ['anm','phc_sn','chc_sn','phc_mo','chc_mo','dh_mo'].indexOf(this.state.role)>-1; }
@@ -786,6 +826,7 @@ export default class App extends React.Component<any, any> {
     return true; // one PHC / CHC block in this deployment — every registered woman resides in it
   }
   worklistVM(){
+    const isHi = (this.state.lang || 'hi') === 'hi';
     const role=ROLES[this.state.role]; const f=this.state.filter;
     const rf=this.state.riskFilter||'ALL';
     const isAsha=this.state.role==='asha';
@@ -820,20 +861,20 @@ export default class App extends React.Component<any, any> {
       else if(d>=-7) b.soon.push({s,w});
     });
     const row=({s,w})=>{ const vm=this.stepVM(s,w); return {icon:vm.icon, lc:vm.lc, lsoft:vm.lsoft,
-      womanName:w.name, stepLine:vm.title+' · '+w.village+(this.scope()==='CATCHMENT'?(' · '+LVL[s.level].short):''), dueColor:vm.dueColor, dueLabel:vm.dueLabel,
+      womanName: isHi ? (w.hi || w.name) : w.name, stepLine:vm.title+' · '+(isHi && w.vhi ? w.vhi : w.village)+(this.scope()==='CATCHMENT'?(' · '+LVL[s.level].short):''), dueColor:vm.dueColor, dueLabel:vm.dueLabel,
       gestLabel:this.metaA(w)+' · '+this.flagShort(w),
       gestFg:this.isHigh(w)?'var(--ml-burnt-orange)':'#1B6B47', gestBg:this.isHigh(w)?'var(--ml-peach)':'#D9F7E8',
       downgraded:vm.downgraded, downNote:vm.downNote,
       onOpen:()=>this.openWoman(w.id)}; };
     const defs=[
-      {key:'overdue', title:'Overdue', dot:'#994242', pillBg:'#F7E3E3'},
-      {key:'today', title:'Due today', dot:'#C35721', pillBg:'#FBE7DC'},
-      {key:'incoming', title:'Incoming referrals to act on', dot:'#1E14BE', pillBg:'#EFEDFF'},
-      {key:'outbound', title:'Referrals sent · awaiting confirmation', dot:'#6165DE', pillBg:'#E7E7FB'},
-      {key:'pending', title:this.scope()==='CATCHMENT'?'No date needed':'To be done here', dot:'#2E9E6B', pillBg:'#D9F7E8'},
-      {key:'unreach', title:'Unreachable', dot:'#909090', pillBg:'#ECEBE7'},
-      {key:'soon', title:'Due soon · 7 days', dot:'#6165DE', pillBg:'#E7E7FB'},
-      {key:'closed', title:'Closed today', dot:'#2E9E6B', pillBg:'#D9F7E8'},
+      {key:'overdue', title: isHi ? 'समय बीता (Overdue)' : 'Overdue', dot:'#994242', pillBg:'#F7E3E3'},
+      {key:'today', title: isHi ? 'आज देय (Due today)' : 'Due today', dot:'#C35721', pillBg:'#FBE7DC'},
+      {key:'incoming', title: isHi ? 'आने वाले रेफ़रल (Incoming)' : 'Incoming referrals to act on', dot:'#1E14BE', pillBg:'#EFEDFF'},
+      {key:'outbound', title: isHi ? 'भेजे गए रेफ़रल (Outbound)' : 'Referrals sent · awaiting confirmation', dot:'#6165DE', pillBg:'#E7E7FB'},
+      {key:'pending', title:this.scope()==='CATCHMENT'?(isHi ? 'तारीख की आवश्यकता नहीं' : 'No date needed'):(isHi ? 'यहाँ किया जाना है' : 'To be done here'), dot:'#2E9E6B', pillBg:'#D9F7E8'},
+      {key:'unreach', title: isHi ? 'संपर्क नहीं हो सका' : 'Unreachable', dot:'#909090', pillBg:'#ECEBE7'},
+      {key:'soon', title: isHi ? 'जल्द देय · 7 दिन' : 'Due soon · 7 days', dot:'#6165DE', pillBg:'#E7E7FB'},
+      {key:'closed', title: isHi ? 'आज पूर्ण (Closed today)' : 'Closed today', dot:'#2E9E6B', pillBg:'#D9F7E8'},
     ];
     return defs.filter(x=>b[x.key].length).map(x=>({title:x.title, dot:x.dot, pillBg:x.pillBg, count:b[x.key].length+'', rows:b[x.key].map(row)}));
   }
@@ -1128,9 +1169,13 @@ export default class App extends React.Component<any, any> {
       return base;
     }
 
+    const isHi = (st.lang || 'hi') === 'hi';
     const role=ROLES[st.role]; const scr=st.screen;
     base.roleAccent=role.accent; base.roleInitials=role.short;
     base.onSwitchRole=()=>this.switchRole();
+    base.lang = st.lang || 'hi';
+    base.langLabel = isHi ? 'English' : 'हिंदी';
+    base.onToggleLang = () => this.toggleLang();
     base.showBack = scr==='journey'||scr==='capture'||scr==='register'||scr==='profile';
     base.isProfile = scr==='profile';
     if(scr==='profile') base.profile=this.profileVM();
@@ -1153,7 +1198,7 @@ export default class App extends React.Component<any, any> {
         mc_mod:[(this.mcMod()||{}).title||'Module', (this.mcMod()||{}).cat||'']};
       base.headerTitle=(mt[scr]||['Refresher',''])[0]; base.headerSub=(mt[scr]||['',''])[1];
       base.canAddSteps=false; base.closeOnly=false;
-      base.tabs=role.tabs.map(k=>({label:TABMETA[k].label, icon:TABMETA[k].icon,
+      base.tabs=role.tabs.map(k=>({label:isHi && TABMETA[k]?.hiLabel ? TABMETA[k].hiLabel : TABMETA[k].label, icon:TABMETA[k].icon,
         color: st.tab===k?role.accent:'#909090', badge:'', onTap:()=>this.setState({screen:k, tab:k, mc:null, dialog:null})}));
       return base;
     }
@@ -1162,12 +1207,19 @@ export default class App extends React.Component<any, any> {
     if(scr==='insights') base.ins=this.insightsVM();
 
     const svcSub = this.hasSvc() ? (this.svcMeta().full+' · '+ROLES[st.role].name.split(' — ')[0]) : (role.name+' · '+role.facility);
-    const titles={home:['Services', role.name+' · PHC Sirmour'], lookup:[this.svcMeta().findTitle, this.hasSvc()?this.svcMeta().full:role.facility], worklist:['Worklist', svcSub], alerts:['Alerts', svcSub], register:['Register', role.facility], insights:['Insights', role.name+' · '+role.facility]};
+    const titles={
+      home:[isHi ? 'सेवाएं' : 'Services', role.name+' · PHC Sirmour'],
+      lookup:[isHi ? 'मरीज़ खोजें' : this.svcMeta().findTitle, this.hasSvc()?this.svcMeta().full:role.facility],
+      worklist:[isHi ? 'वर्कलिस्ट' : 'Worklist', svcSub],
+      alerts:[isHi ? 'अलर्ट' : 'Alerts', svcSub],
+      register:[isHi ? 'नया मरीज़ जोड़ें' : 'Register', role.facility],
+      insights:[isHi ? 'इनसाइट्स' : 'Insights', role.name+' · '+role.facility]
+    };
     if(titles[scr]){ base.headerTitle=titles[scr][0]; base.headerSub=titles[scr][1]; }
-    else if(scr==='journey'){ const w=this.byId(st.selId); base.headerTitle=w?w.name:'Journey'; base.headerSub=SVC[(w&&w.svc)||this.svc()].journey; }
-    else if(scr==='profile'){ const w=this.byId(st.selId); base.headerTitle='Primary health profile'; base.headerSub=w?(w.name+' · one person, three registers'):''; }
-    else if(scr==='capture'){ base.headerTitle='Next steps'; base.headerSub='Coordination only — no clinical data'; }
-    else if(scr==='register'){ base.headerTitle='Register'; base.headerSub=role.name+' · '+role.facility; }
+    else if(scr==='journey'){ const w=this.byId(st.selId); base.headerTitle=w?(isHi ? (w.hi || w.name) : w.name): (isHi ? 'केयर जर्नी' : 'Journey'); base.headerSub=SVC[(w&&w.svc)||this.svc()].journey; }
+    else if(scr==='profile'){ const w=this.byId(st.selId); base.headerTitle=isHi ? 'प्राथमिक स्वास्थ्य प्रोफ़ाइल' : 'Primary health profile'; base.headerSub=w?((isHi ? (w.hi || w.name) : w.name)+' · ' + (isHi ? 'एक व्यक्ति, तीन रजिस्टर' : 'one person, three registers')):''; }
+    else if(scr==='capture'){ base.headerTitle=isHi ? 'अगले कदम' : 'Next steps'; base.headerSub=isHi ? 'समन्वय केवल — कोई नैदानिक रिकॉर्ड नहीं' : 'Coordination only — no clinical data'; }
+    else if(scr==='register'){ base.headerTitle=isHi ? 'नया मरीज़ जोड़ें' : 'Register'; base.headerSub=role.name+' · '+role.facility; }
     base.canAddSteps=this.optionsFor().length>0; base.closeOnly=!base.canAddSteps;
 
     if(scr==='register'){
@@ -1201,19 +1253,27 @@ export default class App extends React.Component<any, any> {
     }
 
     const alertCount=this.alertsVM().length;
-    base.tabs=(role.tabs||['lookup','worklist','alerts','insights']).map(k=>({label:TABMETA[k].label, icon:TABMETA[k].icon,
+    base.tabs=(role.tabs||['lookup','worklist','alerts','insights']).map(k=>({label:isHi && TABMETA[k]?.hiLabel ? TABMETA[k].hiLabel : TABMETA[k].label, icon:TABMETA[k].icon,
       color: st.tab===k?role.accent:'#909090', badge:(k==='alerts'&&alertCount)?(alertCount+''):'', onTap:()=>this.setTab(k)}));
 
     if(scr==='lookup'){
       const mode=st.searchMode||'NAME';
       base.query=st.query; base.onQuery=(e)=>this.setState({query:e.target.value});
-      base.searchModes=[{k:'NAME',label:'Name'},{k:'PHONE',label:'Mobile no.'},{k:'ABHA',label:'ABHA ID'}].map(m=>({
+      base.searchModes=[
+        {k:'NAME', label:isHi ? 'नाम' : 'Name'},
+        {k:'PHONE', label:isHi ? 'मोबाइल' : 'Mobile no.'},
+        {k:'ABHA', label:isHi ? 'ABHA ID' : 'ABHA ID'}
+      ].map(m=>({
         label:m.label, ...this.chip(mode===m.k, role.accent), onTap:()=>this.setState({searchMode:m.k, query:''})}));
-      base.searchPlaceholder = mode==='NAME' ? 'Type first 3 letters of the name' : mode==='PHONE' ? 'Type first 4 digits of the mobile' : 'ABHA / RCH ID';
+      base.searchPlaceholder = isHi
+        ? (mode==='NAME' ? 'नाम के पहले 3 अक्षर लिखें...' : mode==='PHONE' ? 'मोबाइल के पहले 4 अंक लिखें...' : 'ABHA / RCH ID लिखें...')
+        : (mode==='NAME' ? 'Type first 3 letters of the name' : mode==='PHONE' ? 'Type first 4 digits of the mobile' : 'ABHA / RCH ID');
       base.searchInputMode = mode==='NAME' ? 'text' : 'numeric';
-      base.searchHint = mode==='NAME' ? 'Matches start showing after 3 letters.' : mode==='PHONE' ? 'Matches start showing after 4 digits.' : 'Enter any 4 digits of the ABHA / RCH ID, or scan the QR.';
+      base.searchHint = isHi
+        ? (mode==='NAME' ? '3 अक्षर लिखने पर नाम दिखने लगेंगे।' : mode==='PHONE' ? '4 अंक लिखने पर नंबर दिखने लगेंगे।' : 'ABHA/RCH ID के 4 अंक दर्ज करें, या QR स्कैन करें।')
+        : (mode==='NAME' ? 'Matches start showing after 3 letters.' : mode==='PHONE' ? 'Matches start showing after 4 digits.' : 'Enter any 4 digits of the ABHA / RCH ID, or scan the QR.');
       base.onScan=()=>this.openScan(); base.onEnrol=()=>this.openRegister();
-      base.enrolLabel=this.svcMeta().enrol;
+      base.enrolLabel=isHi ? '➕ नया मरीज़ जोड़ें' : this.svcMeta().enrol;
       const q=st.query||'';
       let list=this.clients(), active=false;
       if(mode==='NAME'){
@@ -1226,9 +1286,11 @@ export default class App extends React.Component<any, any> {
         const d=q.replace(/\D/g,'');
         if(d.length>=4){ active=true; list=list.filter(w=>this.abhaOf(w).replace(/\D/g,'').includes(d)); }
       }
-      base.resultsLabel = active ? (list.length+' match'+(list.length===1?'':'es')) : 'Recently seen';
-      base.results=list.map(w=>({name:w.name, nameHi:w.hi, initials:this.initials(w.name), avatarBg:this.avatarFor(w.id),
-        village:w.village, riskLabel:this.riskTag(w).label, riskBg:this.riskTag(w).bg, riskFg:this.riskTag(w).fg,
+      base.resultsLabel = active
+        ? (isHi ? (list.length + ' परिणाम मिले') : (list.length+' match'+(list.length===1?'':'es')))
+        : (isHi ? 'हाल ही में देखे गए' : 'Recently seen');
+      base.results=list.map(w=>({name: isHi ? (w.hi || w.name) : w.name, nameHi:w.hi, initials:this.initials(w.name), avatarBg:this.avatarFor(w.id),
+        village: isHi && w.vhi ? w.vhi : w.village, riskLabel:this.riskTag(w).label, riskBg:this.riskTag(w).bg, riskFg:this.riskTag(w).fg,
         contactLine:[this.mask(w.phone), 'ABHA '+this.abhaOf(w)].filter(Boolean).join(' · '),
         hasOpen:this.openCount(w)>0, openCount:this.openCount(w)+'',
         openTone:this.hasOverdue(w)?'#994242':'#6165DE', onOpen:()=>this.openWoman(w.id)}));
@@ -1242,24 +1304,30 @@ export default class App extends React.Component<any, any> {
       const fromSteps=Object.keys(CAT).filter(c=>this.allSteps().some(({s})=>s.cat===c && (s.level===role.level||s.owner===st.role||(st.role==='asha'&&s.cat==='PMSMA_VISIT'))));
       const present=['ALL'].concat(Object.keys(CAT).filter(c=>fromSteps.indexOf(c)>=0 || this.optionsFor().indexOf(c)>=0));
       const catchCats=(st.role==='anm' && this.scope()==='CATCHMENT') ? ashaCats : null;
-      base.filterChips=(st.role==='asha'?ashaCats:(catchCats||present)).map(c=>({label:c==='ALL'?'All':((c==='IMAGING'&&this.svc()==='CANCER')?'Imaging':CAT[c].label), ...this.chip(st.filter===c, role.accent), onTap:()=>this.setState({filter:c})}));
+      const filterLabel = (c) => {
+        if (!isHi) return c==='ALL'?'All':((c==='IMAGING'&&this.svc()==='CANCER')?'Imaging':CAT[c].label);
+        if (c==='ALL') return 'सभी';
+        if (c==='IMAGING'&&this.svc()==='CANCER') return 'इमेजिंग';
+        return this.catLabel(c, role.level);
+      };
+      base.filterChips=(st.role==='asha'?ashaCats:(catchCats||present)).map(c=>({label:filterLabel(c), ...this.chip(st.filter===c, role.accent), onTap:()=>this.setState({filter:c})}));
       base.hasScopeChips=this.hasScope(); base.noScopeChips=!this.hasScope();
       base.hiScopeNote = ['dh_sn','tert_sn'].indexOf(st.role)>-1
-        ? ('Only women with a next step created at, or pending at, '+role.facility+' — including referrals sent up from '+(st.role==='dh_sn'?'PHC and CHC':'CHC and DH')+'.') : '';
+        ? (isHi ? ('केवल वे महिलाएं जिनका अगला कदम ' + role.facility + ' पर बना या लंबित है — जिसमें ' + (st.role==='dh_sn'?'PHC और CHC':'CHC और DH') + ' से भेजे गए रेफ़रल शामिल हैं।') : ('Only women with a next step created at, or pending at, '+role.facility+' — including referrals sent up from '+(st.role==='dh_sn'?'PHC and CHC':'CHC and DH')+'.')) : '';
       base.showHiScopeNote = !!base.hiScopeNote;
       const sc=this.scope();
       base.scopeLabel = role.level==='SUBCENTRE' ? 'AAM' : LVL[role.level].short;
-      base.scopeChips=[['FACILITY','At my facility'],['CATCHMENT','In my catchment']].map(([k,l])=>({label:l, ...this.chip(sc===k, role.accent), onTap:()=>this.setState({scopeFilter:k, filter:'ALL'})}));
+      base.scopeChips=[['FACILITY', isHi ? 'मेरे अस्पताल में' : 'At my facility'],['CATCHMENT', isHi ? 'मेरे कार्यक्षेत्र में' : 'In my catchment']].map(([k,l])=>({label:l, ...this.chip(sc===k, role.accent), onTap:()=>this.setState({scopeFilter:k, filter:'ALL'})}));
       base.scopeNote = sc==='CATCHMENT'
-        ? 'Every next step for women residing in this catchment — whoever created it, wherever it is pending.'
-        : 'Next steps created at, or pending at, '+role.facility+'.';
+        ? (isHi ? 'इस कार्यक्षेत्र की महिलाओं के सभी अगले कदम — चाहे किसी ने भी बनाए हों, कहीं भी लंबित हों।' : 'Every next step for women residing in this catchment — whoever created it, wherever it is pending.')
+        : (isHi ? (role.facility + ' पर बनाए गए या लंबित अगले कदम।') : ('Next steps created at, or pending at, '+role.facility+'.'));
       const rf=st.riskFilter||'ALL';
       const fl=this.svcMeta().flag;
       const riskOpts = this.svc()==='PNC'
-        ? [['ALL','All'],['MOTHER','High risk mother'],['NEWBORN','High risk newborn']]
+        ? [['ALL', isHi ? 'सभी' : 'All'],['MOTHER', isHi ? 'हाई-रिस्क प्रसूता' : 'High risk mother'],['NEWBORN', isHi ? 'हाई-रिस्क नवजात' : 'High risk newborn']]
         : this.svc()==='NCD'
-          ? [['ALL','All'],['DM','Diabetes'],['HTN','Hypertension']]
-          : [['ALL','All'],['HRP',fl.HRP],['NORMAL',fl.Normal]];
+          ? [['ALL', isHi ? 'सभी' : 'All'],['DM', isHi ? 'डायबिटीज' : 'Diabetes'],['HTN', isHi ? 'हाइपरटेंशन' : 'Hypertension']]
+          : [['ALL', isHi ? 'सभी' : 'All'],['HRP',fl.HRP],['NORMAL',fl.Normal]];
       base.riskChips=riskOpts.map(([k,l])=>({label:l, ...this.chip(rf===k, role.accent), onTap:()=>this.setState({riskFilter:k})}));
     }
 
@@ -1273,21 +1341,21 @@ export default class App extends React.Component<any, any> {
           const ka=a.due||a.sent, kb=b.due||b.sent; return ka<kb?-1:(ka>kb?1:0); });
         const done=w.steps.filter(s=>s.status!=='OPEN'&&inReg(s));
         base.selWoman={
-          name:w.name, nameHi:w.hi, initials:this.initials(w.name), avatarBg:this.avatarFor(w.id),
-          subLine:[w.vhi?(w.village+' ('+w.vhi+')'):w.village, w.asha?('ASHA '+w.asha):w.sc].filter(Boolean).join(' · '),
+          name: isHi ? (w.hi || w.name) : w.name, nameHi:w.hi, initials:this.initials(w.name), avatarBg:this.avatarFor(w.id),
+          subLine:[w.vhi?(w.village+' ('+w.vhi+')'):w.village, w.asha?((isHi ? 'आशा ' : 'ASHA ')+w.asha):w.sc].filter(Boolean).join(' · '),
           gestLabel:this.metaA(w), eddLabel:this.metaB(w), metaBLabel:this.metaBLabel(w), hasMetaB:!!this.metaB(w),
           riskBg:this.isHigh(w)?'var(--ml-peach)':'#D9F7E8', riskFg:this.isHigh(w)?'#8A3D14':'#1B6B47',
           riskIcon:this.isHigh(w)?'M12 3L2 20h20L12 3zM12 10v4M12 17h.01':'M20 6L9 17l-5-5',
           phone:this.mask(w.phone), consent:w.consent, noConsent:!w.consent,
-          smsLabel:w.consent?'SMS on':'SMS off', smsColor:w.consent?'#1B6B47':'#994242',
+          smsLabel:w.consent?(isHi ? 'SMS चालू' : 'SMS on'):(isHi ? 'SMS बंद' : 'SMS off'), smsColor:w.consent?'#1B6B47':'#994242',
           riskShort:this.flagShort(w),
-          onCall:()=>this.toast('Dialling '+w.name+' · '+this.mask(w.phone)),
+          onCall:()=>this.toast((isHi ? 'कॉल किया जा रहा है: ' : 'Dialling ')+w.name+' · '+this.mask(w.phone)),
           openCount:open.length+'', noOpen:open.length===0,
           doneCount:done.length+'', noDone:done.length===0,
           onEnter:()=>this.openCapture(w.id),
           hasProfile:!!w.linked, onProfile:()=>this.setState({screen:'profile', dialog:null}),
           openSteps:open.map(s=>{ const vm=this.stepVM(s,w); return {icon:vm.icon, lc:vm.lc, lsoft:vm.lsoft, title:vm.title, dueColor:vm.dueColor, dueLabel:vm.dueLabel, onOpen:()=>this.openClose(s.id)}; }),
-          doneSteps:done.map(s=>{ const vm=this.stepVM(s,w); return {title:vm.title, line:(s.status==='CANCELLED'?'Cancelled · ':'')+this.fmt(s.cdate)+' · '+s.cby, downgraded:vm.downgraded, downNote:vm.downNote}; }),
+          doneSteps:done.map(s=>{ const vm=this.stepVM(s,w); return {title:vm.title, line:(s.status==='CANCELLED'?(isHi ? 'रद्द · ' : 'Cancelled · '):'')+this.fmt(s.cdate)+' · '+s.cby, downgraded:vm.downgraded, downNote:vm.downNote}; }),
         };
       }
     }
@@ -1430,33 +1498,33 @@ export default class App extends React.Component<any, any> {
             const isLower = !isOwnFacility && myLvl && LADDER.indexOf(myLvl) < LADDER.indexOf(s.level);
 
             const whereOpts = [
-              {k:'AT_REFERRED_FACILITY', l:'At recommended facility (' + (LVL[s.level]?.short || s.level) + ')'},
-              {k:'OTHER_PUBLIC_FACILITY', l:'At another public health facility'},
-              {k:'PRIVATE_PROVIDER', l:'At a private provider'},
+              {k:'AT_REFERRED_FACILITY', l: isHi ? ('निर्धारित अस्पताल (' + (LVL[s.level]?.short || s.level) + ') में') : ('At recommended facility (' + (LVL[s.level]?.short || s.level) + ')')},
+              {k:'OTHER_PUBLIC_FACILITY', l: isHi ? 'अन्य सरकारी स्वास्थ्य केंद्र में' : 'At another public health facility'},
+              {k:'PRIVATE_PROVIDER', l: isHi ? 'निजी क्लिनिक / अस्पताल में' : 'At a private provider'},
             ];
             if(isLower && st.role !== 'asha') {
-              whereOpts.push({k:'DELIVERED_ON_SITE', l:'Delivered here at ' + facWord + ' (below referred level)'});
+              whereOpts.push({k:'DELIVERED_ON_SITE', l: isHi ? (facWord + ' पर ही सेवा दी गई') : ('Delivered here at ' + facWord + ' (below referred level)')});
             }
 
             const completeRow = isMo
-              ? {...rowShell('supervisory','Supervisory view','Frontline steps are closed by facility staff / ANM','#70706E','#EDECE8','M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'), chev:CH_SHUT, rbg:'transparent'}
+              ? {...rowShell('supervisory', isHi ? 'पर्यवेक्षी दृश्य' : 'Supervisory view', isHi ? 'अस्पताल स्टाफ / ANM द्वारा कदम पूरे किए जाते हैं' : 'Frontline steps are closed by facility staff / ANM','#70706E','#EDECE8','M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'), chev:CH_SHUT, rbg:'transparent'}
               : askWhere
-                ? {...rowShell('complete','Mark complete','One tap — where did care happen?','#1B6B47','#D9F7E8','M20 6L9 17l-5-5'),
+                ? {...rowShell('complete', isHi ? 'पूर्ण चिह्नित करें' : 'Mark complete', isHi ? 'सेवा कहाँ पूरी हुई?' : 'One tap — where did care happen?','#1B6B47','#D9F7E8','M20 6L9 17l-5-5'),
                     openComplete:exp==='complete',
                     opts:whereOpts.map(o=>({label:o.l, onTap:()=>this.applyClose(s.id,'COMPLETED',o.k)}))}
-                : {...rowShell('complete', isHbnc?'Mark complete':('Mark complete at '+facWord), isHbnc?'Home visit done':'Care was delivered here on-site','#1B6B47','#D9F7E8','M20 6L9 17l-5-5'),
+                : {...rowShell('complete', isHbnc?(isHi ? 'पूर्ण चिह्नित करें' : 'Mark complete'):(isHi ? (facWord + ' पर पूर्ण चिह्नित करें') : ('Mark complete at '+facWord)), isHbnc?(isHi ? 'गृह भेंट पूरी हुई' : 'Home visit done'):(isHi ? 'यहाँ सेवा प्रदान की गई' : 'Care was delivered here on-site'),'#1B6B47','#D9F7E8','M20 6L9 17l-5-5'),
                     chev:CH_SHUT, rbg:'transparent', onTap:()=>this.applyClose(s.id,'COMPLETED',null)};
 
             dlg.rows=[
               completeRow,
-              ...(nudgeOk ? [{...rowShell('wa','Send WhatsApp nudge', w.consent?'Reminder in Hindi — one tap':'No consent on record','#1B6B47','#D9F7E8','M21 11.5a8.4 8.4 0 0 1-12.2 7.5L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z'),
+              ...(nudgeOk ? [{...rowShell('wa', isHi ? 'WhatsApp संदेश भेजें' : 'Send WhatsApp nudge', w.consent?(isHi ? 'हिंदी में संदेश — एक टैप' : 'Reminder in Hindi — one tap'):(isHi ? 'सहमति दर्ज नहीं है' : 'No consent on record'),'#1B6B47','#D9F7E8','M21 11.5a8.4 8.4 0 0 1-12.2 7.5L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z'),
                 openWa:exp==='wa', hasConsent:!!w.consent, noConsent:!w.consent, msg, phone:w.phone,
-                onSend:()=>{ this.setState({dialog:null}); this.toast('WhatsApp nudge sent to '+w.name); },
-                onDial:()=>{ this.setState({dialog:null}); this.toast('Dialling '+w.name+' · '+w.phone); }}] : []),
-              {...rowShell('call','Call '+w.name.split(' ')[0],'Opens the dialler','#C35721','#FBE7DC','M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z'),
+                onSend:()=>{ this.setState({dialog:null}); this.toast((isHi ? 'WhatsApp संदेश भेजा गया: ' : 'WhatsApp nudge sent to ')+w.name); },
+                onDial:()=>{ this.setState({dialog:null}); this.toast((isHi ? 'कॉल किया जा रहा है: ' : 'Dialling ')+w.name+' · '+w.phone); }}] : []),
+              {...rowShell('call', (isHi ? 'कॉल करें ' : 'Call ')+w.name.split(' ')[0], isHi ? 'डायलर खुलेगा' : 'Opens the dialler','#C35721','#FBE7DC','M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z'),
                 openCall:exp==='call', phone:w.phone,
-                onDial:()=>{ this.setState({dialog:null}); this.toast('Dialling '+w.name+' · '+w.phone); }},
-              {...rowShell('log','Log contact attempt','Marks her unreachable','#70706E','#EDECE8','M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3.5 2'),
+                onDial:()=>{ this.setState({dialog:null}); this.toast((isHi ? 'कॉल किया जा रहा है: ' : 'Dialling ')+w.name+' · '+w.phone); }},
+              {...rowShell('log', isHi ? 'संपर्क प्रयास दर्ज करें' : 'Log contact attempt', isHi ? 'संपर्क नहीं हो सका' : 'Marks her unreachable','#70706E','#EDECE8','M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3.5 2'),
                 chev:CH_SHUT, rbg:'transparent', onTap:()=>this.actLogAttempt(s.id)},
             ].slice(0, isHbnc?1:99);
             dlg.onClose=()=>this.setState({dialog:null});
@@ -1466,35 +1534,35 @@ export default class App extends React.Component<any, any> {
             dlg.date=dl.date||''; dlg.minDate=TODAY_ISO;
             dlg.onDate=(e)=>this.setState({dialog:{...dl, date:e.target.value}});
             dlg.quick=[7,14,28].map(d=>{ const val=this.iso(new Date(TODAY.getTime()+d*86400000)); const on=dl.date===val;
-              return {label:d===7?'In 1 week':(d===14?'In 2 weeks':'In 4 weeks'), ...this.chip(on, role.accent), onTap:()=>this.setState({dialog:{...dl, date:val}})}; });
+              return {label:d===7?(isHi?'1 सप्ताह में':'In 1 week'):(d===14?(isHi?'2 सप्ताह में':'In 2 weeks'):(isHi?'4 सप्ताह में':'In 4 weeks')), ...this.chip(on, role.accent), onTap:()=>this.setState({dialog:{...dl, date:val}})}; });
             dlg.confirmDisabled=dl.date?'1':'0.5'; dlg.onConfirm=()=>this.confirmResched();
           }
           if(dl.type==='close'){
             const isOwnFacility = (st.role!=='asha') && (s.level===ROLES[st.role]?.level);
             const outs = isOwnFacility
-              ? [{k:'COMPLETED',l:'Mark as done',h:'The step was carried out on-site at this facility'}]
-              : [{k:'COMPLETED',l:'Completed',h:'The step was carried out'},
-                 {k:'NOT_COMPLETED',l:'Not completed',h:'She did not receive the service'},
-                 {k:'NO_CONTACT',l:'Could not be contacted',h:'No response after repeated attempts'}];
+              ? [{k:'COMPLETED',l: isHi ? 'पूर्ण चिह्नित करें' : 'Mark as done', h: isHi ? 'इस स्वास्थ्य केंद्र पर सेवा दी गई' : 'The step was carried out on-site at this facility'}]
+              : [{k:'COMPLETED',l: isHi ? 'पूर्ण' : 'Completed', h: isHi ? 'सेवा पूरी हो चुकी है' : 'The step was carried out'},
+                 {k:'NOT_COMPLETED',l: isHi ? 'पूर्ण नहीं हुआ' : 'Not completed', h: isHi ? 'सेवा प्राप्त नहीं हुई' : 'She did not receive the service'},
+                 {k:'NO_CONTACT',l: isHi ? 'संपर्क नहीं हो सका' : 'Could not be contacted', h: isHi ? 'बार-बार प्रयास के बाद भी जवाब नहीं' : 'No response after repeated attempts'}];
             const SUB= isOwnFacility ? {} : {
-              COMPLETED:{heading:'Where did care actually happen?', items:[
-                {k:'AT_REFERRED_FACILITY',l:'At the recommended facility',h:'Service delivered at the facility she was sent to'},
-                {k:'OTHER_PUBLIC_FACILITY',l:'At another public facility',h:'A different government facility'},
-                {k:'PRIVATE_PROVIDER',l:'At a private provider',h:'She used private care'}]},
-              NOT_COMPLETED:{heading:'Why was it not completed?', items:[
-                {k:'PLANS_LATER',l:'Plans to visit later',h:'She intends to go — keep the step open'},
-                {k:'DECLINED',l:'Declined',h:'She chose not to go'}]}};
+              COMPLETED:{heading: isHi ? 'सेवा वास्तव में कहाँ प्रदान की गई?' : 'Where did care actually happen?', items:[
+                {k:'AT_REFERRED_FACILITY',l: isHi ? 'निर्धारित अस्पताल में' : 'At the recommended facility',h: isHi ? 'जिस अस्पताल भेजा गया था वहीं सेवा मिली' : 'Service delivered at the facility she was sent to'},
+                {k:'OTHER_PUBLIC_FACILITY',l: isHi ? 'अन्य सरकारी स्वास्थ्य केंद्र में' : 'At another public facility',h: isHi ? 'किसी अन्य सरकारी अस्पताल में' : 'A different government facility'},
+                {k:'PRIVATE_PROVIDER',l: isHi ? 'निजी अस्पताल / क्लिनिक में' : 'At a private provider',h: isHi ? 'निजी स्वास्थ्य केंद्र में सेवा ली' : 'She used private care'}]},
+              NOT_COMPLETED:{heading: isHi ? 'सेवा पूरी क्यों नहीं हुई?' : 'Why was it not completed?', items:[
+                {k:'PLANS_LATER',l: isHi ? 'बाद में जाने की योजना है' : 'Plans to visit later',h: isHi ? 'जाना चाहती हैं — स्टेप खुला रखें' : 'She intends to go — keep the step open'},
+                {k:'DECLINED',l: isHi ? 'सेवा लेने से मना किया' : 'Declined',h: isHi ? 'सेवा नहीं लेना चाहती' : 'She chose not to go'}]}};
             const sub=SUB[dl.outcome];
             dlg.outcomes=outs.map(x=>{ const on=dl.outcome===x.k; return {label:x.l, hint:x.h, bg:on?'#EFEDFF':'#fff', bd:on?'#1E14BE':'#DEDDD8',
               dot:on?'#1E14BE':'#DEDDD8', fill:on?'#1E14BE':'transparent', onTap:()=>this.setState({dialog:{...dl, outcome:x.k, src:null}})}; });
-            dlg.hasOutcomes=!dl.asha; dlg.closeTitle=dl.asha?'Mark complete':'Close step';
+            dlg.hasOutcomes=!dl.asha; dlg.closeTitle=dl.asha?(isHi ? 'पूर्ण चिह्नित करें' : 'Mark complete'):(isHi ? 'स्टेप पूरा करें' : 'Close step');
             if(dl.asha){ dlg.lc='#1B6B47'; dlg.lsoft='#D9F7E8'; dlg.icon='M20 6L9 17l-5-5'; }
             dlg.hasSub=!!sub; dlg.subHeading=sub?sub.heading:'';
             dlg.sources=(sub?sub.items:[]).map(x=>{ const on=dl.src===x.k; return {label:x.l, hint:x.h, bg:on?'#EFEDFF':'#fff', bd:on?'#1E14BE':'#DEDDD8',
               dot:on?'#1E14BE':'#DEDDD8', fill:on?'#1E14BE':'transparent', onTap:()=>this.setState({dialog:{...dl, src:x.k}})}; });
             const ready = isOwnFacility ? !!dl.outcome : (dl.outcome==='NO_CONTACT' ? true : !!(dl.outcome && dl.src));
             dlg.confirmDisabled=ready?'1':'0.5';
-            dlg.confirmLabel = dl.asha ? 'Confirm complete' : isOwnFacility ? 'Mark as done' : (dl.outcome==='COMPLETED' ? 'Mark completed' : (dl.outcome ? 'Save outcome' : 'Choose an outcome'));
+            dlg.confirmLabel = dl.asha ? (isHi ? 'पुष्टि करें' : 'Confirm complete') : isOwnFacility ? (isHi ? 'पूर्ण चिह्नित करें' : 'Mark as done') : (dl.outcome==='COMPLETED' ? (isHi ? 'पूर्ण चिह्नित करें' : 'Mark completed') : (dl.outcome ? (isHi ? 'परिणाम सेव करें' : 'Save outcome') : (isHi ? 'विकल्प चुनें' : 'Choose an outcome')));
             dlg.confirmBg = dl.outcome==='COMPLETED'||!dl.outcome ? 'var(--status-success)' : 'var(--ml-blue)';
             dlg.onConfirm=()=>this.confirmClose();
           }

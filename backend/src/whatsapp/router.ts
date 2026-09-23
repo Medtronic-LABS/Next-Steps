@@ -80,12 +80,12 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       {
         kind: 'buttons',
         to,
-        header: 'Role Switched: CHC Staff Nurse',
-        body: `🏥 Switched to *CHC Staff Nurse Priya* at *CHC Teonthar*.\n\nYou now have access to Expected Arrivals and secondary care confirmation:`,
+        header: 'रोल बदला: CHC Staff Nurse',
+        body: `🏥 अब आप *CHC Teonthar* पर *CHC Staff Nurse Priya* के रोल में हैं।\n\nअब आप Expected Arrivals और द्वितीयक देखभाल की पुष्टि कर सकते हैं:`,
         buttons: [
           { id: 'CMD_ARRIVALS', title: 'Expected Arrivals' },
           { id: 'CMD_WORKLIST', title: 'CHC Worklist' },
-          { id: 'CMD_MENU', title: 'Main Menu' },
+          { id: 'CMD_MENU', title: 'मुख्य मेनू' },
         ],
       },
     ];
@@ -103,12 +103,12 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       {
         kind: 'buttons',
         to,
-        header: 'Role Switched: ANM (Sub-centre)',
-        body: `👩‍⚕️ Switched to *ANM Rekha* at *Sub-centre Ghurehta*.\n\nYou now have access to community patient intake, next steps, and referrals:`,
+        header: 'रोल बदला: ANM (सब-सेंटर)',
+        body: `👩‍⚕️ अब आप *Sub-centre Ghurehta* पर *ANM Rekha* के रोल में हैं।\n\nअब आप गाँव के मरीज़ों का पंजीकरण, वर्कलिस्ट और रेफरल प्रबंधित कर सकते हैं:`,
         buttons: [
           { id: 'CMD_WORKLIST', title: 'Worklist' },
-          { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
-          { id: 'CMD_REGISTER_START', title: '➕ Register Patient' },
+          { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
+          { id: 'CMD_REGISTER_START', title: '➕ नया मरीज़' },
         ],
       },
     ];
@@ -126,12 +126,12 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       {
         kind: 'buttons',
         to,
-        header: 'Role Switched: PHC Staff Nurse',
-        body: `🩺 Switched to *PHC Staff Nurse Suman* at *PHC Sirmour*.\n\nYou can manage primary care arrivals and doctor consultations:`,
+        header: 'रोल बदला: PHC Staff Nurse',
+        body: `🩺 अब आप *PHC Sirmour* पर *PHC Staff Nurse Suman* के रोल में हैं।\n\nआप प्राथमिक स्वास्थ्य केंद्र के अराइवल्स और डॉक्टर परामर्श प्रबंधित कर सकते हैं:`,
         buttons: [
           { id: 'CMD_ARRIVALS', title: 'Expected Arrivals' },
           { id: 'CMD_WORKLIST', title: 'PHC Worklist' },
-          { id: 'CMD_MENU', title: 'Main Menu' },
+          { id: 'CMD_MENU', title: 'मुख्य मेनू' },
         ],
       },
     ];
@@ -142,12 +142,12 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       {
         kind: 'buttons',
         to,
-        header: `Current Role: ${user.role.toUpperCase()}`,
+        header: `वर्तमान रोल: ${user.role.toUpperCase()}`,
         body:
-          `You are currently acting as *${user.name}* at *${user.facility_name || user.facility_id}*.\n\n` +
-          `Select a frontline role to switch to for the demo:`,
+          `आप वर्तमान में *${user.facility_name || user.facility_id}* पर *${user.name}* के रूप में सक्रिय हैं।\n\n` +
+          `डेमो के लिए नीचे दिए गए फ्रंटलाइन रोल में से चुनें:`,
         buttons: [
-          { id: 'ROLE_ANM', title: '👩‍⚕️ ANM (Sub-centre)' },
+          { id: 'ROLE_ANM', title: '👩‍⚕️ ANM (सब-सेंटर)' },
           { id: 'ROLE_CHC', title: '🏥 CHC Staff Nurse' },
           { id: 'ROLE_PHC', title: '🩺 PHC Staff Nurse' },
         ],

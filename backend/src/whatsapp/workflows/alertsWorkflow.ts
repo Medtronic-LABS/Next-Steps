@@ -40,51 +40,51 @@ export function handleAlerts(to: string, user: WhatsAppUser): OutboundMessage {
   staleQuery += ` ORDER BY s.sent_at ASC LIMIT 5`;
   const staleReferrals = db.prepare(staleQuery).all(...staleParams) as any[];
 
-  let body = `⚠️ *Care Alerts & Follow-up Needed*\n`;
-  body += `Facility: ${user.facility_name || user.facility_id || 'Your Health Centre'}\n\n`;
+  let body = `⚠️ *केयर अलर्ट्स एवं आवश्यक फ़ॉलो-अप*\n`;
+  body += `सेंटर: ${user.facility_name || user.facility_id || 'Health Centre'}\n\n`;
 
   if (overdueSteps.length === 0 && staleReferrals.length === 0) {
     return {
       kind: 'buttons',
       to,
-      header: 'Care Coordination Alerts',
-      body: `🎉 *No critical alerts!*\n\nAll referrals are active within the 7-day window, and there are no critical care steps overdue by >3 days.`,
+      header: 'केयर अलर्ट्स',
+      body: `🎉 *कोई गंभीर अलर्ट नहीं है!*\n\nसभी रेफरल समय सीमा के भीतर हैं, और कोई भी गंभीर केयर स्टेप 3 दिन से अधिक ओवरड्यू नहीं है।`,
       buttons: [
         { id: 'CMD_WORKLIST', title: 'Worklist' },
-        { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
-        { id: 'CMD_MENU', title: 'Main Menu' },
+        { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
+        { id: 'CMD_MENU', title: 'मुख्य मेनू' },
       ],
     };
   }
 
   if (overdueSteps.length > 0) {
-    body += `🔴 *CRITICALLY OVERDUE (>3 days):*\n`;
+    body += `🔴 *समय बीता (CRITICALLY OVERDUE):*\n`;
     overdueSteps.forEach((s) => {
       const risk = s.patient_risk === 'HRP' ? ' [HRP]' : '';
-      body += `• *${s.patient_name}*${risk} — ${s.cat.replace('_', ' ')} (Due: ${s.due})\n`;
+      body += `• *${s.patient_name}*${risk} — ${s.cat.replace('_', ' ')} (तारीख: ${s.due})\n`;
     });
     body += `\n`;
   }
 
   if (staleReferrals.length > 0) {
-    body += `⏱️ *STALE REFERRALS (>7 days unconfirmed):*\n`;
+    body += `⏱️ *अपुष्ट रेफरल (>7 दिन से अराइवल नहीं):*\n`;
     staleReferrals.forEach((s) => {
-      body += `• *${s.patient_name}* $\\rightarrow$ ${s.level} (Sent: ${s.sent_at})\n`;
+      body += `• *${s.patient_name}* → ${s.level} (भेजा गया: ${s.sent_at})\n`;
     });
-    body += `\n_Action: Please contact ASHA or patient to check if visit occurred._\n`;
+    body += `\n_सुझाव: कृपया ASHA या मरीज़ से संपर्क करके पुष्टि करें कि क्या वे अस्पताल पहुँचे थे।_\n`;
   }
 
   return {
     kind: 'buttons',
     to,
-    header: 'Active Care Alerts',
+    header: 'सक्रिय केयर अलर्ट्स',
     body: body.trim(),
     buttons: [
       { id: 'CMD_WORKLIST', title: 'Worklist' },
       overdueSteps.length > 0
-        ? { id: `SEL_PATIENT_${overdueSteps[0].patient_id}`, title: `Act: ${overdueSteps[0].patient_name.slice(0, 15)}` }
-        : { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
-      { id: 'CMD_MENU', title: 'Main Menu' },
+        ? { id: `SEL_PATIENT_${overdueSteps[0].patient_id}`, title: `👤 ${overdueSteps[0].patient_name.slice(0, 15)}` }
+        : { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
+      { id: 'CMD_MENU', title: 'मुख्य मेनू' },
     ],
   };
 }

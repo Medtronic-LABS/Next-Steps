@@ -77,38 +77,38 @@ export function promptNextStepCategories(to: string, patientId: string, stagedCo
     // Default ANC: Routine ANC, Diagnostics, and Facility Referrals (PHC, CHC, DH)
     sections = [
       {
-        title: 'Routine Antenatal Care',
+        title: 'सामान्य ANC देखभाल',
         rows: [
-          { id: `STAGE_CAT_${patientId}_ANC_VISIT`, title: 'ANC Routine Visit', description: 'Scheduled contact at Sub-centre (+4w)' },
-          { id: `STAGE_CAT_${patientId}_FOLLOW_UP`, title: 'Clinical Follow-up', description: 'Routine check-up at Sub-centre (+2w)' },
+          { id: `STAGE_CAT_${patientId}_ANC_VISIT`, title: 'ANC रूटीन विज़िट', description: 'सब-सेंटर पर नियमित विज़िट (+4w)' },
+          { id: `STAGE_CAT_${patientId}_FOLLOW_UP`, title: 'फ़ॉलो-अप जाँच', description: 'सब-सेंटर पर रूटीन चेकअप (+2w)' },
         ],
       },
       {
-        title: 'Diagnostics & Tests',
+        title: 'जाँच एवं टेस्ट (Diagnostics)',
         rows: [
-          { id: `STAGE_CAT_${patientId}_LAB`, title: 'Laboratory Test', description: 'Hb, Urine Albumin, Blood Sugar (+7d)' },
-          { id: `STAGE_CAT_${patientId}_IMAGING`, title: 'Ultrasound (USG)', description: 'Obstetric scan at CHC / DH (+7d)' },
+          { id: `STAGE_CAT_${patientId}_LAB`, title: 'लैब टेस्ट (Hb, पेशाब)', description: 'हीमोग्लोबिन, यूरिन एल्बुमिन (+7d)' },
+          { id: `STAGE_CAT_${patientId}_IMAGING`, title: 'अल्ट्रासाउंड (USG)', description: 'CHC / DH पर सोनोग्राफी (+7d)' },
         ],
       },
       {
-        title: 'Facility Referrals',
+        title: 'अस्पताल रेफरल',
         rows: [
-          { id: `STAGE_CAT_${patientId}_REFERRAL_PHC`, title: 'Referral to PHC', description: 'Primary Health Centre (PHC Sirmour)' },
-          { id: `STAGE_CAT_${patientId}_REFERRAL_CHC`, title: 'Referral to CHC', description: 'Community Health Centre (CHC Teonthar)' },
-          { id: `STAGE_CAT_${patientId}_REFERRAL_DH`, title: 'Referral to DH', description: 'District Hospital (DH Rewa)' },
+          { id: `STAGE_CAT_${patientId}_REFERRAL_PHC`, title: 'PHC रेफरल', description: 'प्राथमिक स्वास्थ्य केंद्र (PHC Sirmour)' },
+          { id: `STAGE_CAT_${patientId}_REFERRAL_CHC`, title: 'CHC रेफरल', description: 'सामुदायिक स्वास्थ्य केंद्र (CHC Teonthar)' },
+          { id: `STAGE_CAT_${patientId}_REFERRAL_DH`, title: 'DH रेफरल', description: 'ज़िला अस्पताल (DH Rewa)' },
         ],
       },
     ];
   }
 
-  const stagedNote = stagedCount > 0 ? `\n_(${stagedCount} step${stagedCount > 1 ? 's' : ''} currently selected)_` : '';
+  const stagedNote = stagedCount > 0 ? `\n_(${stagedCount} स्टेप्स चुने गए हैं)_` : '';
 
   return {
     kind: 'list',
     to,
-    header: `Add Next Step: ${name}`.slice(0, 24),
-    body: `Select care steps to prescribe for *${name}* (${service}):${stagedNote}`,
-    buttonText: 'Choose Care Step',
+    header: `केयर स्टेप: ${name}`.slice(0, 24),
+    body: `*${name}* (${service}) के लिए केयर स्टेप चुनें:${stagedNote}`,
+    buttonText: 'केयर स्टेप चुनें',
     sections,
   };
 }
@@ -120,16 +120,16 @@ export function promptFacilitySelection(to: string, patientId: string): Outbound
   return {
     kind: 'list',
     to,
-    header: 'Select Facility Level',
-    body: `Which facility level should *${name}* be referred to?`,
-    buttonText: 'Select Facility',
+    header: 'अस्पताल चुनें',
+    body: `*${name}* को किस अस्पताल में रेफर करना चाहते हैं?`,
+    buttonText: 'अस्पताल चुनें',
     sections: [
       {
-        title: 'Referral Facilities',
+        title: 'रेफरल अस्पताल',
         rows: [
-          { id: `REF_FAC_${patientId}_PHC`, title: 'PHC Sirmour (PHC)', description: 'Primary Health Centre · Doctor consultation' },
-          { id: `REF_FAC_${patientId}_CHC`, title: 'CHC Teonthar (CHC)', description: 'Community Health Centre / FRU · Specialist' },
-          { id: `REF_FAC_${patientId}_DH`, title: 'District Hospital Rewa', description: 'Secondary care · Comprehensive diagnostics' },
+          { id: `REF_FAC_${patientId}_PHC`, title: 'PHC Sirmour', description: 'प्राथमिक स्वास्थ्य केंद्र · डॉक्टर परामर्श' },
+          { id: `REF_FAC_${patientId}_CHC`, title: 'CHC Teonthar', description: 'सामुदायिक स्वास्थ्य केंद्र / FRU · विशेषज्ञ' },
+          { id: `REF_FAC_${patientId}_DH`, title: 'District Hospital Rewa', description: 'ज़िला अस्पताल · संपूर्ण जाँच व आपातकालीन' },
         ],
       },
     ],
@@ -337,24 +337,24 @@ export function handleCategorySelected(
   }
 
   const count = combinedSteps.length;
-  let body = `📋 *Review Prescribed Steps for ${name} (${count} step${count > 1 ? 's' : ''}):*\n\n`;
+  let body = `📋 *${name} के लिए केयर स्टेप्स (${count} स्टेप्स):*\n\n`;
 
   combinedSteps.forEach((s, idx) => {
     const catLabel = s.category.replace(/_/g, ' ');
-    body += `${idx + 1}. *${catLabel}* (${s.level})\n   📍 ${s.targetFacilityName || s.level} · Due: ${s.dueDate}\n\n`;
+    body += `${idx + 1}. *${catLabel}* (${s.level})\n   📍 ${s.targetFacilityName || s.level} · तारीख: ${s.dueDate}\n\n`;
   });
 
-  body += `Tap below to add more care steps, or confirm and save:`;
+  body += `और स्टेप्स जोड़ने के लिए नीचे टैप करें, या कन्फर्म करके सेव करें:`;
 
   const message: OutboundMessage = {
     kind: 'buttons',
     to,
-    header: `Prescribe: ${name}`.slice(0, 24),
+    header: `केयर स्टेप: ${name}`.slice(0, 24),
     body: body.trim(),
     buttons: [
-      { id: `ACTION_ADD_MORE_STEP_${patientId}`, title: '➕ Add Another Step' },
-      { id: `CONFIRM_STEP_${patientId}`, title: `✅ Save ${count > 1 ? `All (${count})` : 'Step'}`.slice(0, 20) },
-      { id: 'CMD_MENU', title: 'Cancel' },
+      { id: `ACTION_ADD_MORE_STEP_${patientId}`, title: '➕ एक और जोड़ें' },
+      { id: `CONFIRM_STEP_${patientId}`, title: `✅ सेव करें ${count > 1 ? `(${count})` : ''}`.trim().slice(0, 20) },
+      { id: 'CMD_MENU', title: 'रद्द करें' },
     ],
   };
 
@@ -409,15 +409,15 @@ export function handleConfirmStep(to: string, user: WhatsAppUser, staged: any, s
     // 2. Queue CCE CloudEvent
     const outboxId = enqueueStepEvent(stepRecord, s.patientId);
     outboxIds.push(outboxId.slice(0, 8));
-    createdStepNames.push(`${s.category.replace(/_/g, ' ')} (${s.level}) · Due ${s.dueDate}`);
+    createdStepNames.push(`${s.category.replace(/_/g, ' ')} (${s.level}) · तारीख: ${s.dueDate}`);
   }
 
   const count = stepsToSave.length;
-  let body = `✅ *Success! ${count} Care Step${count > 1 ? 's' : ''} Prescribed for ${name}:*\n\n`;
+  let body = `✅ *सफलतापूर्वक दर्ज! ${name} के लिए ${count} केयर स्टेप्स सेव हो गए:*\n\n`;
   createdStepNames.forEach((s) => {
     body += `• ${s}\n`;
   });
-  body += `\nAll care steps are now saved in the system. Tap below to view ${name}'s updated care journey:`;
+  body += `\nसभी केयर स्टेप्स सिस्टम में सुरक्षित हैं। ${name} की केयर जर्नी देखने के लिए नीचे टैप करें:`;
 
   return {
     kind: 'buttons',
@@ -425,8 +425,8 @@ export function handleConfirmStep(to: string, user: WhatsAppUser, staged: any, s
     header: 'Steps Prescribed',
     body: body.trim(),
     buttons: [
-      { id: `SEL_PATIENT_${patientId}`, title: `👤 View ${name}`.slice(0, 20) },
-      { id: `ACTION_ADD_STEP_${patientId}`, title: '➕ Add More Steps' },
+      { id: `SEL_PATIENT_${patientId}`, title: `👤 प्रोफाइल देखें`.slice(0, 20) },
+      { id: `ACTION_ADD_STEP_${patientId}`, title: '➕ नया स्टेप' },
       { id: 'CMD_WORKLIST', title: 'Worklist' },
     ],
   };
