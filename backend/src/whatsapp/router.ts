@@ -1,7 +1,7 @@
 import { InboundMessage, OutboundMessage, WhatsAppUser } from './types.js';
 import { resolveSender } from './senderResolution.js';
 import { getSession, updateSession, resetSession } from './sessionManager.js';
-import { handleMenu } from './workflows/menuWorkflow.js';
+import { handleMenu, promptLanguageSelection } from './workflows/menuWorkflow.js';
 import {
   handleFindPrompt,
   handlePatientSearchResults,
@@ -44,6 +44,7 @@ const ADD_KEYWORDS = new Set(['add', 'new', 'prescribe', 'refer']);
 const OCR_KEYWORDS = new Set(['ocr', 'import register', 'register import', 'paper register']);
 const EVENTS_KEYWORDS = new Set(['events', 'event log', 'cce log', 'log', 'audit']);
 const RESET_KEYWORDS = new Set(['reset demo', 'reset', 'restart demo']);
+const LANG_KEYWORDS = new Set(['language', 'lang', 'भाषा', 'bhasha', 'change language', 'select language']);
 
 export async function routeInboundMessage(message: InboundMessage): Promise<OutboundMessage[]> {
   const to = message.from;
@@ -62,10 +63,61 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     ];
   }
 
-  const session = getSession(to, user.id);
+  const userLang = (user.preferred_lang as 'hi' | 'en') || 'hi';
+  const session = getSession(to, user.id, userLang);
+  const lang = session.lang || userLang;
   const replyId = message.replyId || '';
   const rawText = (message.text || '').trim();
   const lower = rawText.toLowerCase();
+
+  // --- Language Selection (English / Hindi Toggle) ---
+  if (LANG_KEYWORDS.has(lower) || replyId === 'CMD_LANG') {
+    return [promptLanguageSelection(to, lang)];
+  }
+
+  if (replyId === 'SET_LANG_EN' || lower === 'english' || lower === 'en') {
+    session.lang = 'en';
+    resetSession(session);
+    try {
+      db.prepare(`UPDATE users SET preferred_lang = 'en' WHERE id = ? OR phone = ?`).run(user.id, user.phone);
+    } catch {}
+    user.preferred_lang = 'en';
+    return [
+      {
+        kind: 'buttons',
+        to,
+        header: 'Language: English',
+        body: `✅ *Language updated to English!*\n\nWelcome ${user.name}. What would you like to do?`,
+        buttons: [
+          { id: 'CMD_WORKLIST', title: 'Worklist' },
+          { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
+          { id: 'CMD_MENU', title: 'Main Menu' },
+        ],
+      },
+    ];
+  }
+
+  if (replyId === 'SET_LANG_HI' || lower === 'hindi' || lower === 'हिंदी') {
+    session.lang = 'hi';
+    resetSession(session);
+    try {
+      db.prepare(`UPDATE users SET preferred_lang = 'hi' WHERE id = ? OR phone = ?`).run(user.id, user.phone);
+    } catch {}
+    user.preferred_lang = 'hi';
+    return [
+      {
+        kind: 'buttons',
+        to,
+        header: 'भाषा: हिंदी',
+        body: `✅ *भाषा बदलकर हिंदी कर दी गई है!*\n\nनमस्ते ${user.name}। आप क्या करना चाहते हैं?`,
+        buttons: [
+          { id: 'CMD_WORKLIST', title: 'Worklist' },
+          { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
+          { id: 'CMD_MENU', title: 'मुख्य मेनू' },
+        ],
+      },
+    ];
+  }
 
   // --- Role Switching for Seamless Demo Walkthrough (PRD Section 1 & 18) ---
   if (lower === 'role chc' || lower === 'switch chc' || lower === 'switch to chc' || replyId === 'ROLE_CHC') {
@@ -344,35 +396,35 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   // --- Handle Global Command Buttons & Greetings (Always take priority over conversational state) ---
   if (replyId === 'CMD_MENU' || GREETINGS.has(lower)) {
     resetSession(session);
-    return [handleMenu(to, user)];
+    return [handleMenu(to, user, lang)];
   }
 
   if (replyId === 'CMD_WORKLIST') {
     session.currentState = 'VIEWING_WORKLIST';
     session.stagedRegistration = undefined;
     updateSession(session);
-    return [handleWorklist(to, user)];
+    return [handleWorklist(to, user, lang)];
   }
 
   if (replyId === 'CMD_FIND_PATIENT') {
     session.currentState = 'AWAITING_SEARCH';
     session.stagedRegistration = undefined;
     updateSession(session);
-    return [handleFindPrompt(to)];
+    return [handleFindPrompt(to, lang)];
   }
 
   if (replyId === 'CMD_ARRIVALS') {
     session.currentState = 'VIEWING_ARRIVALS';
     session.stagedRegistration = undefined;
     updateSession(session);
-    return [handleExpectedArrivals(to, user)];
+    return [handleExpectedArrivals(to, user, lang)];
   }
 
   if (replyId === 'CMD_ALERTS') {
     session.currentState = 'IDLE';
     session.stagedRegistration = undefined;
     updateSession(session);
-    return [handleAlerts(to, user)];
+    return [handleAlerts(to, user, lang)];
   }
 
   if (replyId === 'CMD_ADD_STEP') {
@@ -454,25 +506,25 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   if (message.kind === 'text') {
     if (GREETINGS.has(lower)) {
       resetSession(session);
-      return [handleMenu(to, user)];
+      return [handleMenu(to, user, lang)];
     }
 
     if (WORKLIST_KEYWORDS.has(lower)) {
       session.currentState = 'VIEWING_WORKLIST';
       updateSession(session);
-      return [handleWorklist(to, user)];
+      return [handleWorklist(to, user, lang)];
     }
 
     if (ARRIVAL_KEYWORDS.has(lower)) {
       session.currentState = 'VIEWING_ARRIVALS';
       updateSession(session);
-      return [handleExpectedArrivals(to, user)];
+      return [handleExpectedArrivals(to, user, lang)];
     }
 
     if (ALERT_KEYWORDS.has(lower)) {
       session.currentState = 'IDLE';
       updateSession(session);
-      return [handleAlerts(to, user)];
+      return [handleAlerts(to, user, lang)];
     }
 
     if (ADD_KEYWORDS.has(lower)) {
@@ -481,14 +533,14 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       }
       session.currentState = 'AWAITING_SEARCH';
       updateSession(session);
-      return [handleFindPrompt(to)];
+      return [handleFindPrompt(to, lang)];
     }
 
     if (lower.startsWith('find ')) {
       const query = rawText.slice(5).trim();
       session.currentState = 'VIEWING_SEARCH';
       updateSession(session);
-      return [handlePatientSearchResults(to, user, query)];
+      return [handlePatientSearchResults(to, user, query, lang)];
     }
 
     // Direct Patient Search: if user types a patient name, phone, or ID
@@ -496,7 +548,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     if (matchingPatients.length > 0) {
       session.currentState = 'VIEWING_SEARCH';
       updateSession(session);
-      return [handlePatientSearchResults(to, user, rawText)];
+      return [handlePatientSearchResults(to, user, rawText, lang)];
     }
 
     // Default fallback: show helpful smart menu
@@ -528,7 +580,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     if (!patient) {
       return [{ kind: 'text', to, body: '❌ Patient record not found.' }];
     }
-    return [renderPatientDetail(to, user, patient)];
+    return [renderPatientDetail(to, user, patient, lang)];
   }
 
   // Action: Add Step: ACTION_ADD_STEP_<patientId>
@@ -539,7 +591,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     session.stagedAction = undefined;
     session.currentState = 'STAGING_STEP';
     updateSession(session);
-    return [promptNextStepCategories(to, patientId, 0)];
+    return [promptNextStepCategories(to, patientId, 0, lang)];
   }
 
   // Action: Add More Steps (keep existing cart): ACTION_ADD_MORE_STEP_<patientId>
@@ -548,13 +600,13 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     session.patientId = patientId;
     session.currentState = 'STAGING_STEP';
     updateSession(session);
-    return [promptNextStepCategories(to, patientId, session.stagedSteps?.length || 0)];
+    return [promptNextStepCategories(to, patientId, session.stagedSteps?.length || 0, lang)];
   }
 
   // Action: Change Facility for Referral: CHANGE_TARGET_<patientId>
   if (replyId.startsWith('CHANGE_TARGET_')) {
     const patientId = replyId.replace('CHANGE_TARGET_', '');
-    return [promptFacilitySelection(to, patientId)];
+    return [promptFacilitySelection(to, patientId, lang)];
   }
 
   // Facility Selected for Referral: REF_FAC_<patientId>_<level>
@@ -569,7 +621,8 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       user,
       patientId,
       cat,
-      session.stagedSteps || []
+      session.stagedSteps || [],
+      lang
     );
     session.stagedAction = stagedAction;
     session.stagedSteps = stagedSteps;
@@ -589,7 +642,8 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       user,
       patientId,
       category,
-      session.stagedSteps || []
+      session.stagedSteps || [],
+      lang
     );
     session.stagedAction = stagedAction;
     session.stagedSteps = stagedSteps;
@@ -605,11 +659,11 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
         {
           kind: 'text',
           to,
-          body: '⚠️ Session expired or no step staged. Please find the patient again.',
+          body: lang === 'en' ? '⚠️ Session expired or no step staged. Please find the patient again.' : '⚠️ सत्र समाप्त या कोई स्टेप नहीं चुना गया। कृपया मरीज़ को फिर से खोजें।',
         },
       ];
     }
-    const resultMsg = handleConfirmStep(to, user, session.stagedAction, session.stagedSteps);
+    const resultMsg = handleConfirmStep(to, user, session.stagedAction, session.stagedSteps, lang);
     session.stagedAction = undefined;
     session.stagedSteps = undefined;
     session.currentState = 'IDLE';
@@ -621,7 +675,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   if (replyId.startsWith('ACTION_CHOOSE_CLOSE_')) {
     const patientId = replyId.replace('ACTION_CHOOSE_CLOSE_', '');
     session.patientId = patientId;
-    return [promptChooseStepToClose(to, patientId)];
+    return [promptChooseStepToClose(to, patientId, lang)];
   }
 
   // Action: Close Step: ACTION_CLOSE_STEP_<stepId>
@@ -630,7 +684,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     session.stepId = stepId;
     session.currentState = 'CLOSING_STEP';
     updateSession(session);
-    return [promptClosureProvenance(to, stepId)];
+    return [promptClosureProvenance(to, stepId, lang)];
   }
 
   // Provenance selected: PROV_<stepId>_<provenance>
@@ -639,27 +693,27 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     if (match) {
       const stepId = match[1];
       const provenance = match[2];
-      return [handleCloseWithProvenance(to, user, stepId, provenance)];
+      return [handleCloseWithProvenance(to, user, stepId, provenance, lang)];
     }
   }
 
   // Inbound Arrival Pick: ARRIVE_PICK_<stepId>
   if (replyId.startsWith('ARRIVE_PICK_')) {
     const stepId = replyId.replace('ARRIVE_PICK_', '');
-    return [promptArrivalAction(to, user, stepId)];
+    return [promptArrivalAction(to, user, stepId, lang)];
   }
 
   // Mark Arrived on-site: DO_ARRIVE_ONSITE_<stepId>
   if (replyId.startsWith('DO_ARRIVE_ONSITE_')) {
     const stepId = replyId.replace('DO_ARRIVE_ONSITE_', '');
-    return [handleMarkArrived(to, user, stepId)];
+    return [handleMarkArrived(to, user, stepId, lang)];
   }
 
   // Care Delivered: DO_CARE_DELIVERED_<stepId>
   if (replyId.startsWith('DO_CARE_DELIVERED_')) {
     const stepId = replyId.replace('DO_CARE_DELIVERED_', '');
-    return [handleCareDelivered(to, user, stepId)];
+    return [handleCareDelivered(to, user, stepId, lang)];
   }
 
-  return [handleMenu(to, user)];
+  return [handleMenu(to, user, lang)];
 }

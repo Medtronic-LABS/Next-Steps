@@ -8,6 +8,7 @@ export interface WhatsAppUser {
   facility_id: string | null;
   facility_name?: string;
   facility_level?: string;
+  preferred_lang?: 'hi' | 'en';
   is_active: boolean;
 }
 
@@ -81,6 +82,7 @@ export interface ConversationSession {
   userId: string;
   phoneNumber: string;
   currentState: string;
+  lang?: 'hi' | 'en';
   patientId?: string;
   stepId?: string;
   stagedAction?: {

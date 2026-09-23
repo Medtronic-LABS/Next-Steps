@@ -64,6 +64,7 @@ export function initDatabase() {
       phone TEXT UNIQUE NOT NULL,
       role TEXT NOT NULL,
       facility_id TEXT,
+      preferred_lang TEXT DEFAULT 'hi',
       is_active INTEGER DEFAULT 1,
       created_at TEXT NOT NULL
     );
@@ -140,6 +141,10 @@ export function initDatabase() {
       value TEXT NOT NULL
     );
   `);
+
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN preferred_lang TEXT DEFAULT 'hi';`);
+  } catch (e) {}
 
   seedInitialData();
   syncTestPhoneNumbers();

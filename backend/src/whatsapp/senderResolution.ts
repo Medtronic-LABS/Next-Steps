@@ -29,7 +29,7 @@ export function resolveSender(rawPhone: string): WhatsAppUser | null {
 
   // Match exact normalized phone or trailing 10 digits
   const stmt = db.prepare(`
-    SELECT u.id, u.name, u.phone, u.role, u.facility_id, u.is_active,
+    SELECT u.id, u.name, u.phone, u.role, u.facility_id, u.preferred_lang, u.is_active,
            f.name as facility_name, f.level as facility_level
     FROM users u
     LEFT JOIN facilities f ON u.facility_id = f.id

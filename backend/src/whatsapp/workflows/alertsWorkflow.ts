@@ -1,10 +1,10 @@
 import { db } from '../../db/index.js';
 import { OutboundMessage, WhatsAppUser } from '../types.js';
 
-export function handleAlerts(to: string, user: WhatsAppUser): OutboundMessage {
+export function handleAlerts(to: string, user: WhatsAppUser, lang: 'hi' | 'en' = 'hi'): OutboundMessage {
   const todayIso = new Date().toISOString().slice(0, 10);
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const isEn = lang === 'en';
 
   // 1. Overdue Steps
   let overdueQuery = `
@@ -40,51 +40,62 @@ export function handleAlerts(to: string, user: WhatsAppUser): OutboundMessage {
   staleQuery += ` ORDER BY s.sent_at ASC LIMIT 5`;
   const staleReferrals = db.prepare(staleQuery).all(...staleParams) as any[];
 
-  let body = `⚠️ *केयर अलर्ट्स एवं आवश्यक फ़ॉलो-अप*\n`;
-  body += `सेंटर: ${user.facility_name || user.facility_id || 'Health Centre'}\n\n`;
+  let body = isEn
+    ? `⚠️ *Care Alerts & Required Follow-ups*\nFacility: ${user.facility_name || user.facility_id || 'Health Centre'}\n\n`
+    : `⚠️ *केयर अलर्ट्स एवं आवश्यक फ़ॉलो-अप*\nसेंटर: ${user.facility_name || user.facility_id || 'Health Centre'}\n\n`;
 
   if (overdueSteps.length === 0 && staleReferrals.length === 0) {
     return {
       kind: 'buttons',
       to,
-      header: 'केयर अलर्ट्स',
-      body: `🎉 *कोई गंभीर अलर्ट नहीं है!*\n\nसभी रेफरल समय सीमा के भीतर हैं, और कोई भी गंभीर केयर स्टेप 3 दिन से अधिक ओवरड्यू नहीं है।`,
+      header: isEn ? 'Care Alerts' : 'केयर अलर्ट्स',
+      body: isEn
+        ? `🎉 *No critical alerts!*\n\nAll referrals are within expected timeframes, and no care obligations are overdue.`
+        : `🎉 *कोई गंभीर अलर्ट नहीं है!*\n\nसभी रेफरल समय सीमा के भीतर हैं, और कोई भी गंभीर केयर स्टेप 3 दिन से अधिक ओवरड्यू नहीं है।`,
       buttons: [
         { id: 'CMD_WORKLIST', title: 'Worklist' },
-        { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
-        { id: 'CMD_MENU', title: 'मुख्य मेनू' },
+        { id: 'CMD_FIND_PATIENT', title: isEn ? 'Find Patient' : 'मरीज़ खोजें' },
+        { id: 'CMD_MENU', title: isEn ? 'Main Menu' : 'मुख्य मेनू' },
       ],
     };
   }
 
   if (overdueSteps.length > 0) {
-    body += `🔴 *समय बीता (CRITICALLY OVERDUE):*\n`;
+    body += isEn ? `🔴 *CRITICALLY OVERDUE (${overdueSteps.length}):*\n` : `🔴 *समय बीता (CRITICALLY OVERDUE):*\n`;
     overdueSteps.forEach((s) => {
       const risk = s.patient_risk === 'HRP' ? ' [HRP]' : '';
-      body += `• *${s.patient_name}*${risk} — ${s.cat.replace('_', ' ')} (तारीख: ${s.due})\n`;
+      body += isEn
+        ? `• *${s.patient_name}*${risk} — ${s.cat.replace(/_/g, ' ')} (Due: ${s.due})\n`
+        : `• *${s.patient_name}*${risk} — ${s.cat.replace(/_/g, ' ')} (तारीख: ${s.due})\n`;
     });
     body += `\n`;
   }
 
   if (staleReferrals.length > 0) {
-    body += `⏱️ *अपुष्ट रेफरल (>7 दिन से अराइवल नहीं):*\n`;
+    body += isEn
+      ? `⏱️ *Unconfirmed Referrals (>7 days without arrival):*\n`
+      : `⏱️ *अपुष्ट रेफरल (>7 दिन से अराइवल नहीं):*\n`;
     staleReferrals.forEach((s) => {
-      body += `• *${s.patient_name}* → ${s.level} (भेजा गया: ${s.sent_at})\n`;
+      body += isEn
+        ? `• *${s.patient_name}* → ${s.level} (Sent: ${s.sent_at})\n`
+        : `• *${s.patient_name}* → ${s.level} (भेजा गया: ${s.sent_at})\n`;
     });
-    body += `\n_सुझाव: कृपया ASHA या मरीज़ से संपर्क करके पुष्टि करें कि क्या वे अस्पताल पहुँचे थे।_\n`;
+    body += isEn
+      ? `\n_Tip: Please follow up with ASHA or patient to check if they arrived at facility._\n`
+      : `\n_सुझाव: कृपया ASHA या मरीज़ से संपर्क करके पुष्टि करें कि क्या वे अस्पताल पहुँचे थे।_\n`;
   }
 
   return {
     kind: 'buttons',
     to,
-    header: 'सक्रिय केयर अलर्ट्स',
+    header: isEn ? 'Active Care Alerts' : 'सक्रिय केयर अलर्ट्स',
     body: body.trim(),
     buttons: [
       { id: 'CMD_WORKLIST', title: 'Worklist' },
       overdueSteps.length > 0
         ? { id: `SEL_PATIENT_${overdueSteps[0].patient_id}`, title: `👤 ${overdueSteps[0].patient_name.slice(0, 15)}` }
-        : { id: 'CMD_FIND_PATIENT', title: 'मरीज़ खोजें' },
-      { id: 'CMD_MENU', title: 'मुख्य मेनू' },
+        : { id: 'CMD_FIND_PATIENT', title: isEn ? 'Find Patient' : 'मरीज़ खोजें' },
+      { id: 'CMD_MENU', title: isEn ? 'Main Menu' : 'मुख्य मेनू' },
     ],
   };
 }
