@@ -48,15 +48,26 @@ Built on the **[OpenPHC](https://github.com/orgs/openphc/repositories)** infrast
 The WhatsApp Bot provides an accessible, zero-install interface for frontline community health workers and facility nurses.
 
 ### Key Capabilities
+- **Dynamic Bilingual Support (English $\leftrightarrow$ हिंदी)**:
+  - Full conversational Hindi with common clinical terms preserved in English (facility names, clinical step codes).
+  - Instant language switching: tap the **`🌐 भाषा / English`** button or type `language`, `भाषा`, `english`, or `hindi`.
+  - Persistent user language preference saved to `users.preferred_lang` in SQLite, remembered across sessions and restarts.
+- **High-Throughput Multi-User Concurrency**:
+  - **Isolated Per-User Queues**: Messages from distinct health workers run on independent, parallel Promise chains without blocking one another.
+  - **Strict FIFO Serialization per Phone Number**: Prevents race conditions from rapid double-taps by serializing messages from the same sender.
+  - **Instant Webhook ACK**: Meta receives immediate HTTP 200 acknowledgments, preventing retry storms.
+  - **Deduplication & Staleness Filter**: In-memory cache drops duplicate Meta webhook deliveries within a 15-minute TTL and discards stale retries (>5 minutes old).
+  - **SQLite WAL Mode**: SQLite runs in Write-Ahead Logging mode (`PRAGMA journal_mode = WAL;`) for concurrent reads and writes.
 - **Worklist Management (`Worklist`)**: Instant access to overdue and due-today patient visits tailored to the worker's facility catchment.
 - **30-Second Care Step Prescription**:
   - Referrals to Primary Health Centres (PHC), Community Health Centres (CHC), and District Hospitals (DH).
   - Antenatal Care (ANC) checkups (`+2w`, `+4w`, or custom dates).
   - Diagnostic orders (Ultrasound USG, Hemoglobin, Urine Albumin).
   - Postnatal (PNC) and Home-Based Newborn Care (HBNC) protocols.
-- **Inbound Expected Arrivals**:
+- **Inbound Expected Arrivals & Care Delivery**:
   - Staff nurses at PHC and CHC receive real-time notifications of incoming referrals from sub-centres.
-  - One-tap arrival confirmation (`✅ Confirm Arrived`).
+  - Strict compliance with Meta WhatsApp API limits: button titles stay under 20 characters (e.g. `'उपस्थिति दर्ज'`, `'वापस सूची'`).
+  - One-tap arrival confirmation and full service provenance capture (`AT_FACILITY`, `OTHER_FACILITY`, `PRIVATE_FACILITY`).
 - **Care Step Closure**: Select specific open steps and record outcomes (Completed, Escalated, Cancelled) with immediate worklist updates.
 - **Secure Web App Deep-Links**:
   - 🔒 *Patient Registration Form*: Opens the responsive registration view with pre-selected catchment without requiring user login.
@@ -66,9 +77,9 @@ The WhatsApp Bot provides an accessible, zero-install interface for frontline co
 ### Supported Personas & Commands
 | Role | Facility Level | Core Workflows | Quick Commands |
 | :--- | :--- | :--- | :--- |
-| **ANM / CHO** | Sub-centre / HWC | Patient Intake, Worklist, Prescribe Next Steps, OCR Import | `menu`, `worklist`, `alerts`, `register`, `ocr` |
-| **Staff Nurse** | PHC (Sirmour) | Expected Arrivals, Inbound Referrals, Worklist, Doctor Consult | `arrivals`, `worklist`, `alerts`, `menu` |
-| **Staff Nurse** | CHC (Teonthar) | High-Risk Specialist Arrivals, Ultrasound Intake, Secondary Worklist | `arrivals`, `worklist`, `menu` |
+| **ANM / CHO** | Sub-centre / HWC | Patient Intake, Worklist, Prescribe Next Steps, OCR Import | `menu`, `worklist`, `alerts`, `register`, `language` |
+| **Staff Nurse** | PHC (Sirmour) | Expected Arrivals, Inbound Referrals, Worklist, Doctor Consult | `arrivals`, `worklist`, `alerts`, `menu`, `language` |
+| **Staff Nurse** | CHC (Teonthar) | High-Risk Specialist Arrivals, Ultrasound Intake, Secondary Worklist | `arrivals`, `worklist`, `menu`, `language` |
 
 ---
 
@@ -243,7 +254,18 @@ Send a WhatsApp message from a registered test phone:
 - Type **`menu`** to view your persona dashboard.
 - Tap **`Worklist`** to inspect pending patients.
 - Type **`role anm`**, **`role phc`**, or **`role chc`** to switch between frontline personas.
+- Type **`language`** or tap **`🌐 भाषा / English`** to switch language.
 - Type **`demo reset`** to restore the initial test scenario.
+
+### 3. Automated Test Suites
+Run the verified automated test suites locally:
+```bash
+# Verify SQLite sync constraints, deduplication, and greeting session resets
+node tests/test_fixes_verification.mjs
+
+# Verify multi-user concurrent message delivery, bilingual switching, and arrival flows
+node tests/test_concurrency_and_bilingual.mjs
+```
 
 ---
 
