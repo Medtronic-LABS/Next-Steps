@@ -25,6 +25,63 @@ whatsappRouter.get(['/', '/webhook'], (req: Request, res: Response) => {
   return res.sendStatus(403);
 });
 
+// Deduplication cache: tracks processed message IDs for 15 minutes to ignore duplicate Meta webhook deliveries
+const processedMessageIds = new Map<string, number>();
+const DEDUP_TTL_MS = 15 * 60 * 1000; // 15 mins
+const MAX_STALE_AGE_MS = 5 * 60 * 1000; // Discard webhook messages older than 5 minutes
+
+function isDuplicateOrStale(msgId: string, timestamp?: string): boolean {
+  const now = Date.now();
+
+  // 1. Check stale timestamp from Meta (prevents executing hours-old or minutes-old retries)
+  if (timestamp) {
+    const msgEpoch = parseInt(timestamp, 10) * 1000;
+    if (!isNaN(msgEpoch) && now - msgEpoch > MAX_STALE_AGE_MS) {
+      console.warn(`[WhatsApp Webhook] Dropping stale message ${msgId} (age: ${Math.round((now - msgEpoch) / 1000)}s)`);
+      return true;
+    }
+  }
+
+  // 2. Periodic cache eviction
+  if (processedMessageIds.size > 2000) {
+    for (const [id, ts] of processedMessageIds.entries()) {
+      if (now - ts > DEDUP_TTL_MS) {
+        processedMessageIds.delete(id);
+      }
+    }
+  }
+
+  // 3. Deduplication check
+  if (msgId) {
+    if (processedMessageIds.has(msgId)) {
+      console.warn(`[WhatsApp Webhook] Dropping duplicate message ${msgId} (already processed)`);
+      return true;
+    }
+    processedMessageIds.set(msgId, now);
+  }
+
+  return false;
+}
+
+// Per-User FIFO sequential queue: prevents concurrent race conditions and ensures messages
+// from the same phone number are executed strictly one after another in order.
+const userQueues = new Map<string, Promise<void>>();
+
+function enqueueUserTask(phoneNumber: string, task: () => Promise<void>): Promise<void> {
+  const currentQueue = userQueues.get(phoneNumber) || Promise.resolve();
+  const nextQueue = currentQueue
+    .then(task, (err) => {
+      console.error(`[WhatsApp Queue Error for ${phoneNumber}]:`, err);
+    })
+    .finally(() => {
+      if (userQueues.get(phoneNumber) === nextQueue) {
+        userQueues.delete(phoneNumber);
+      }
+    });
+  userQueues.set(phoneNumber, nextQueue);
+  return nextQueue;
+}
+
 /**
  * Inbound Meta WhatsApp Webhook (POST /webhook or /api/whatsapp/webhook)
  */
@@ -44,7 +101,7 @@ whatsappRouter.post(['/', '/webhook'], async (req: Request, res: Response) => {
     }
   }
 
-  // Acknowledge receipt to Meta immediately (prevents duplicate retries)
+  // Acknowledge receipt to Meta immediately (prevents duplicate HTTP retries)
   res.sendStatus(200);
 
   try {
@@ -57,19 +114,35 @@ whatsappRouter.post(['/', '/webhook'], async (req: Request, res: Response) => {
         if (!value || !value.messages) continue;
 
         for (const msg of value.messages) {
-          const inbound = parseInboundMessage(msg);
-          if (!inbound) continue;
+          if (!msg) continue;
 
-          console.log(`[WhatsApp Webhook] Inbound from ${inbound.from} (kind: ${inbound.kind}):`, inbound.text || inbound.replyId);
-
-          const responses = await routeInboundMessage(inbound);
-          const client = getWhatsAppClient();
-
-          for (const resp of responses) {
-            console.log(`[WhatsApp Webhook] Sending outbound response to ${resp.to}...`);
-            await client.sendMessage(resp);
-            console.log(`[WhatsApp Webhook] Outbound sent successfully to ${resp.to}`);
+          // Deduplication and staleness check against Meta retries
+          if (isDuplicateOrStale(msg.id, msg.timestamp)) {
+            continue;
           }
+
+          const inbound = parseInboundMessage(msg);
+          if (!inbound || !inbound.from) continue;
+
+          const senderPhone = inbound.from;
+
+          // Serialize message processing per sender phone number strictly sequentially
+          enqueueUserTask(senderPhone, async () => {
+            try {
+              console.log(`[WhatsApp Webhook] Inbound from ${inbound.from} (kind: ${inbound.kind}):`, inbound.text || inbound.replyId);
+
+              const responses = await routeInboundMessage(inbound);
+              const client = getWhatsAppClient();
+
+              for (const resp of responses) {
+                console.log(`[WhatsApp Webhook] Sending outbound response to ${resp.to}...`);
+                await client.sendMessage(resp);
+                console.log(`[WhatsApp Webhook] Outbound sent successfully to ${resp.to}`);
+              }
+            } catch (taskErr: any) {
+              console.error(`[WhatsApp Message Processing Error for ${senderPhone}]:`, taskErr);
+            }
+          });
         }
       }
     }

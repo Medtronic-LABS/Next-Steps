@@ -1,6 +1,6 @@
 import { InboundMessage, OutboundMessage, WhatsAppUser } from './types.js';
 import { resolveSender } from './senderResolution.js';
-import { getSession, updateSession } from './sessionManager.js';
+import { getSession, updateSession, resetSession } from './sessionManager.js';
 import { handleMenu } from './workflows/menuWorkflow.js';
 import {
   handleFindPrompt,
@@ -157,11 +157,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
 
   // --- Reset Demo Command (PRD Section 14) ---
   if (RESET_KEYWORDS.has(lower) || replyId === 'CMD_RESET_DEMO') {
-    session.currentState = 'IDLE';
-    session.patientId = undefined;
-    session.stagedAction = undefined;
-    session.stagedRegistration = undefined;
-    updateSession(session);
+    resetSession(session);
     return [handleResetDemo(to, user)];
   }
 
@@ -347,9 +343,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
 
   // --- Handle Global Command Buttons & Greetings (Always take priority over conversational state) ---
   if (replyId === 'CMD_MENU' || GREETINGS.has(lower)) {
-    session.currentState = 'IDLE';
-    session.stagedRegistration = undefined;
-    updateSession(session);
+    resetSession(session);
     return [handleMenu(to, user)];
   }
 
@@ -459,8 +453,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   // --- Handle Plain Text Messages ---
   if (message.kind === 'text') {
     if (GREETINGS.has(lower)) {
-      session.currentState = 'IDLE';
-      updateSession(session);
+      resetSession(session);
       return [handleMenu(to, user)];
     }
 

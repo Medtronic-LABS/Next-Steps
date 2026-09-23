@@ -52,69 +52,95 @@ syncRouter.post('/push', (req: Request, res: Response) => {
 
     // 2. Process steps & enqueue to CCE
     if (Array.isArray(steps)) {
-      const stepStmt = db.prepare(`
+      const selectStepStmt = db.prepare(
+        'SELECT id, patient_id, cat, level, due, sent_at, status, owner_role, created_by, created_at FROM steps WHERE id = ?'
+      );
+
+      const updateStepStmt = db.prepare(`
+        UPDATE steps SET
+          status = COALESCE(?, status),
+          closed_at = COALESCE(?, closed_at),
+          closed_by = COALESCE(?, closed_by),
+          closed_source = COALESCE(?, closed_source),
+          closed_level = COALESCE(?, closed_level),
+          downgraded = COALESCE(?, downgraded),
+          reminder_state = COALESCE(?, reminder_state),
+          unreach_count = COALESCE(?, unreach_count),
+          updated_at = ?
+        WHERE id = ?
+      `);
+
+      const insertStepStmt = db.prepare(`
         INSERT INTO steps (
           id, patient_id, cat, level, due, sent_at, status, owner_role,
           created_by, closed_at, closed_by, closed_source, closed_level,
           downgraded, reminder_state, unreach_count, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          status = excluded.status,
-          closed_at = excluded.closed_at,
-          closed_by = excluded.closed_by,
-          closed_source = excluded.closed_source,
-          closed_level = excluded.closed_level,
-          downgraded = excluded.downgraded,
-          reminder_state = excluded.reminder_state,
-          unreach_count = excluded.unreach_count,
-          updated_at = excluded.updated_at
       `);
 
       for (const s of steps) {
-        const existing = db.prepare('SELECT cat, level, due, sent_at, owner_role, created_by, created_at FROM steps WHERE id = ?').get(s.id) as any;
-        const resolvedCat = s.cat || existing?.cat || 'REFERRAL';
+        if (!s || !s.id) continue;
+
+        const existing = selectStepStmt.get(s.id) as any;
+        const resolvedPatientId = s.patient_id || s.patientId || existing?.patient_id || 'unknown';
+        const resolvedCat = s.cat || s.category || existing?.cat || 'REFERRAL';
         const resolvedLevel = s.level || existing?.level || 'CHC';
         const resolvedDue = s.due || existing?.due || null;
         const resolvedSent = s.sent_at || existing?.sent_at || null;
         const resolvedOwner = s.owner_role || existing?.owner_role || 'anm';
-        const resolvedCreatedBy = s.created_by || existing?.created_by || actorName || null;
+        const resolvedCreatedBy = s.created_by || existing?.created_by || actorName || 'system';
         const resolvedCreatedAt = s.created_at || existing?.created_at || now;
 
-        stepStmt.run(
-          s.id,
-          s.patient_id,
-          resolvedCat,
-          resolvedLevel,
-          resolvedDue,
-          resolvedSent,
-          s.status || 'OPEN',
-          resolvedOwner,
-          resolvedCreatedBy,
-          s.closed_at || null,
-          s.closed_by || null,
-          s.closed_source || null,
-          s.closed_level || null,
-          s.downgraded ? 1 : 0,
-          s.reminder_state || null,
-          s.unreach_count || 0,
-          resolvedCreatedAt,
-          now
-        );
+        if (existing) {
+          updateStepStmt.run(
+            s.status || null,
+            s.closed_at || null,
+            s.closed_by || null,
+            s.closed_source || null,
+            s.closed_level || null,
+            s.downgraded !== undefined ? (s.downgraded ? 1 : 0) : null,
+            s.reminder_state || null,
+            s.unreach_count !== undefined ? s.unreach_count : null,
+            now,
+            s.id
+          );
+        } else {
+          insertStepStmt.run(
+            s.id,
+            resolvedPatientId,
+            resolvedCat,
+            resolvedLevel,
+            resolvedDue,
+            resolvedSent,
+            s.status || 'OPEN',
+            resolvedOwner,
+            resolvedCreatedBy,
+            s.closed_at || null,
+            s.closed_by || null,
+            s.closed_source || null,
+            s.closed_level || null,
+            s.downgraded ? 1 : 0,
+            s.reminder_state || null,
+            s.unreach_count || 0,
+            resolvedCreatedAt,
+            now
+          );
+        }
 
         // Enqueue event to CCE Outbox
         enqueueStepEvent({
           id: s.id,
-          patient_id: s.patient_id,
+          patient_id: resolvedPatientId,
           cat: resolvedCat,
           level: resolvedLevel,
           due: resolvedDue,
           sent_at: resolvedSent,
-          status: s.status || 'OPEN',
+          status: s.status || existing?.status || 'OPEN',
           owner_role: resolvedOwner,
-          closed_at: s.closed_at,
-          closed_by: s.closed_by,
-          closed_source: s.closed_source,
-          closed_level: s.closed_level,
+          closed_at: s.closed_at || existing?.closed_at || null,
+          closed_by: s.closed_by || existing?.closed_by || null,
+          closed_source: s.closed_source || existing?.closed_source || null,
+          closed_level: s.closed_level || existing?.closed_level || null,
         });
         enqueuedCount++;
       }

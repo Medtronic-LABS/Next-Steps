@@ -31,3 +31,14 @@ export function updateSession(session: ConversationSession): void {
 export function clearSession(phoneNumber: string): void {
   sessions.delete(phoneNumber);
 }
+
+export function resetSession(session: ConversationSession): void {
+  session.currentState = 'IDLE';
+  session.patientId = undefined;
+  session.stepId = undefined;
+  session.stagedAction = undefined;
+  session.stagedSteps = undefined;
+  session.stagedRegistration = undefined;
+  session.lastActiveAt = Date.now();
+  sessions.set(session.phoneNumber, session);
+}
