@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config.js';
 
@@ -15,6 +16,7 @@ export interface NextStepRecord {
   closed_source?: string | null;
   closed_level?: string | null;
   facility_id?: string | null;
+  plan_version?: string | null;
 }
 
 export interface CloudEventPayload {
@@ -33,10 +35,18 @@ export interface CloudEventPayload {
 /**
  * Transforms a Next-Steps care step into an official CloudEvents 1.0 FHIR Task envelope
  * accepted by the CCE Collector Service.
+ *
+ * Uses deterministic SHA-256 derived identifiers to ensure stable idempotency across
+ * retries and outbox republishing.
  */
 export function transformStepToCloudEvent(step: NextStepRecord, patientUpid?: string): CloudEventPayload {
-  const eventId = `evt-${step.id.slice(0, 20)}-${Date.now().toString(36)}`;
-  const correlationId = `corr-${uuidv4().slice(0, 16)}`;
+  const hashKey = `${step.patient_id}:${step.id}:${step.status}:${step.closed_at || ''}`;
+  const hash = crypto.createHash('sha256').update(hashKey).digest('hex').substring(0, 16);
+  const eventId = `evt-${step.id.slice(0, 16)}-${hash}`;
+
+  const corrHash = crypto.createHash('sha256').update(`${step.patient_id}:${step.id}`).digest('hex').substring(0, 16);
+  const correlationId = `corr-${corrHash}`;
+
   const nowIso = new Date().toISOString();
   const upid = patientUpid || `Patient/${step.patient_id}`;
 
@@ -119,8 +129,10 @@ function getCategoryDisplay(cat: string): string {
 }
 
 export function transformPatientToCloudEvent(patient: any): CloudEventPayload {
-  const eventId = `evt-pat-${patient.id.slice(0, 20)}-${Date.now().toString(36)}`;
-  const correlationId = `corr-${uuidv4().slice(0, 16)}`;
+  const patHash = crypto.createHash('sha256').update(`patient:${patient.id}:${patient.status || ''}`).digest('hex').substring(0, 16);
+  const eventId = `evt-pat-${patient.id.slice(0, 16)}-${patHash}`;
+  const correlationId = `corr-${patHash}`;
+
   const nowIso = new Date().toISOString();
   const upid = `Patient/${patient.id}`;
 
@@ -151,4 +163,3 @@ export function transformPatientToCloudEvent(patient: any): CloudEventPayload {
     data: fhirPatient,
   };
 }
-
