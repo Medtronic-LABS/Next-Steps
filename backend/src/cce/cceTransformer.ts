@@ -17,6 +17,11 @@ export interface NextStepRecord {
   closed_level?: string | null;
   facility_id?: string | null;
   plan_version?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  notes?: string | null;
+  successor_step_id?: string | null;
+  successor_plan_version?: string | null;
 }
 
 export interface CloudEventPayload {
@@ -29,6 +34,7 @@ export interface CloudEventPayload {
   datacontenttype: string;
   facilityid: string;
   correlationid: string;
+  planversion?: string;
   data: Record<string, any>;
 }
 
@@ -37,10 +43,24 @@ export interface CloudEventPayload {
  * accepted by the CCE Collector Service.
  *
  * Uses deterministic SHA-256 derived identifiers to ensure stable idempotency across
- * retries and outbox republishing.
+ * retries while distinguishing legitimate updates (rescheduling, notes, status changes)
+ * per Finding D2.
  */
 export function transformStepToCloudEvent(step: NextStepRecord, patientUpid?: string): CloudEventPayload {
-  const hashKey = `${step.patient_id}:${step.id}:${step.status}:${step.closed_at || ''}`;
+  const planVersion = step.plan_version || '1.0';
+
+  // Include mutable fields (due, updated_at/closed_at, notes, plan_version) to ensure
+  // distinct events on legitimate modifications while preserving identical eventId on retries
+  const contentTokens = [
+    step.patient_id,
+    step.id,
+    step.status,
+    step.due || '',
+    step.updated_at || step.closed_at || step.created_at || '',
+    step.notes || step.closed_source || '',
+    planVersion,
+  ];
+  const hashKey = contentTokens.join(':');
   const hash = crypto.createHash('sha256').update(hashKey).digest('hex').substring(0, 16);
   const eventId = `evt-${step.id.slice(0, 16)}-${hash}`;
 
@@ -52,9 +72,19 @@ export function transformStepToCloudEvent(step: NextStepRecord, patientUpid?: st
 
   const fhirTaskStatus = step.status === 'DONE' ? 'completed' : step.status === 'CANCELLED' ? 'cancelled' : 'requested';
 
-  const fhirTask = {
+  const fhirTask: Record<string, any> = {
     resourceType: 'Task',
     id: `task-${step.id}`,
+    identifier: [
+      {
+        system: 'http://openphc.org/identifiers/step-id',
+        value: step.id,
+      },
+      {
+        system: 'http://openphc.org/identifiers/plan-version',
+        value: planVersion,
+      },
+    ],
     status: fhirTaskStatus,
     intent: 'order',
     code: {
@@ -84,13 +114,33 @@ export function transformStepToCloudEvent(step: NextStepRecord, patientUpid?: st
     owner: {
       display: step.owner_role,
     },
-    note: step.closed_source
+    note: (step.notes || step.closed_source)
       ? [
           {
-            text: `Closed via ${step.closed_source} at ${step.closed_level || step.level} by ${step.closed_by || 'Staff'}`,
+            text: step.closed_source
+              ? `Closed via ${step.closed_source} at ${step.closed_level || step.level} by ${step.closed_by || 'Staff'}${step.notes ? ` - ${step.notes}` : ''}`
+              : step.notes || '',
           },
         ]
       : undefined,
+    extension: [
+      {
+        url: 'http://openphc.org/fhir/StructureDefinition/plan-version',
+        valueString: planVersion,
+      },
+      ...(step.successor_step_id
+        ? [
+            {
+              url: 'http://openphc.org/fhir/StructureDefinition/successor-step-id',
+              valueString: step.successor_step_id,
+            },
+            {
+              url: 'http://openphc.org/fhir/StructureDefinition/successor-plan-version',
+              valueString: step.successor_plan_version || '',
+            },
+          ]
+        : []),
+    ],
   };
 
   return {
@@ -103,8 +153,41 @@ export function transformStepToCloudEvent(step: NextStepRecord, patientUpid?: st
     datacontenttype: 'application/json',
     facilityid: `facility/${step.facility_id || step.level}`,
     correlationid: correlationId,
+    planversion: planVersion,
     data: fhirTask,
   };
+}
+
+/**
+ * Resolves offline task completion reconciliation when a plan replacement has occurred (K1).
+ * Maps completed tasks from prior plan versions (e.g. V1) to matching active successor
+ * tasks in the newly active plan version (e.g. V2) based on equivalent category and clinical tier.
+ */
+export function reconcileOfflineStepCompletion(
+  offlineCompletedStep: NextStepRecord,
+  activePlanSteps: NextStepRecord[],
+  activePlanVersion: string
+): { reconciledStep: NextStepRecord; matchedSuccessor?: NextStepRecord } {
+  // If the completed step is already on the active version, no reconciliation needed
+  if (!offlineCompletedStep.plan_version || offlineCompletedStep.plan_version === activePlanVersion) {
+    return { reconciledStep: offlineCompletedStep };
+  }
+
+  // Find corresponding open task in the active replacement plan with matching category
+  const matchingSuccessor = activePlanSteps.find(
+    (s) => s.status === 'OPEN' && s.cat === offlineCompletedStep.cat
+  );
+
+  if (matchingSuccessor) {
+    const updatedStep: NextStepRecord = {
+      ...offlineCompletedStep,
+      successor_step_id: matchingSuccessor.id,
+      successor_plan_version: activePlanVersion,
+    };
+    return { reconciledStep: updatedStep, matchedSuccessor: matchingSuccessor };
+  }
+
+  return { reconciledStep: offlineCompletedStep };
 }
 
 function getCategoryDisplay(cat: string): string {
@@ -154,7 +237,7 @@ export function transformPatientToCloudEvent(patient: any): CloudEventPayload {
     specversion: '1.0',
     id: eventId,
     source: config.cce.sourceSystem,
-    type: 'org.openphc.cce.patient.created',
+    type: 'org.openphc.cce.task',
     subject: upid,
     time: nowIso,
     datacontenttype: 'application/json',
