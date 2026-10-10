@@ -219,12 +219,16 @@ export function transformPatientToCloudEvent(patient: any): CloudEventPayload {
   const nowIso = new Date().toISOString();
   const upid = `Patient/${patient.id}`;
 
+  // SEC-07: Mask patient PII/demographics in CloudEvents
+  const maskedName = patient.name ? patient.name.charAt(0) + '***' : undefined;
+  const maskedPhone = patient.phone && patient.phone.length > 4 ? '***' + patient.phone.slice(-4) : undefined;
+
   const fhirPatient = {
     resourceType: 'Patient',
     id: patient.id,
     active: true,
-    name: [{ text: patient.name }],
-    telecom: patient.phone ? [{ system: 'phone', value: patient.phone }] : undefined,
+    name: maskedName ? [{ text: maskedName }] : undefined,
+    telecom: maskedPhone ? [{ system: 'phone', value: maskedPhone }] : undefined,
     address: [{ city: patient.village_name, state: 'Madhya Pradesh' }],
     extension: [
       { url: 'http://openphc.org/fhir/service', valueString: patient.service },

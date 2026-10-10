@@ -4,6 +4,7 @@ import {
   NextStepRecord,
   transformStepToCloudEvent,
   reconcileOfflineStepCompletion,
+  transformPatientToCloudEvent,
 } from './cceTransformer.js';
 
 describe('cceTransformer - D2 Event Identity & K1 Plan Version', () => {
@@ -153,6 +154,21 @@ describe('cceTransformer - D2 Event Identity & K1 Plan Version', () => {
       (e: any) => e.url === 'http://openphc.org/fhir/StructureDefinition/successor-step-id'
     );
     assert.ok(successorExtension, 'CloudEvent must include successor-step-id extension');
-    assert.equal(successorExtension.valueString, 'step-v2-001');
+        assert.equal(successorExtension.valueString, 'step-v2-001');
+  });
+
+  it('SEC-07: minimizes and masks patient demographics in CloudEvents', () => {
+    const rawPatient = {
+      id: 'pat-99999',
+      name: 'Rekha Devi',
+      phone: '+919876543210',
+      village_name: 'Pipliya',
+      service: 'ANC',
+      status: 'HIGH_RISK',
+      consent_whatsapp: true,
+    };
+    const event = transformPatientToCloudEvent(rawPatient);
+    assert.equal(event.data.name[0].text, 'R***');
+    assert.equal(event.data.telecom[0].value, '***3210');
   });
 });
