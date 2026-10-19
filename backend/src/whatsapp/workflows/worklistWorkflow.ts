@@ -17,7 +17,9 @@ export function handleWorklist(to: string, user: WhatsAppUser, lang: 'hi' | 'en'
     query += ` AND (s.owner_role = 'anm' OR p.subcentre_id = ?)`;
     params.push(user.facility_id || 'FAC-SC-GHU');
   } else if (user.role === 'phc_sn' || user.role === 'phc_mo') {
-    query += ` AND (s.level = 'PHC' OR p.subcentre_id IN (SELECT id FROM facilities WHERE block = 'Sirmour'))`;
+    // The user's own block (was hardcoded 'Sirmour'), so PHC staff anywhere see their own sub-centres.
+    query += ` AND (s.level = 'PHC' OR p.subcentre_id IN (SELECT id FROM facilities WHERE block = (SELECT block FROM facilities WHERE id = ?)))`;
+    params.push(user.facility_id || 'FAC-PHC-SIR');
   } else if (user.role === 'chc_sn' || user.role === 'chc_mo') {
     query += ` AND (s.level = 'CHC' OR s.owner_role LIKE 'chc%')`;
   }

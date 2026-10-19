@@ -148,6 +148,39 @@ export function initDatabase() {
 
   seedInitialData();
   syncTestPhoneNumbers();
+  ensureOpenDemoReferrals();
+
+  // CPHC demo (Ballabgarh block): users and patients from the demo app reference these facility ids.
+  const demoFacility = db.prepare(`
+    INSERT OR IGNORE INTO facilities (id, name, short_name, level, nin_code, block, district, services, created_at)
+    VALUES (?, ?, ?, ?, ?, 'Ballabgarh', 'Faridabad', ?, ?)
+  `);
+  for (const [id, name, short, level] of [
+    ['FAC-SC-CHW', 'Sub-centre Chandawali', 'SC Chandawali', 'SUBCENTRE'],
+    ['FAC-PHC-DYP', 'PHC Dayalpur', 'PHC Dayalpur', 'PHC'],
+    ['FAC-CHC-BLB', 'CHC Ballabgarh', 'CHC Ballabgarh', 'CHC'],
+  ]) {
+    demoFacility.run(id, name, short, level, `NIN-HR-${id.slice(-3)}`, JSON.stringify(['ANC', 'PNC', 'NCD']), new Date().toISOString());
+  }
+}
+
+export function ensureOpenDemoReferrals() {
+  try {
+    const chcCount = db.prepare(`SELECT COUNT(*) as c FROM steps WHERE status = 'OPEN' AND cat = 'REFERRAL' AND level = 'CHC'`).get() as { c: number };
+    if (!chcCount || chcCount.c === 0) {
+      const now = new Date().toISOString();
+      const today = now.slice(0, 10);
+      db.prepare(`
+        INSERT OR REPLACE INTO steps (id, patient_id, cat, level, due, sent_at, status, owner_role, created_at, updated_at)
+        VALUES 
+          ('step-lakshmi-ref', 'w2', 'REFERRAL', 'CHC', ?, ?, 'OPEN', 'anm', ?, ?),
+          ('step-sunita-ref', 'w1', 'REFERRAL', 'CHC', ?, ?, 'OPEN', 'anm', ?, ?)
+      `).run(today, today, now, now, today, today, now, now);
+      console.log('[Database] Seeded active open CHC referrals for demo.');
+    }
+  } catch (err: any) {
+    console.warn('[Database] ensureOpenDemoReferrals note:', err?.message || err);
+  }
 }
 
 export function syncTestPhoneNumbers() {

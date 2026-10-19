@@ -2,12 +2,29 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '../../db/index.js';
 import { OutboundMessage, WhatsAppUser } from '../types.js';
 import { enqueueStepEvent } from '../../cce/outboxWorker.js';
+import { config } from '../../config.js';
 
 export function promptNextStepCategories(to: string, patientId: string, stagedCount = 0, lang: 'hi' | 'en' = 'hi'): OutboundMessage {
   const patient = db.prepare('SELECT * FROM patients WHERE id = ?').get(patientId) as any;
   const name = patient ? patient.name : 'the patient';
   const service = patient ? patient.service : 'ANC';
   const isEn = lang === 'en';
+
+  if (config.whatsapp.flowIdReferral) {
+    return {
+      kind: 'flow',
+      to,
+      header: `Prescribe: ${name}`.slice(0, 60),
+      body: isEn
+        ? `Tap below to open the care prescription form for *${name}*:`
+        : `*${name}* के लिए अगला केयर स्टेप या रेफरल निर्धारित करने हेतु नीचे फॉर्म खोलें:`,
+      footer: 'Next Steps Care Coordination',
+      flowId: config.whatsapp.flowIdReferral,
+      flowCta: isEn ? 'Prescribe Step' : 'स्टेप तय करें',
+      screen: 'REFERRAL',
+      flowMode: 'published',
+    };
+  }
 
   let sections: any[] = [];
 

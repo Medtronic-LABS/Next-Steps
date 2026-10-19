@@ -15,8 +15,9 @@ export function enqueueStepEvent(step: NextStepRecord, patientUpid?: string): st
   const outboxId = uuidv4();
   const now = new Date().toISOString();
 
+  // OR IGNORE: re-pushing with the same status yields the same deterministic event_id; that is a no-op, not a 500.
   const stmt = db.prepare(`
-    INSERT INTO cce_event_outbox (
+    INSERT OR IGNORE INTO cce_event_outbox (
       id, event_id, cloud_events_id, event_type, subject, facility_id,
       correlation_id, payload, status, attempts, created_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 0, ?)
@@ -46,8 +47,9 @@ export function enqueuePatientEvent(patient: any): string {
   const outboxId = uuidv4();
   const now = new Date().toISOString();
 
+  // OR IGNORE: re-pushing with the same status yields the same deterministic event_id; that is a no-op, not a 500.
   const stmt = db.prepare(`
-    INSERT INTO cce_event_outbox (
+    INSERT OR IGNORE INTO cce_event_outbox (
       id, event_id, cloud_events_id, event_type, subject, facility_id,
       correlation_id, payload, status, attempts, created_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 0, ?)

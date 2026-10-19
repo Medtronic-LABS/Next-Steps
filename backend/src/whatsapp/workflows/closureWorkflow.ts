@@ -1,6 +1,7 @@
 import { db } from '../../db/index.js';
 import { OutboundMessage, WhatsAppUser } from '../types.js';
 import { enqueueStepEvent } from '../../cce/outboxWorker.js';
+import { config } from '../../config.js';
 
 /**
  * When a patient has multiple open steps, prompts the user to select which specific step to close.
@@ -70,6 +71,22 @@ export function promptClosureProvenance(to: string, stepId: string, lang: 'hi' |
   const stepLevel = step ? ` (${step.level})` : '';
   const isEn = lang === 'en';
   const dueInfo = step?.due ? (isEn ? ` · Due: ${step.due}` : ` · तारीख: ${step.due}`) : '';
+
+  if (config.whatsapp.flowIdClosure) {
+    return {
+      kind: 'flow',
+      to,
+      header: `Close: ${stepCat}`.slice(0, 60),
+      body: isEn
+        ? `Tap below to record care completion and outcome for *${patientName}*:`
+        : `*${patientName}* के लिए सेवा पूर्णता और डॉक्टर परामर्श दर्ज करने हेतु फॉर्म खोलें:`,
+      footer: 'Next Steps Care Coordination',
+      flowId: config.whatsapp.flowIdClosure,
+      flowCta: isEn ? 'Close Referral' : 'रेफरल बंद करें',
+      screen: 'CLOSURE',
+      flowMode: 'published',
+    };
+  }
 
   return {
     kind: 'list',

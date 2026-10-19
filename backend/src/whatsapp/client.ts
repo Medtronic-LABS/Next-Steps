@@ -93,7 +93,7 @@ export class MetaWhatsAppClient implements WhatsAppClient {
               flow_action_payload: {
                 screen: msg.screen || 'PRESCRIBE_SCREEN',
               },
-              mode: msg.flowMode || 'draft',
+              mode: msg.flowMode || 'published',
             },
           },
         },
@@ -132,11 +132,12 @@ export class MockWhatsAppClient implements WhatsAppClient {
 
 let customClient: WhatsAppClient | null = null;
 
-export function getWhatsAppClient(): WhatsAppClient {
+export function getWhatsAppClient(overridePhoneId?: string): WhatsAppClient {
   if (customClient) return customClient;
 
-  if (config.whatsapp.phoneNumberId && config.whatsapp.accessToken) {
-    return new MetaWhatsAppClient(config.whatsapp.phoneNumberId, config.whatsapp.accessToken);
+  const phoneId = overridePhoneId || config.whatsapp.phoneNumberId;
+  if (phoneId && config.whatsapp.accessToken) {
+    return new MetaWhatsAppClient(phoneId, config.whatsapp.accessToken);
   }
 
   return new MockWhatsAppClient();

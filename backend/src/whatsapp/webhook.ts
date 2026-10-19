@@ -112,6 +112,7 @@ whatsappRouter.post(['/', '/webhook'], async (req: Request, res: Response) => {
       for (const change of entry.changes || []) {
         const value = change.value;
         if (!value || !value.messages) continue;
+        const incomingPhoneId = value.metadata?.phone_number_id;
 
         for (const msg of value.messages) {
           if (!msg) continue;
@@ -132,7 +133,7 @@ whatsappRouter.post(['/', '/webhook'], async (req: Request, res: Response) => {
               console.log(`[WhatsApp Webhook] Inbound from ${inbound.from} (kind: ${inbound.kind}):`, inbound.text || inbound.replyId);
 
               const responses = await routeInboundMessage(inbound);
-              const client = getWhatsAppClient();
+              const client = getWhatsAppClient(incomingPhoneId);
 
               for (const resp of responses) {
                 console.log(`[WhatsApp Webhook] Sending outbound response to ${resp.to}...`);

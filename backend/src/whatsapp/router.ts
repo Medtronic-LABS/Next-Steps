@@ -46,6 +46,13 @@ const EVENTS_KEYWORDS = new Set(['events', 'event log', 'cce log', 'log', 'audit
 const RESET_KEYWORDS = new Set(['reset demo', 'reset', 'restart demo']);
 const LANG_KEYWORDS = new Set(['language', 'lang', 'भाषा', 'bhasha', 'change language', 'select language']);
 
+// Demo safety: allow test phones and admin phones to switch roles or reset data.
+function isAdminPhone(phone: string): boolean {
+  if (!process.env.ADMIN_PHONES) return true;
+  const last10 = (p: string) => p.replace(/\D/g, '').slice(-10);
+  return (process.env.ADMIN_PHONES || '').split(',').some((p) => p.trim() && last10(p) === last10(phone));
+}
+
 export async function routeInboundMessage(message: InboundMessage): Promise<OutboundMessage[]> {
   const to = message.from;
   let user = resolveSender(to);
@@ -63,12 +70,21 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     ];
   }
 
-  const userLang = (user.preferred_lang as 'hi' | 'en') || 'hi';
+  const userLang = (user.preferred_lang as 'hi' | 'en') || 'en';
   const session = getSession(to, user.id, userLang);
-  const lang = session.lang || userLang;
+  let lang = session.lang || userLang;
   const replyId = message.replyId || '';
   const rawText = (message.text || '').trim();
   const lower = rawText.toLowerCase();
+
+  // Smart English greeting detection: if user types an English greeting, default to English
+  if (['hi', 'hello', 'start', 'hey'].includes(lower)) {
+    lang = 'en';
+    session.lang = 'en';
+  } else if (['namaste', 'नमस्ते'].includes(lower)) {
+    lang = 'hi';
+    session.lang = 'hi';
+  }
 
   // --- Language Selection (English / Hindi Toggle) ---
   if (LANG_KEYWORDS.has(lower) || replyId === 'CMD_LANG') {
@@ -117,6 +133,18 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
         ],
       },
     ];
+  }
+
+  const wantsRoleOrReset = RESET_KEYWORDS.has(lower) || replyId === 'CMD_RESET_DEMO' || replyId.startsWith('ROLE_')
+    || /^(role|switch)\b/.test(lower);
+  if (wantsRoleOrReset && !isAdminPhone(user.phone)) {
+    return [{
+      kind: 'text',
+      to,
+      body: lang === 'en'
+        ? 'Only the demo admin can change roles or reset demo data.'
+        : 'केवल डेमो एडमिन रोल बदल सकते हैं या डेमो डेटा रीसेट कर सकते हैं।',
+    }];
   }
 
   // --- Role Switching for Seamless Demo Walkthrough (PRD Section 1 & 18) ---
@@ -239,8 +267,127 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   if (message.kind === 'flow_reply') {
     const res = message.flowResponse || {};
 
-    // 1. Prescribe Next Step Flow (Operational - Zero PII)
-    if (res.category) {
+    // 1. Referral Closure & Provenance Flow
+    if (res.kind === 'close_referral' || res.provenance) {
+      const provenance = res.provenance || 'AT_REFERRED_FACILITY';
+      const outcome = res.outcome || 'RESOLVED';
+      const advice = res.advice || '';
+      const patientId = session.patientId || 'w2';
+
+      // Find the most relevant open step for this patient
+      let step = session.stepId
+        ? db.prepare('SELECT * FROM steps WHERE id = ?').get(session.stepId)
+        : db.prepare(`SELECT * FROM steps WHERE patient_id = ? AND status = 'OPEN' ORDER BY created_at DESC LIMIT 1`).get(patientId);
+
+      const now = new Date().toISOString();
+      const stepId = step?.id || `step-${uuidv4().slice(0, 8)}`;
+
+      if (step) {
+        db.prepare(`
+          UPDATE steps
+          SET status = 'CLOSED', closed_at = ?, closed_by = ?, closed_source = ?, updated_at = ?
+          WHERE id = ?
+        `).run(now, user.name, provenance, now, step.id);
+        try {
+          enqueueStepEvent({ ...step, status: 'CLOSED', closed_at: now, closed_source: provenance }, patientId);
+        } catch (e) {}
+      }
+
+      db.prepare(`
+        INSERT INTO audit_logs (id, user_id, user_name, action, details, timestamp)
+        VALUES (?, ?, ?, 'STEP_CLOSED_FLOW', ?, ?)
+      `).run(
+        `aud-${uuidv4().slice(0, 8)}`,
+        user.id,
+        user.name,
+        `Closed step ${stepId} via WhatsApp Flow (Provenance: ${provenance}, Outcome: ${outcome})`,
+        now
+      );
+
+      const patient = db.prepare('SELECT name FROM patients WHERE id = ?').get(patientId) as any;
+      const provLabels: Record<string, string> = {
+        AT_REFERRED_FACILITY: 'Referred Public Facility',
+        OTHER_PUBLIC_FACILITY: 'Other Govt Hospital',
+        PRIVATE_FACILITY: 'Private Hospital / Clinic',
+        NOT_ATTENDED: 'Not Attended / Refused'
+      };
+
+      return [
+        {
+          kind: 'buttons',
+          to,
+          header: 'Referral Loop Closed',
+          body:
+            `✅ *Referral Loop Closed via WhatsApp Flow!*\n\n` +
+            `• *Patient:* ${patient?.name || 'Patient'}\n` +
+            `• *Where Evaluated:* ${provLabels[provenance] || provenance}\n` +
+            `• *Outcome:* ${outcome.replace(/_/g, ' ')}\n` +
+            (advice ? `• *Advice:* ${advice}\n` : '') +
+            `\nThe closed-loop record has been saved and synced with CCE.`,
+          buttons: [
+            { id: 'CMD_WORKLIST', title: 'Worklist' },
+            { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
+            { id: 'CMD_MENU', title: 'Main Menu' },
+          ],
+        },
+      ];
+    }
+
+    // 2. ANC Clinical Checklist & Vitals Flow
+    if (res.kind === 'anc_checklist' || res.visit_number) {
+      const visit = (res.visit_number || 'ANC_1').replace(/_/g, ' ');
+      const sbp = parseInt(res.systolic_bp || '120', 10);
+      const dbp = parseInt(res.diastolic_bp || '80', 10);
+      const wt = parseFloat(res.weight_kg || '50');
+      const hb = parseFloat(res.hb_level || '11');
+      const dangerSigns = Array.isArray(res.danger_signs) ? res.danger_signs.join(', ') : (res.danger_signs || 'None');
+      const patientId = session.patientId || 'w2';
+
+      const isHighRisk = sbp >= 140 || dbp >= 90 || hb < 8.0 || (dangerSigns !== 'None' && dangerSigns.length > 0);
+      const now = new Date().toISOString();
+
+      if (isHighRisk) {
+        db.prepare(`UPDATE patients SET status = 'HRP' WHERE id = ?`).run(patientId);
+      }
+
+      db.prepare(`
+        INSERT INTO audit_logs (id, user_id, user_name, action, details, timestamp)
+        VALUES (?, ?, ?, 'ANC_VISIT_RECORDED_FLOW', ?, ?)
+      `).run(
+        `aud-${uuidv4().slice(0, 8)}`,
+        user.id,
+        user.name,
+        `Recorded ${visit} for patient ${patientId} (BP: ${sbp}/${dbp}, Hb: ${hb}, Weight: ${wt}kg, Danger: ${dangerSigns})`,
+        now
+      );
+
+      const patient = db.prepare('SELECT name FROM patients WHERE id = ?').get(patientId) as any;
+
+      return [
+        {
+          kind: 'buttons',
+          to,
+          header: `${visit} Recorded`,
+          body:
+            `🩺 *${visit} Checkup Saved via WhatsApp Flow!*\n\n` +
+            `• *Patient:* ${patient?.name || 'Patient'}\n` +
+            `• *Blood Pressure:* ${sbp}/${dbp} mmHg ${sbp >= 140 ? '⚠️ High' : '🟢 Normal'}\n` +
+            `• *Hemoglobin:* ${hb} g/dL ${hb < 9 ? '⚠️ Low' : '🟢 Normal'}\n` +
+            `• *Weight:* ${wt} kg\n` +
+            `• *Danger Signs:* ${dangerSigns}\n` +
+            `• *Status:* ${isHighRisk ? '🔴 High Risk Pregnancy (HRP Flagged)' : '🟢 Routine Care'}\n\n` +
+            (isHighRisk ? `⚠️ *Action Required:* Prescribe referral or doctor consultation immediately.` : `Care records updated.`),
+          buttons: [
+            { id: `ACTION_ADD_STEP_${patientId}`, title: '➕ Prescribe Step' },
+            { id: `SEL_PATIENT_${patientId}`, title: '👤 View Patient' },
+            { id: 'CMD_WORKLIST', title: 'Worklist' },
+          ],
+        },
+      ];
+    }
+
+    // 3. Prescribe Next Step Flow (Operational - Zero PII)
+    if (res.kind === 'prescribe_step' || res.category) {
       const category = res.category;
       const level = res.target_level || 'CHC';
       const days = parseInt(res.timeframe_days || '3', 10);
@@ -442,12 +589,118 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     ];
   }
 
+  // --- Dedicated WhatsApp Flow Showcase Menu & Triggers ---
+  if (lower === 'flows' || lower === 'flow' || lower === 'forms' || replyId === 'CMD_SHOW_FLOWS') {
+    return [
+      {
+        kind: 'list',
+        to,
+        header: 'WhatsApp Flows Demo',
+        body: lang === 'en'
+          ? `🌟 *Next Steps Interactive WhatsApp Forms*\n\nSelect any form below to open the native Meta WhatsApp Flow modal directly:`
+          : `🌟 *Next Steps इंटरएक्टिव व्हाट्सएप फॉर्म*\n\nसीधे व्हाट्सएप फ्लो खोलने के लिए नीचे कोई भी फॉर्म चुनें:`,
+        buttonText: lang === 'en' ? 'Open Form Menu' : 'फॉर्म चुनें',
+        sections: [
+          {
+            title: lang === 'en' ? 'Available WhatsApp Flows' : 'उपलब्ध व्हाट्सएप फॉर्म',
+            rows: [
+              {
+                id: 'LAUNCH_FLOW_REG',
+                title: lang === 'en' ? '1. Patient Registration' : '1. मरीज़ पंजीकरण',
+                description: lang === 'en' ? 'Maternal intake, DPDP consent, risk assessment' : 'गर्भवती महिला पंजीकरण व सहमति',
+              },
+              {
+                id: 'LAUNCH_FLOW_ANC',
+                title: lang === 'en' ? '2. ANC Clinical Vitals' : '2. ANC जाँच व वाइटल्स',
+                description: lang === 'en' ? 'Record BP, weight, Hb, and danger signs' : 'बीपी, वज़न, हीमोग्लोबिन और लक्षण',
+              },
+              {
+                id: 'LAUNCH_FLOW_REF',
+                title: lang === 'en' ? '3. Prescribe Referral' : '3. रेफरल / अगला स्टेप',
+                description: lang === 'en' ? 'Refer for Ultrasound / High-Risk care' : 'अल्ट्रासाउंड व विशेषज्ञ रेफरल',
+              },
+              {
+                id: 'LAUNCH_FLOW_CLOSE',
+                title: lang === 'en' ? '4. Close Referral Loop' : '4. रेफरल लूप क्लोज़र',
+                description: lang === 'en' ? 'Record provenance, outcome & doctor notes' : 'अस्पताल उपस्थिति व परामर्श परिणाम',
+              },
+            ],
+          },
+        ],
+      },
+    ];
+  }
+
+  // Launch ANC Checklist Flow
+  if (lower === 'anc' || lower === 'vitals' || replyId === 'LAUNCH_FLOW_ANC') {
+    if (config.whatsapp.flowIdAnc) {
+      return [
+        {
+          kind: 'flow',
+          to,
+          header: 'ANC Clinical Checklist',
+          body: lang === 'en'
+            ? `Tap below to record maternal vitals (BP, weight, Hb) and danger signs:`
+            : `गर्भवती महिला के वाइटल्स और जाँच दर्ज करने के लिए फॉर्म खोलें:`,
+          footer: 'Next Steps Care Coordination',
+          flowId: config.whatsapp.flowIdAnc,
+          flowCta: lang === 'en' ? 'Record ANC Vitals' : 'ANC जाँच दर्ज करें',
+          screen: 'ANC_CHECKLIST',
+          flowMode: 'published',
+        },
+      ];
+    }
+  }
+
+  // Launch Prescribe Referral Flow
+  if (lower === 'refer' || lower === 'prescribe' || replyId === 'LAUNCH_FLOW_REF') {
+    if (config.whatsapp.flowIdReferral) {
+      return [
+        {
+          kind: 'flow',
+          to,
+          header: 'Prescribe Next Step',
+          body: lang === 'en'
+            ? `Tap below to prescribe a care step or facility referral:`
+            : `केयर स्टेप या रेफरल निर्धारित करने के लिए फॉर्म खोलें:`,
+          footer: 'Next Steps Care Coordination',
+          flowId: config.whatsapp.flowIdReferral,
+          flowCta: lang === 'en' ? 'Prescribe Referral' : 'रेफरल जारी करें',
+          screen: 'REFERRAL',
+          flowMode: 'published',
+        },
+      ];
+    }
+  }
+
+  // Launch Close Referral Loop Flow
+  if (lower === 'close' || lower === 'closure' || replyId === 'LAUNCH_FLOW_CLOSE') {
+    if (config.whatsapp.flowIdClosure) {
+      return [
+        {
+          kind: 'flow',
+          to,
+          header: 'Close Referral Loop',
+          body: lang === 'en'
+            ? `Tap below to record referral care delivery, provenance and clinical outcome:`
+            : `रेफरल लूप क्लोज़र, उपस्थिति और परिणाम दर्ज करने के लिए फॉर्म खोलें:`,
+          footer: 'Next Steps Care Coordination',
+          flowId: config.whatsapp.flowIdClosure,
+          flowCta: lang === 'en' ? 'Close Referral' : 'रेफरल बंद करें',
+          screen: 'CLOSURE',
+          flowMode: 'published',
+        },
+      ];
+    }
+  }
+
   // --- Registration Flow (PRD Section 2 & 3) ---
   if (
     lower === 'register' ||
     lower === 'new patient' ||
     lower === 'add patient' ||
-    replyId === 'CMD_REGISTER_START'
+    replyId === 'CMD_REGISTER_START' ||
+    replyId === 'LAUNCH_FLOW_REG'
   ) {
     // If a Meta Flow ID is configured, trigger the native WhatsApp Flow modal!
     if (config.whatsapp.flowIdRegistration) {
@@ -456,11 +709,14 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
           kind: 'flow',
           to,
           header: 'Patient Intake',
-          body: `Tap below to open the official registration form and intake patient details:`,
+          body: lang === 'en'
+            ? `Tap below to open the official registration form and intake patient details:`
+            : `मरीज़ पंजीकरण फॉर्म खोलने के लिए नीचे टैप करें:`,
           footer: 'Next Steps Care Coordination',
           flowId: config.whatsapp.flowIdRegistration,
-          flowCta: 'Register Patient',
-          screen: 'REGISTER_SCREEN',
+          flowCta: lang === 'en' ? 'Register Patient' : 'पंजीकरण शुरू करें',
+          screen: 'DEMOGRAPHICS',
+          flowMode: 'published',
         },
       ];
     }
