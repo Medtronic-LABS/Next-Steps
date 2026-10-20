@@ -316,17 +316,15 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
         {
           kind: 'buttons',
           to,
-          header: 'Referral Loop Closed',
+          header: 'Referral Closed',
           body:
-            `✅ *Referral Loop Closed via WhatsApp Flow!*\n\n` +
-            `• *Patient:* ${patient?.name || 'Patient'}\n` +
-            `• *Where Evaluated:* ${provLabels[provenance] || provenance}\n` +
-            `• *Outcome:* ${outcome.replace(/_/g, ' ')}\n` +
-            (advice ? `• *Advice:* ${advice}\n` : '') +
-            `\nThe closed-loop record has been saved and synced with CCE.`,
+            `✅ *${patient?.name || 'Patient'}*\n` +
+            `• Seen: ${provLabels[provenance] || provenance}` +
+            (outcome ? `\n• Outcome: ${outcome.replace(/_/g, ' ')}` : '') +
+            (advice ? `\n• Notes: ${advice}` : ''),
           buttons: [
+            { id: 'CMD_ARRIVALS', title: 'Expected Arrivals' },
             { id: 'CMD_WORKLIST', title: 'Worklist' },
-            { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
             { id: 'CMD_MENU', title: 'Main Menu' },
           ],
         },
@@ -336,8 +334,17 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     // 2. ANC Clinical Checklist & Vitals Flow
     if (res.kind === 'anc_checklist' || res.visit_number) {
       const visit = (res.visit_number || 'ANC_1').replace(/_/g, ' ');
-      const sbp = parseInt(res.systolic_bp || '120', 10);
-      const dbp = parseInt(res.diastolic_bp || '80', 10);
+      // Parse BP from single blood_pressure string "120/80" or separate sbp/dbp
+      let sbp = 120;
+      let dbp = 80;
+      if (res.blood_pressure) {
+        const parts = String(res.blood_pressure).split(/[\/\s\-]+/);
+        sbp = parseInt(parts[0] || '120', 10);
+        dbp = parseInt(parts[1] || '80', 10);
+      } else {
+        sbp = parseInt(res.systolic_bp || '120', 10);
+        dbp = parseInt(res.diastolic_bp || '80', 10);
+      }
       const wt = parseFloat(res.weight_kg || '50');
       const hb = parseFloat(res.hb_level || '11');
       const dangerSigns = Array.isArray(res.danger_signs) ? res.danger_signs.join(', ') : (res.danger_signs || 'None');
@@ -367,20 +374,15 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
         {
           kind: 'buttons',
           to,
-          header: `${visit} Recorded`,
+          header: `${visit} Saved`,
           body:
-            `🩺 *${visit} Checkup Saved via WhatsApp Flow!*\n\n` +
-            `• *Patient:* ${patient?.name || 'Patient'}\n` +
-            `• *Blood Pressure:* ${sbp}/${dbp} mmHg ${sbp >= 140 ? '⚠️ High' : '🟢 Normal'}\n` +
-            `• *Hemoglobin:* ${hb} g/dL ${hb < 9 ? '⚠️ Low' : '🟢 Normal'}\n` +
-            `• *Weight:* ${wt} kg\n` +
-            `• *Danger Signs:* ${dangerSigns}\n` +
-            `• *Status:* ${isHighRisk ? '🔴 High Risk Pregnancy (HRP Flagged)' : '🟢 Routine Care'}\n\n` +
-            (isHighRisk ? `⚠️ *Action Required:* Prescribe referral or doctor consultation immediately.` : `Care records updated.`),
+            `✅ *${patient?.name || 'Patient'}*\n` +
+            `• BP: ${sbp}/${dbp} mmHg · Hb: ${hb} g/dL\n` +
+            `• Status: ${isHighRisk ? '🔴 High Risk' : '🟢 Normal'}`,
           buttons: [
             { id: `ACTION_ADD_STEP_${patientId}`, title: '➕ Prescribe Step' },
-            { id: `SEL_PATIENT_${patientId}`, title: '👤 View Patient' },
             { id: 'CMD_WORKLIST', title: 'Worklist' },
+            { id: 'CMD_MENU', title: 'Main Menu' },
           ],
         },
       ];
@@ -389,7 +391,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
     // 3. Prescribe Next Step Flow (Operational - Zero PII)
     if (res.kind === 'prescribe_step' || res.category) {
       const category = res.category;
-      const level = res.target_level || 'CHC';
+      const level = res.target_facility || res.target_level || 'CHC';
       const days = parseInt(res.timeframe_days || '3', 10);
       const dueDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const patientId = session.patientId || 'w2';
@@ -422,20 +424,18 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
         new Date().toISOString()
       );
 
-      const outboxId = enqueueStepEvent(stepRecord, patientId);
+      enqueueStepEvent(stepRecord, patientId);
       const patient = db.prepare('SELECT name FROM patients WHERE id = ?').get(patientId) as any;
 
       return [
         {
           kind: 'buttons',
           to,
-          header: 'Next Step Prescribed',
+          header: 'Prescribed',
           body:
-            `✅ *Next Step Created via WhatsApp Flow!*\n\n` +
-            `• *Patient:* ${patient?.name || 'Patient'}\n` +
-            `• *Action:* ${category.replace(/_/g, ' ')} (${level})\n` +
-            `• *Due:* ${dueDate} (+${days} days)\n\n` +
-            `What would you like to do next?`,
+            `✅ *${patient?.name || 'Patient'}*\n` +
+            `• Referral: ${category.replace(/_/g, ' ')}\n` +
+            `• Facility: ${level} · Due: ${dueDate}`,
           buttons: [
             { id: 'CMD_WORKLIST', title: 'Worklist' },
             { id: 'CMD_FIND_PATIENT', title: 'Find Patient' },
@@ -445,20 +445,16 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       ];
     }
 
-    // 2. Patient Intake Flow (if configured)
+    // 4. Patient Registration Flow
     const name = res.full_name || res.name || 'Patient';
     const rawPhone = (res.phone_number || res.phone || '0000000000').replace(/\D/g, '');
     const phone = rawPhone.length === 10 ? `+91${rawPhone}` : `+${rawPhone}`;
-    const villageId = res.village || 'VIL-RAM';
-    const service = res.program || 'ANC';
-    const status = res.risk_status || 'NORMAL';
-    const consentWhatsapp =
-      res.whatsapp_consent?.includes('CONSENTED') ||
-      res.whatsapp_consent === 'YES' ||
-      res.whatsapp_consent === true ||
-      Array.isArray(res.whatsapp_consent) && res.whatsapp_consent.length > 0
-        ? 1
-        : 0;
+    const villageId = res.village_id || res.village || 'VIL-RAM';
+    const service = 'ANC';
+    const status = res.risk_tier === 'HIGH_RISK' || res.risk_status === 'HRP' ? 'HRP' : 'NORMAL';
+    const age = parseInt(res.age || '25', 10);
+    const weeks = parseInt(res.gestational_weeks || '16', 10);
+    const consentWhatsapp = 1;
 
     const village = db.prepare('SELECT * FROM villages WHERE id = ?').get(villageId) as any;
     const patientId = `p-${uuidv4().slice(0, 8)}`;
@@ -475,7 +471,7 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       subcentre_id: village?.subcentre_id || user.facility_id || 'FAC-SC-GHU',
       asha_name: village?.asha_name || 'ASHA Samta',
       status,
-      age: 26,
+      age,
       consent_whatsapp: consentWhatsapp,
       created_at: now,
     };
@@ -522,17 +518,13 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       {
         kind: 'buttons',
         to,
-        header: 'Registration Complete',
+        header: 'Registered',
         body:
-          `🎉 *Patient Registered via WhatsApp Flow!*\n\n` +
-          `• *Name:* ${patientRecord.name} (26y)\n` +
-          `• *Mobile:* ${patientRecord.phone}\n` +
-          `• *Village:* ${patientRecord.village_name} (ASHA: ${patientRecord.asha_name})\n` +
-          `• *Program:* ${patientRecord.service} · ${patientRecord.status === 'HRP' ? '🔴 High Risk' : '🟢 Normal'}\n` +
-          `• *WhatsApp Reminders:* ${consentWhatsapp ? '✅ Consented' : '❌ Declined'}\n\n` +
-          `Prescribe the first care step or view the patient journey:`,
+          `✅ *${patientRecord.name}* (${patientRecord.age}y, ${patientRecord.village_name})\n` +
+          `• Status: ${patientRecord.status === 'HRP' ? '🔴 High Risk' : '🟢 Normal'}\n` +
+          `• Gestation: ${weeks} Weeks`,
         buttons: [
-          { id: `ACTION_ADD_STEP_${patientId}`, title: '➕ Add Next Step' },
+          { id: `ACTION_ADD_STEP_${patientId}`, title: '➕ Prescribe Step' },
           { id: `SEL_PATIENT_${patientId}`, title: '👤 View Patient' },
           { id: 'CMD_WORKLIST', title: 'Worklist' },
         ],
@@ -595,34 +587,32 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
       {
         kind: 'list',
         to,
-        header: 'WhatsApp Flows Demo',
-        body: lang === 'en'
-          ? `🌟 *Next Steps Interactive WhatsApp Forms*\n\nSelect any form below to open the native Meta WhatsApp Flow modal directly:`
-          : `🌟 *Next Steps इंटरएक्टिव व्हाट्सएप फॉर्म*\n\nसीधे व्हाट्सएप फ्लो खोलने के लिए नीचे कोई भी फॉर्म चुनें:`,
-        buttonText: lang === 'en' ? 'Open Form Menu' : 'फॉर्म चुनें',
+        header: 'Next Steps Forms',
+        body: 'Select a form to open directly:',
+        buttonText: 'Select Form',
         sections: [
           {
-            title: lang === 'en' ? 'Available WhatsApp Flows' : 'उपलब्ध व्हाट्सएप फॉर्म',
+            title: 'WhatsApp Forms',
             rows: [
               {
                 id: 'LAUNCH_FLOW_REG',
-                title: lang === 'en' ? '1. Patient Registration' : '1. मरीज़ पंजीकरण',
-                description: lang === 'en' ? 'Maternal intake, DPDP consent, risk assessment' : 'गर्भवती महिला पंजीकरण व सहमति',
+                title: '1. Register Mother',
+                description: 'Maternal intake & risk assessment',
               },
               {
                 id: 'LAUNCH_FLOW_ANC',
-                title: lang === 'en' ? '2. ANC Clinical Vitals' : '2. ANC जाँच व वाइटल्स',
-                description: lang === 'en' ? 'Record BP, weight, Hb, and danger signs' : 'बीपी, वज़न, हीमोग्लोबिन और लक्षण',
+                title: '2. ANC Vitals',
+                description: 'Record BP, weight, Hb & signs',
               },
               {
                 id: 'LAUNCH_FLOW_REF',
-                title: lang === 'en' ? '3. Prescribe Referral' : '3. रेफरल / अगला स्टेप',
-                description: lang === 'en' ? 'Refer for Ultrasound / High-Risk care' : 'अल्ट्रासाउंड व विशेषज्ञ रेफरल',
+                title: '3. Prescribe Referral',
+                description: 'Ultrasound & specialist care',
               },
               {
                 id: 'LAUNCH_FLOW_CLOSE',
-                title: lang === 'en' ? '4. Close Referral Loop' : '4. रेफरल लूप क्लोज़र',
-                description: lang === 'en' ? 'Record provenance, outcome & doctor notes' : 'अस्पताल उपस्थिति व परामर्श परिणाम',
+                title: '4. Close Referral',
+                description: 'Record outcome & provenance',
               },
             ],
           },
@@ -638,13 +628,11 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
         {
           kind: 'flow',
           to,
-          header: 'ANC Clinical Checklist',
-          body: lang === 'en'
-            ? `Tap below to record maternal vitals (BP, weight, Hb) and danger signs:`
-            : `गर्भवती महिला के वाइटल्स और जाँच दर्ज करने के लिए फॉर्म खोलें:`,
+          header: 'ANC Vitals',
+          body: 'Tap below to record maternal vitals:',
           footer: 'Next Steps Care Coordination',
           flowId: config.whatsapp.flowIdAnc,
-          flowCta: lang === 'en' ? 'Record ANC Vitals' : 'ANC जाँच दर्ज करें',
+          flowCta: 'Open Form',
           screen: 'ANC_CHECKLIST',
           flowMode: 'published',
         },
@@ -659,13 +647,11 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
         {
           kind: 'flow',
           to,
-          header: 'Prescribe Next Step',
-          body: lang === 'en'
-            ? `Tap below to prescribe a care step or facility referral:`
-            : `केयर स्टेप या रेफरल निर्धारित करने के लिए फॉर्म खोलें:`,
+          header: 'Prescribe Referral',
+          body: 'Tap below to prescribe care step:',
           footer: 'Next Steps Care Coordination',
           flowId: config.whatsapp.flowIdReferral,
-          flowCta: lang === 'en' ? 'Prescribe Referral' : 'रेफरल जारी करें',
+          flowCta: 'Open Form',
           screen: 'REFERRAL',
           flowMode: 'published',
         },
@@ -680,13 +666,11 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
         {
           kind: 'flow',
           to,
-          header: 'Close Referral Loop',
-          body: lang === 'en'
-            ? `Tap below to record referral care delivery, provenance and clinical outcome:`
-            : `रेफरल लूप क्लोज़र, उपस्थिति और परिणाम दर्ज करने के लिए फॉर्म खोलें:`,
+          header: 'Close Referral',
+          body: 'Tap below to record visit outcome:',
           footer: 'Next Steps Care Coordination',
           flowId: config.whatsapp.flowIdClosure,
-          flowCta: lang === 'en' ? 'Close Referral' : 'रेफरल बंद करें',
+          flowCta: 'Open Form',
           screen: 'CLOSURE',
           flowMode: 'published',
         },
@@ -697,24 +681,22 @@ export async function routeInboundMessage(message: InboundMessage): Promise<Outb
   // --- Registration Flow (PRD Section 2 & 3) ---
   if (
     lower === 'register' ||
+    lower === 'reg' ||
     lower === 'new patient' ||
     lower === 'add patient' ||
     replyId === 'CMD_REGISTER_START' ||
     replyId === 'LAUNCH_FLOW_REG'
   ) {
-    // If a Meta Flow ID is configured, trigger the native WhatsApp Flow modal!
     if (config.whatsapp.flowIdRegistration) {
       return [
         {
           kind: 'flow',
           to,
-          header: 'Patient Intake',
-          body: lang === 'en'
-            ? `Tap below to open the official registration form and intake patient details:`
-            : `मरीज़ पंजीकरण फॉर्म खोलने के लिए नीचे टैप करें:`,
+          header: 'Register Mother',
+          body: 'Tap below to register a pregnant mother:',
           footer: 'Next Steps Care Coordination',
           flowId: config.whatsapp.flowIdRegistration,
-          flowCta: lang === 'en' ? 'Register Patient' : 'पंजीकरण शुरू करें',
+          flowCta: 'Open Form',
           screen: 'DEMOGRAPHICS',
           flowMode: 'published',
         },

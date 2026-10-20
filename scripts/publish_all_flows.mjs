@@ -1,33 +1,34 @@
 import fs from 'fs';
 
-const token = 'EAAX1g7zPTiMBSobYVR3l8yA2ECHMXaBDUbEVZBV4TKWHdohJM8ZAKZAG8MMzDKfzWcb6gJrOKh98OSFxdvGrMfP36mssZA6Kfax5YjBWxdGnycHRTxia8dxOZCHma90UgxnpQyiQd2kkJHeMtAKHZBenuW0rGiTlOPhhqysiHeQJbLeHjfQ2djZCFJioOYNhwZDZD';
+const token = process.env.WHATSAPP_ACCESS_TOKEN || 'EAAX1g7zPTiMBSsweHO2gmI65WaI4oID0zZAwwxm3HwMjZAKLxDJFbI3UidIrXhWvrXSZCjWfnM0qZA1LX1HxYfN3aVnZBQ2pIpkBx9CgMw3FaVdShk1EeMAKgY5m0no6qCZBzaiuZBjZAyKFXeG5KUDOepgX1YexZBjds0wddydRqFuOIqXQZBPPgtnq7rtSlZBmAZDZD';
 const wabaId = '2450605875348094';
 
-// 1. Patient Registration Flow
+// 1. Patient Registration Flow - Single Screen, Minimalist, No DatePicker Glitches
 const flowRegistration = {
   version: "6.0",
   screens: [
     {
       id: "DEMOGRAPHICS",
-      title: "Patient Registration",
-      terminal: false,
+      title: "Register Mother",
+      terminal: true,
+      success: true,
       layout: {
         type: "SingleColumnLayout",
         children: [
           {
             type: "Form",
-            name: "demo_form",
+            name: "form",
             children: [
               {
                 type: "TextInput",
                 name: "full_name",
-                label: "Mother's Full Name",
+                label: "Mother's Name",
                 required: true
               },
               {
                 type: "TextInput",
                 name: "phone_number",
-                label: "10-Digit Mobile Number",
+                label: "Mobile Number",
                 "input-type": "phone",
                 required: true
               },
@@ -38,9 +39,9 @@ const flowRegistration = {
                 required: true,
                 "data-source": [
                   { id: "VIL-RAM", title: "Rampur" },
-                  { id: "VIL-KOT", title: "Kothar" },
-                  { id: "VIL-GHO", title: "Ghoghar" },
-                  { id: "VIL-BAD", title: "Badwar" }
+                  { id: "VIL-GHU", title: "Ghurehta" },
+                  { id: "VIL-AMI", title: "Amiliya" },
+                  { id: "VIL-SIR", title: "Sirmour" }
                 ]
               },
               {
@@ -51,37 +52,11 @@ const flowRegistration = {
                 required: true
               },
               {
-                type: "Footer",
-                label: "Next: Clinical Info",
-                "on-click-action": {
-                  name: "navigate",
-                  next: {
-                    type: "screen",
-                    name: "CLINICAL"
-                  }
-                }
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      id: "CLINICAL",
-      title: "Clinical & Consent",
-      terminal: true,
-      layout: {
-        type: "SingleColumnLayout",
-        children: [
-          {
-            type: "Form",
-            name: "clinical_form",
-            children: [
-              {
-                type: "DatePicker",
-                name: "lmp_date",
-                label: "Last Menstrual Period (LMP)",
-                required: true
+                type: "TextInput",
+                name: "gestational_weeks",
+                label: "Weeks Pregnant (e.g. 16)",
+                "input-type": "number",
+                required: false
               },
               {
                 type: "RadioButtonsGroup",
@@ -89,18 +64,8 @@ const flowRegistration = {
                 label: "Risk Assessment",
                 required: true,
                 "data-source": [
-                  { id: "NORMAL", title: "Normal / Routine Care" },
-                  { id: "MODERATE", title: "Moderate Risk" },
-                  { id: "HIGH_RISK", title: "High Risk Pregnancy (HRP)" }
-                ]
-              },
-              {
-                type: "CheckboxGroup",
-                name: "whatsapp_consent",
-                label: "DPDP Digital Consent",
-                required: true,
-                "data-source": [
-                  { id: "CONSENTED", title: "Patient consents to maternal tracking & WhatsApp updates" }
+                  { id: "NORMAL", title: "🟢 Normal" },
+                  { id: "HIGH_RISK", title: "🔴 High Risk (HRP)" }
                 ]
               },
               {
@@ -110,13 +75,12 @@ const flowRegistration = {
                   name: "complete",
                   payload: {
                     kind: "patient_registration",
-                    full_name: "${demo_form.full_name}",
-                    phone_number: "${demo_form.phone_number}",
-                    village_id: "${demo_form.village_id}",
-                    age: "${demo_form.age}",
-                    lmp_date: "${clinical_form.lmp_date}",
-                    risk_tier: "${clinical_form.risk_tier}",
-                    whatsapp_consent: "${clinical_form.whatsapp_consent}"
+                    full_name: "${form.full_name}",
+                    phone_number: "${form.phone_number}",
+                    village_id: "${form.village_id}",
+                    age: "${form.age}",
+                    gestational_weeks: "${form.gestational_weeks}",
+                    risk_tier: "${form.risk_tier}"
                   }
                 }
               }
@@ -128,73 +92,73 @@ const flowRegistration = {
   ]
 };
 
-// 2. Prescribe Next Step / Referral Flow
+// 2. Prescribe Next Step / Referral Flow - Single Screen, Minimalist
 const flowReferral = {
   version: "6.0",
   screens: [
     {
       id: "REFERRAL",
-      title: "Prescribe Next Step",
+      title: "Prescribe Referral",
       terminal: true,
+      success: true,
       layout: {
         type: "SingleColumnLayout",
         children: [
           {
             type: "Form",
-            name: "ref_form",
+            name: "form",
             children: [
               {
                 type: "RadioButtonsGroup",
                 name: "category",
-                label: "Care Action Category",
+                label: "Care Action Needed",
                 required: true,
                 "data-source": [
-                  { id: "HIGH_RISK_ANC", title: "High Risk ANC Evaluation" },
                   { id: "ULTRASOUND_SCAN", title: "Obstetric Ultrasound" },
-                  { id: "SEVERE_ANEMIA", title: "Severe Anemia (Hb < 7) Management" },
-                  { id: "PRE_ECLAMPSIA", title: "Pre-eclampsia Workup" },
-                  { id: "INSTITUTIONAL_DELIVERY", title: "Institutional Delivery Planning" }
+                  { id: "HIGH_RISK_ANC", title: "High Risk Specialist Care" },
+                  { id: "SEVERE_ANEMIA", title: "Severe Anemia Management" },
+                  { id: "INSTITUTIONAL_DELIVERY", title: "Delivery Planning" }
                 ]
               },
               {
                 type: "RadioButtonsGroup",
                 name: "target_facility",
-                label: "Target Facility Level",
+                label: "Refer To Facility",
                 required: true,
                 "data-source": [
-                  { id: "PHC", title: "Primary Health Centre (PHC)" },
-                  { id: "CHC", title: "Community Health Centre (CHC)" },
-                  { id: "DH", title: "District Hospital (DH)" }
+                  { id: "CHC", title: "CHC Teonthar" },
+                  { id: "PHC", title: "PHC Sirmour" },
+                  { id: "DH", title: "District Hospital Rewa" }
                 ]
               },
               {
                 type: "RadioButtonsGroup",
                 name: "timeframe_days",
-                label: "Urgency Window",
+                label: "Urgency",
                 required: true,
                 "data-source": [
-                  { id: "1", title: "Immediate (Within 24 Hours)" },
-                  { id: "3", title: "Urgent (Within 3 Days)" },
-                  { id: "7", title: "Routine (Within 7 Days)" }
+                  { id: "1", title: "Immediate (24h)" },
+                  { id: "3", title: "Urgent (3 Days)" },
+                  { id: "7", title: "Routine (7 Days)" }
                 ]
               },
               {
                 type: "TextInput",
                 name: "notes",
-                label: "Clinical Notes / Reason",
+                label: "Doctor Notes (Optional)",
                 required: false
               },
               {
                 type: "Footer",
-                label: "Issue Referral",
+                label: "Submit Referral",
                 "on-click-action": {
                   name: "complete",
                   payload: {
                     kind: "prescribe_step",
-                    category: "${ref_form.category}",
-                    target_facility: "${ref_form.target_facility}",
-                    timeframe_days: "${ref_form.timeframe_days}",
-                    notes: "${ref_form.notes}"
+                    category: "${form.category}",
+                    target_facility: "${form.target_facility}",
+                    timeframe_days: "${form.timeframe_days}",
+                    notes: "${form.notes}"
                   }
                 }
               }
@@ -206,20 +170,21 @@ const flowReferral = {
   ]
 };
 
-// 3. Referral Closure & Provenance Flow
+// 3. Referral Closure & Provenance Flow - Outcome Optional! Never blocks submission!
 const flowClosure = {
   version: "6.0",
   screens: [
     {
       id: "CLOSURE",
-      title: "Close Referral Loop",
+      title: "Close Referral",
       terminal: true,
+      success: true,
       layout: {
         type: "SingleColumnLayout",
         children: [
           {
             type: "Form",
-            name: "close_form",
+            name: "form",
             children: [
               {
                 type: "RadioButtonsGroup",
@@ -228,7 +193,7 @@ const flowClosure = {
                 required: true,
                 "data-source": [
                   { id: "AT_REFERRED_FACILITY", title: "Seen at referred facility" },
-                  { id: "OTHER_PUBLIC_FACILITY", title: "Seen at another Govt hospital" },
+                  { id: "OTHER_PUBLIC_FACILITY", title: "Seen at other Govt hospital" },
                   { id: "PRIVATE_FACILITY", title: "Seen at private clinic/hospital" },
                   { id: "NOT_ATTENDED", title: "Did not attend / Refused care" }
                 ]
@@ -236,8 +201,8 @@ const flowClosure = {
               {
                 type: "RadioButtonsGroup",
                 name: "outcome",
-                label: "Clinical Outcome",
-                required: true,
+                label: "Clinical Outcome (Optional)",
+                required: false,
                 "data-source": [
                   { id: "RESOLVED", title: "Evaluated & Treatment Prescribed" },
                   { id: "ADMITTED", title: "Admitted to Ward / Observation" },
@@ -247,7 +212,7 @@ const flowClosure = {
               {
                 type: "TextInput",
                 name: "advice",
-                label: "Doctor's Advice / Follow-up Notes",
+                label: "Doctor's Advice / Notes (Optional)",
                 required: false
               },
               {
@@ -257,9 +222,9 @@ const flowClosure = {
                   name: "complete",
                   payload: {
                     kind: "close_referral",
-                    provenance: "${close_form.provenance}",
-                    outcome: "${close_form.outcome}",
-                    advice: "${close_form.advice}"
+                    provenance: "${form.provenance}",
+                    outcome: "${form.outcome}",
+                    advice: "${form.advice}"
                   }
                 }
               }
@@ -271,45 +236,38 @@ const flowClosure = {
   ]
 };
 
-// 4. ANC Clinical Checklist & Vitals Flow
+// 4. ANC Clinical Checklist & Vitals Flow - Single BP input box, minimalist labels
 const flowAnc = {
   version: "6.0",
   screens: [
     {
       id: "ANC_CHECKLIST",
-      title: "ANC Visit & Vitals",
+      title: "ANC Vitals",
       terminal: true,
+      success: true,
       layout: {
         type: "SingleColumnLayout",
         children: [
           {
             type: "Form",
-            name: "vitals_form",
+            name: "form",
             children: [
               {
                 type: "RadioButtonsGroup",
                 name: "visit_number",
-                label: "ANC Visit Round",
+                label: "ANC Visit",
                 required: true,
                 "data-source": [
-                  { id: "ANC_1", title: "ANC 1 (First Trimester)" },
-                  { id: "ANC_2", title: "ANC 2 (14-26 Weeks)" },
-                  { id: "ANC_3", title: "ANC 3 (28-34 Weeks)" },
-                  { id: "ANC_4", title: "ANC 4 (36+ Weeks)" }
+                  { id: "ANC_1", title: "ANC 1" },
+                  { id: "ANC_2", title: "ANC 2" },
+                  { id: "ANC_3", title: "ANC 3" },
+                  { id: "ANC_4", title: "ANC 4" }
                 ]
               },
               {
                 type: "TextInput",
-                name: "systolic_bp",
-                label: "Systolic BP (mmHg, e.g. 120)",
-                "input-type": "number",
-                required: true
-              },
-              {
-                type: "TextInput",
-                name: "diastolic_bp",
-                label: "Diastolic BP (mmHg, e.g. 80)",
-                "input-type": "number",
+                name: "blood_pressure",
+                label: "Blood Pressure (e.g. 120/80)",
                 required: true
               },
               {
@@ -329,7 +287,7 @@ const flowAnc = {
               {
                 type: "CheckboxGroup",
                 name: "danger_signs",
-                label: "High-Risk Danger Signs (if any)",
+                label: "Danger Signs (Optional)",
                 required: false,
                 "data-source": [
                   { id: "HEADACHE", title: "Severe Headache / Blurred Vision" },
@@ -344,12 +302,11 @@ const flowAnc = {
                   name: "complete",
                   payload: {
                     kind: "anc_checklist",
-                    visit_number: "${vitals_form.visit_number}",
-                    systolic_bp: "${vitals_form.systolic_bp}",
-                    diastolic_bp: "${vitals_form.diastolic_bp}",
-                    weight_kg: "${vitals_form.weight_kg}",
-                    hb_level: "${vitals_form.hb_level}",
-                    danger_signs: "${vitals_form.danger_signs}"
+                    visit_number: "${form.visit_number}",
+                    blood_pressure: "${form.blood_pressure}",
+                    weight_kg: "${form.weight_kg}",
+                    hb_level: "${form.hb_level}",
+                    danger_signs: "${form.danger_signs}"
                   }
                 }
               }
@@ -416,18 +373,33 @@ async function publishFlow(name, jsonContent) {
 
 async function run() {
   const ts = Date.now().toString().slice(-4);
-  const regId = await publishFlow(`nextsteps_reg_${ts}`, flowRegistration);
-  const refId = await publishFlow(`nextsteps_ref_${ts}`, flowReferral);
-  const clsId = await publishFlow(`nextsteps_cls_${ts}`, flowClosure);
-  const ancId = await publishFlow(`nextsteps_anc_${ts}`, flowAnc);
+  const regId = await publishFlow(`nextsteps_reg_v2_${ts}`, flowRegistration);
+  const refId = await publishFlow(`nextsteps_ref_v2_${ts}`, flowReferral);
+  const clsId = await publishFlow(`nextsteps_cls_v2_${ts}`, flowClosure);
+  const ancId = await publishFlow(`nextsteps_anc_v2_${ts}`, flowAnc);
 
   console.log('\n========================================');
-  console.log('🎉 ALL 4 FLOWS PUBLISHED SUCCESSFULLY!');
+  console.log('🎉 ALL 4 REDESIGNED FLOWS PUBLISHED SUCCESSFULLY!');
   console.log('========================================');
   console.log(`FLOW_ID_REGISTRATION=${regId}`);
   console.log(`FLOW_ID_REFERRAL=${refId}`);
   console.log(`FLOW_ID_CLOSURE=${clsId}`);
   console.log(`FLOW_ID_ANC=${ancId}`);
+
+  // Save to config / .env
+  const outputEnv = `
+FLOW_ID_REGISTRATION=${regId}
+FLOW_ID_REFERRAL=${refId}
+FLOW_ID_CLOSURE=${clsId}
+FLOW_ID_ANC=${ancId}
+`;
+  fs.writeFileSync('flows_published_ids.json', JSON.stringify({
+    FLOW_ID_REGISTRATION: regId,
+    FLOW_ID_REFERRAL: refId,
+    FLOW_ID_CLOSURE: clsId,
+    FLOW_ID_ANC: ancId
+  }, null, 2));
+  console.log('Saved to flows_published_ids.json');
 }
 
 run();

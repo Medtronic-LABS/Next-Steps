@@ -1,6 +1,7 @@
 import { db } from '../../db/index.js';
 import { OutboundMessage, WhatsAppUser } from '../types.js';
 import { enqueueStepEvent } from '../../cce/outboxWorker.js';
+import { config } from '../../config.js';
 
 export function handleExpectedArrivals(to: string, user: WhatsAppUser, lang: 'hi' | 'en' = 'hi'): OutboundMessage {
   const facilityLevel = user.facility_level || (user.role.startsWith('chc') ? 'CHC' : 'PHC');
@@ -111,30 +112,31 @@ export function promptArrivalAction(to: string, user: WhatsAppUser, stepId: stri
     };
   }
 
-  const isEn = lang === 'en';
-  const riskTag =
-    step.patient_risk === 'HRP'
-      ? (isEn ? '🔴 High-Risk (HRP)' : '🔴 हाई-रिस्क (HRP)')
-      : (isEn ? '🟢 Normal' : '🟢 सामान्य');
+  // Direct 1-tap Flow opening: eliminate unnecessary reconfirmation clicks
+  if (config.whatsapp.flowIdClosure) {
+    return {
+      kind: 'flow',
+      to,
+      header: `Close: ${step.patient_name}`.slice(0, 60),
+      body: `Tap below to record outcome for *${step.patient_name}*:`,
+      footer: 'Next Steps Care Coordination',
+      flowId: config.whatsapp.flowIdClosure,
+      flowCta: 'Close Referral',
+      screen: 'CLOSURE',
+      flowMode: 'published',
+    };
+  }
 
+  const isEn = lang === 'en';
   return {
     kind: 'buttons',
     to,
     header: (isEn ? `Arrival: ${step.patient_name}` : `अराइवल: ${step.patient_name}`).slice(0, 24),
     body: isEn
-      ? `🏥 *Inbound Referral Arrival*\n\n` +
-        `• *Patient:* ${step.patient_name} (${riskTag})\n` +
-        `• *Village:* ${step.village_name}\n` +
-        `• *Referral Target:* ${step.level}\n\n` +
-        `Choose an action below to close this referral loop with our interactive WhatsApp form, or record on-site arrival:`
-      : `🏥 *रेफरल मरीज़ का आगमन*\n\n` +
-        `• *मरीज़:* ${step.patient_name} (${riskTag})\n` +
-        `• *गाँव:* ${step.village_name}\n` +
-        `• *रेफरल स्तर:* ${step.level}\n\n` +
-        `व्हाट्सएप फॉर्म द्वारा रेफरल लूप क्लोज़र दर्ज करने या उपस्थिति दर्ज करने के लिए नीचे चुनें:`,
+      ? `• Patient: *${step.patient_name}*\n• Facility: *${step.level}*\n\nTap below to confirm arrival:`
+      : `• मरीज़: *${step.patient_name}*\n• अस्पताल: *${step.level}*\n\nउपस्थिति दर्ज करें:`,
     buttons: [
-      { id: `ACTION_CLOSE_STEP_${step.id}`, title: isEn ? 'Close with Flow' : 'लूप क्लोज़ करें' },
-      { id: `DO_ARRIVE_ONSITE_${step.id}`, title: isEn ? 'Confirm Arrival' : 'उपस्थिति दर्ज' },
+      { id: `DO_CARE_DELIVERED_${step.id}`, title: isEn ? 'Confirm Arrival' : 'उपस्थिति दर्ज' },
       { id: 'CMD_ARRIVALS', title: isEn ? 'Back to List' : 'वापस सूची' },
     ],
   };

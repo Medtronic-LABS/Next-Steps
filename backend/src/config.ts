@@ -35,10 +35,10 @@ export const config = {
     testAnmPhone: process.env.TEST_ANM_PHONE || '+919812345010',
     testPhcPhone: process.env.TEST_PHC_PHONE || '+919812345020',
     testChcPhone: process.env.TEST_CHC_PHONE || '+919812345030',
-    flowIdRegistration: process.env.FLOW_ID_REGISTRATION || '2334490887381968',
-    flowIdReferral: process.env.FLOW_ID_REFERRAL || '2170160490199477',
-    flowIdClosure: process.env.FLOW_ID_CLOSURE || '2912060949141436',
-    flowIdAnc: process.env.FLOW_ID_ANC || '29323505923923750',
+    flowIdRegistration: process.env.FLOW_ID_REGISTRATION || '1632595094912515',
+    flowIdReferral: process.env.FLOW_ID_REFERRAL || '1055687100855193',
+    flowIdClosure: process.env.FLOW_ID_CLOSURE || '1529895475711859',
+    flowIdAnc: process.env.FLOW_ID_ANC || '1606970507146777',
   }
 };
 
