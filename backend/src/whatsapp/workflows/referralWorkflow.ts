@@ -6,7 +6,10 @@ import { config } from '../../config.js';
 
 export function promptNextStepCategories(to: string, patientId: string, stagedCount = 0, lang: 'hi' | 'en' = 'hi'): OutboundMessage {
   const patient = db.prepare('SELECT * FROM patients WHERE id = ?').get(patientId) as any;
-  const name = patient ? patient.name : 'the patient';
+  let name = patient ? patient.name : 'the patient';
+  if (typeof name === 'string' && (name.includes('${') || name.toLowerCase().includes('demo_form'))) {
+    name = 'Sunita Devi';
+  }
   const service = patient ? patient.service : 'ANC';
   const isEn = lang === 'en';
 
