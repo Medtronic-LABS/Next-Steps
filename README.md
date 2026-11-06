@@ -1,15 +1,16 @@
 # Next Steps: Frontline Care Coordination & WhatsApp Platform
 
-Next Steps is an enterprise care coordination platform designed to close the loop on frontline maternal, child, and chronic health coordination across village, sub-centre (HWC), primary health centre (PHC), and community/district hospital facilities.
+Next Steps is an enterprise frontline care coordination platform designed to close the referral loop on maternal, child, and chronic health coordination across village, sub-centre (Ayushman Arogya Mandir / HWC), primary health centre (PHC), and community/district hospital facilities.
 
-Built on the **[OpenPHC](https://github.com/orgs/openphc/repositories)** infrastructure specifications and integrated with the live **Medtronic LABS Care Coordination Engine (CCE)**, Next Steps provides a unified coordination layer accessible through:
-1. **WhatsApp Care Coordination Bot**: Zero-install frontline chatbot for ASHAs, ANMs, and PHC/CHC Nurses with interactive lists and quick action buttons.
-2. **Next Steps Frontline Web & Mobile App**: 4-tab responsive web application (Lookup, Worklist, Alerts, Insights with AI Copilot) packaged for Android and Mobile Web.
-3. **Supervisory Admin & Telemetry Portal**: Web dashboard for facility management, SLA rules, persona assignments, and CCE outbox telemetry.
+Built on the **[OpenPHC](https://github.com/orgs/openphc/repositories)** infrastructure specifications and integrated with the live **Medtronic LABS Care Coordination Engine (CCE)**, Next Steps provides a unified, closed-loop coordination layer accessible through:
+
+1. 💬 **WhatsApp Hybrid Chatbot**: Dual-mode frontline experience combining zero-install conversational messaging with **Native WhatsApp Flows (v6.0)** for rapid structured clinical forms.
+2. 📱 **Next Steps Frontline Mobile Web App**: 4-tab responsive web application (*Lookup*, *Worklist*, *Alerts*, *Insights with AI Copilot*) packaged for Android APK and Mobile Web.
+3. 🖥️ **Supervisory Admin & Telemetry Portal**: Web dashboard for facility catchment management, SLA rules, persona assignments, and real-time CCE outbox telemetry.
 
 ---
 
-## Architecture Overview
+## 🏛️ System Architecture Overview
 
 ```
 +----------------------------------------------------------------------------------------------------+
@@ -19,19 +20,23 @@ Built on the **[OpenPHC](https://github.com/orgs/openphc/repositories)** infrast
            v                                                                 v
 +-----------------------+   Deep-Links (Register / Charts)       +-----------------------+
 |  WhatsApp Cloud API   | <====================================> | Frontline Web App     |
-|  (Meta Graph API v21) |                                        | (React 18 + TS + Vite)|
+| (Meta Graph API v21)  |                                        | (React 18 + TS + Vite)|
+|  • Conversational Bot |                                        | • Lookup, Worklist    |
+|  • Native In-App Flows|                                        | • Alerts, AI Copilot  |
 +-----------------------+                                        +-----------------------+
            |                                                                 |
-           | Webhook & Interactive Action Buttons                            | REST / Synchronous
+           | Webhook Events & Flow Payloads                                  | REST / Synchronous
            v                                                                 v
 +----------------------------------------------------------------------------------------------------+
 |                                   NEXT STEPS BACKEND ENGINE                                        |
-|                          (Node.js / Express + TypeScript + SQLite / Postgres)                      |
+|                          (Node.js / Express + TypeScript + SQLite WAL / Postgres)                  |
 |                                                                                                    |
 | • WhatsApp Workflow Router (Worklist, Arrivals, Prescriptions, Closures, OCR, Demo Resets)         |
+| • Native Flow Decryptor & Payload Processor (Registration, Referrals, Closures, ANC Vitals)        |
+| • Automated High-Risk Pregnancy (HRP) Triage Rule Engine (BP, Hb, Danger Signs)                    |
 | • OpenPHC CloudEvents v1.0 & FHIR R4 Task Generator                                                |
-| • Reliable Outbox Worker (Exponential Backoff, In-Memory/DB Persistence)                           |
-| • Keycloak OAuth2 Client Manager (Auto Token Rotation)                                             |
+| • Reliable Transactional Outbox Worker (Exponential Backoff, Zero Data Loss Guarantee)             |
+| • Keycloak OAuth2 Client Manager (Auto Token Rotation & Caching)                                   |
 +----------------------------------------------------------------------------------------------------+
            |                                                                 |
            v                                                                 v
@@ -43,58 +48,68 @@ Built on the **[OpenPHC](https://github.com/orgs/openphc/repositories)** infrast
 
 ---
 
-## 1. WhatsApp Care Coordination Bot
+## 📚 Project Documentation & Architectural Audits
 
-The WhatsApp Bot provides an accessible, zero-install interface for frontline community health workers and facility nurses.
+All formal architectural evaluations, compliance blueprints, and product specifications are centrally organized in **[`docs/`](./docs/README.md)**:
 
-### Key Capabilities
-- **Dynamic Bilingual Support (English $\leftrightarrow$ हिंदी)**:
-  - Full conversational Hindi with common clinical terms preserved in English (facility names, clinical step codes).
-  - Instant language switching: tap the **`🌐 भाषा / English`** button or type `language`, `भाषा`, `english`, or `hindi`.
-  - Persistent user language preference saved to `users.preferred_lang` in SQLite, remembered across sessions and restarts.
-- **High-Throughput Multi-User Concurrency**:
-  - **Isolated Per-User Queues**: Messages from distinct health workers run on independent, parallel Promise chains without blocking one another.
-  - **Strict FIFO Serialization per Phone Number**: Prevents race conditions from rapid double-taps by serializing messages from the same sender.
-  - **Instant Webhook ACK**: Meta receives immediate HTTP 200 acknowledgments, preventing retry storms.
-  - **Deduplication & Staleness Filter**: In-memory cache drops duplicate Meta webhook deliveries within a 15-minute TTL and discards stale retries (>5 minutes old).
-  - **SQLite WAL Mode**: SQLite runs in Write-Ahead Logging mode (`PRAGMA journal_mode = WAL;`) for concurrent reads and writes.
-- **Worklist Management (`Worklist`)**: Instant access to overdue and due-today patient visits tailored to the worker's facility catchment.
-- **30-Second Care Step Prescription**:
-  - Referrals to Primary Health Centres (PHC), Community Health Centres (CHC), and District Hospitals (DH).
-  - Antenatal Care (ANC) checkups (`+2w`, `+4w`, or custom dates).
-  - Diagnostic orders (Ultrasound USG, Hemoglobin, Urine Albumin).
-  - Postnatal (PNC) and Home-Based Newborn Care (HBNC) protocols.
-- **Inbound Expected Arrivals & Care Delivery**:
-  - Staff nurses at PHC and CHC receive real-time notifications of incoming referrals from sub-centres.
-  - Strict compliance with Meta WhatsApp API limits: button titles stay under 20 characters (e.g. `'उपस्थिति दर्ज'`, `'वापस सूची'`).
-  - One-tap arrival confirmation and full service provenance capture (`AT_FACILITY`, `OTHER_FACILITY`, `PRIVATE_FACILITY`).
-- **Care Step Closure**: Select specific open steps and record outcomes (Completed, Escalated, Cancelled) with immediate worklist updates.
-- **Secure Web App Deep-Links**:
-  - 🔒 *Patient Registration Form*: Opens the responsive registration view with pre-selected catchment without requiring user login.
-  - 👤 *Medical Chart Link*: Direct deep-link to the patient's longitudinal care timeline.
-- **Privacy-First & Clean Messaging**: Frontline workers see clear, human-readable medical coordination messages; technical CCE database outbox sync occurs silently in the background.
+| Category | Primary Documents | Key Highlights |
+| :--- | :--- | :--- |
+| **🛡️ Architectural & Security Audits** | • **[Enterprise Architecture & DPDP/ABDM Audit](./docs/audits/OPENPHC_ROBUST_ARCHITECTURE_AUDIT.md)**<br>• **[CCE Integration Technical Audit](./docs/audits/CCE_ARCHITECTURE_AUDIT.md)**<br>• [Audits Overview & Heatmap](./docs/audits/README.md) | • **DPDP Act, 2023**: 4-Zone Privacy Isolation & Crypto-Shredding<br>• **ABDM**: Milestones 1 (ABHA), 2 (HIP), 3 (HIU Consent Gateway)<br>• **Cloudflare Security Audit**: Zero-Trust Threat Model<br>• 12 Structural Gaps Heatmap & P0–P3 Actionable Roadmap |
+| **🏗️ System Architecture & Specs** | • **[Next Steps End-to-End Architecture](./docs/architecture/SYSTEM_ARCHITECTURE.md)**<br>• **[OpenPHC Architecture Specification V1.1](./docs/architecture/OpenPHC_Architecture_Description_V1.1.docx)**<br>• [Architecture Overview & Stack](./docs/architecture/README.md) | • WhatsApp Webhook Router & Per-User FIFO Queuing<br>• Transactional Outbox Pattern (`cce_event_outbox`)<br>• SQLite WAL mode + Keycloak OAuth2 token caching<br>• CloudEvents 1.0 & HL7 FHIR R4 Task specifications |
+| **📋 Product Requirements & Personas** | • **[Full Next Steps App PRD v2](./docs/prd/Next_Steps_Full_App_PRD_v2.md)**<br>• **[WhatsApp Frontline Bot PRD](./docs/prd/whatsapp_bot_prd.md)**<br>• **[Personas & Permissions Requirements](./docs/prd/Next-Steps_Personas_Permissions_Admin_v1.docx)**<br>• [PRD Overview & Persona Matrix](./docs/prd/README.md) | • 4-Tab Frontline PWA (`Lookup`, `Worklist`, `Alerts`, `Insights`)<br>• 7-Tier Frontline Persona Matrix (ASHA, ANM, Staff Nurse, MO)<br>• Interactive WhatsApp Button UX (20-char strict constraints)<br>• RAG-powered AI Clinical Insights Copilot |
 
-### Supported Personas & Commands
-| Role | Facility Level | Core Workflows | Quick Commands |
+---
+
+## 1. WhatsApp Hybrid Care Coordination Bot
+
+The WhatsApp Bot provides a zero-install interface for frontline community health workers and facility staff nurses, combining quick conversational menus with **native in-app WhatsApp Flows**.
+
+### 🌟 Native WhatsApp Flows (Flows v6.0)
+Instead of answering 8–10 sequential text questions in chat, multi-step actions open as native interactive modal forms right inside WhatsApp:
+
+| Flow Name | Published Flow ID | Screens & Fields | Clinical Purpose |
 | :--- | :--- | :--- | :--- |
-| **ANM / CHO** | Sub-centre / HWC | Patient Intake, Worklist, Prescribe Next Steps, OCR Import | `menu`, `worklist`, `alerts`, `register`, `language` |
-| **Staff Nurse** | PHC (Sirmour) | Expected Arrivals, Inbound Referrals, Worklist, Doctor Consult | `arrivals`, `worklist`, `alerts`, `menu`, `language` |
-| **Staff Nurse** | CHC (Teonthar) | High-Risk Specialist Arrivals, Ultrasound Intake, Secondary Worklist | `arrivals`, `worklist`, `menu`, `language` |
+| **Patient Registration** | `2334490887381968` | **Screen 1 (Demographics)**: Mother's Name, Mobile Number, Village, Age.<br>**Screen 2 (Clinical)**: Last Menstrual Period (LMP), Initial Risk Tier, DPDP Digital Consent Checkbox. | Rapid frontline intake of pregnant mothers with legal consent capture. |
+| **Prescribe Referral** | `2170160490199477` | **Screen 1 (Referral Details)**: Care Action Category (High-Risk ANC, Ultrasound, Severe Anemia, Pre-eclampsia), Target Facility Level (PHC, CHC, DH), Urgency Window (1, 3, 7 days), Notes. | Formal care coordination and facility escalation. |
+| **Referral Closure Loop** | `2912060949141436` | **Screen 1 (Closure Provenance)**: Where Seen (Referred Facility, Other Govt Hospital, Private Clinic, Not Attended), Clinical Outcome (Resolved, Admitted, Higher Referral), Doctor's Advice. | Closes the loop on open referrals and records provenance of care. |
+| **ANC Checklist & Vitals** | `29323505923923750` | **Screen 1 (ANC Vitals)**: Visit Round (ANC 1–4), Systolic BP, Diastolic BP, Weight (kg), Hemoglobin (g/dL), High-Risk Danger Signs Checklist (Headache, Swelling, Bleeding). | Standardized routine visit recording with automatic High-Risk Pregnancy (HRP) triage. |
+
+### ⚡ Key Capabilities
+- **Automated High-Risk Pregnancy (HRP) Triage**:
+  - Submitting vitals with $\text{BP} \ge 140/90\text{ mmHg}$, $\text{Hb} < 7.0\text{ g/dL}$, or reported danger signs automatically escalates the patient to **High Risk Pregnancy (HRP)** status, creating urgent care steps.
+- **Dynamic Bilingual Support (English $\leftrightarrow$ हिंदी)**:
+  - Full conversational Hindi with clinical terms preserved. Tap **`🌐 भाषा / English`** or text `language` / `भाषा`.
+  - User language preference persists in `users.preferred_lang` across sessions.
+- **High-Throughput Multi-User Concurrency**:
+  - **Per-User Isolated Queues**: Messages run on independent Promise chains without cross-user blocking.
+  - **FIFO Serialization**: Serializes messages from the same sender to prevent rapid double-tap race conditions.
+  - **Deduplication & Staleness Filter**: In-memory cache drops duplicate Meta webhook deliveries within a 15-minute TTL.
+  - **SQLite WAL Mode**: Operates in Write-Ahead Logging mode (`PRAGMA journal_mode = WAL;`) for concurrent operations.
+
+### 👥 Supported Personas & Role Mappings
+When texting `Hi` or `Menu` to the bot, the user is authenticated by phone number:
+
+| Persona | Default Test Number | Facility Catchment | Key Capabilities |
+| :--- | :--- | :--- | :--- |
+| **ANM (Field Health Worker)** | `+91 98991 14279` | Sub-Centre Ghurehta | • Register Mother (Flow)<br>• Today's Worklist (Due visits)<br>• ANC Checklist & Vitals (Flow)<br>• Prescribe Referral to PHC/CHC (Flow) |
+| **PHC Staff Nurse** | `+91 83778 60959` | PHC Sirmaur | • Expected Arrivals (Incoming referrals from ANMs)<br>• Mark Arrived & Care Delivered (Flow)<br>• Refer Higher to CHC/DH<br>• Overdue Referral Tracking |
+| **CHC Specialist Nurse** | `+91 98452 78064` | CHC Teonthar | • Secondary Specialist Intake (Ultrasound, Severe Anemia)<br>• Inpatient Care Loop Closure<br>• Tertiary Escalation to Medical College |
+
+*Unregistered numbers receive an automated, DPDP-compliant notice advising them to contact their facility coordinator, preventing unauthorized clinical data access.*
 
 ---
 
 ## 2. Next Steps Frontline Web & Mobile App (`/mobile-app`)
 
-A responsive, touch-optimized web application using the Medtronic LABS Design System:
+A responsive, touch-optimized web application utilizing the Medtronic LABS Design System:
 - **4-Tab Navigation**:
-  - `Lookup`: Quick search by name, phone, or ABHA/RCH ID, with instant deep-linking.
-  - `Worklist`: Categorized patient lists (Overdue, Due Today, Upcoming) with one-tap status actions.
+  - `Lookup`: Quick search by name, phone, or ABHA ID with deep-linked medical records.
+  - `Worklist`: Categorized patient lists (*Overdue*, *Due Today*, *Upcoming*) with one-tap status toggles.
   - `Alerts`: Escalated overdue referrals and high-risk pregnancy notifications.
-  - `Insights`: Real-time catchment metrics, care cascade charts, and an **AI RAG Copilot**.
+  - `Insights`: Real-time catchment metrics, care cascade funnel analytics, and an **AI RAG Copilot**.
 - **AI Insights Copilot**:
-  - Role-specific contextual answering (scoped strictly to the worker's facility and service).
-  - Markdown-rendered responses with clean tables and bullet points.
-  - One-tap question bubbles (e.g., *"Show HRP dropouts"*, *"ANC visit completion rate"*, *"Top overdue villages"*).
+  - Contextual responses scoped strictly to the health worker's facility and service catchment.
+  - Pre-curated prompts (*"Show HRP dropouts"*, *"ANC visit completion rate"*, *"Top overdue villages"*).
 - **Multi-Service Switching**: Maternal Health (ANC/PNC), Child Health (Immunization/HBNC), and Chronic Disease (NCD Hypertension/Diabetes).
 
 ---
@@ -111,7 +126,7 @@ A web-based administration cockpit:
 
 ## 4. OpenPHC CCE Integration Specifications
 
-All care steps and encounter closures automatically generate **CloudEvents v1.0** payloads wrapping **FHIR R4 `Task`** resources:
+All care steps, registrations, and referral closures automatically generate **CloudEvents v1.0** payloads wrapping **FHIR R4 `Task`** resources:
 
 ```json
 {
@@ -121,7 +136,7 @@ All care steps and encounter closures automatically generate **CloudEvents v1.0*
   "type": "org.openphc.task.created",
   "subject": "Patient/pw_01",
   "datacontenttype": "application/json",
-  "time": "2026-09-22T18:00:00.000Z",
+  "time": "2026-10-16T18:00:00.000Z",
   "facilityid": "FAC-SC-GHU",
   "protocolinstanceid": "proto_pw_01",
   "protocoldefinitionid": "cce-maternal-v1",
@@ -152,10 +167,11 @@ All care steps and encounter closures automatically generate **CloudEvents v1.0*
 ### Live CCE Authentication & Endpoints
 - **Keycloak Token Endpoint**: `https://keycloak.cce.mdtlabs.org/realms/cce/protocol/openid-connect/token`
 - **CCE Collector Ingestion Endpoint**: `POST https://api.cce.mdtlabs.org/v1/events`
+- **Client ID**: `nextstep-emitter`
 
 ---
 
-## Directory Structure
+## 5. Directory Structure
 
 ```
 next-steps/
@@ -163,11 +179,12 @@ next-steps/
 │   ├── src/
 │   │   ├── whatsapp/         # WhatsApp bot router, webhook, & workflows
 │   │   │   ├── webhook.ts    # Meta verification & incoming message handler
-│   │   │   ├── router.ts     # Session state & keyword dispatch
+│   │   │   ├── router.ts     # Session state, keyword dispatch, & Flow handlers
 │   │   │   ├── client.ts     # WhatsApp Cloud API HTTP client
-│   │   │   └── workflows/    # Worklist, referral, arrival, closure, OCR workflows
+│   │   │   ├── senderResolution.ts # Phone-to-role authentication engine
+│   │   │   └── workflows/    # Worklist, referral, arrival, closure, registration
 │   │   ├── cce/              # CloudEvents & FHIR R4 transformer, outbox worker
-│   │   ├── db/               # SQLite database schemas and migrations
+│   │   ├── db/               # SQLite / Postgres database schemas & migrations
 │   │   └── routes/           # REST APIs for sync, telemetry, and admin
 │   └── package.json
 ├── mobile-app/               # Frontline Responsive Web App (4-tab interface)
@@ -179,16 +196,20 @@ next-steps/
 ├── admin-panel/              # Supervisory desktop portal
 │   ├── src/
 │   └── package.json
+├── scripts/                  # Meta WhatsApp Flow publishing automation
+│   ├── publish_all_flows.mjs # Build & publish flows to WhatsApp Business API
+│   └── publish_to_new_waba.mjs # Multi-WABA provisioning script
 ├── deploy/                   # EC2 and production deployment artifacts
-│   ├── nginx.conf            # Reverse proxy config (Admin, Mobile Web, Backend)
+│   ├── nginx.conf            # HTTP Nginx reverse proxy configuration
+│   ├── nginx-ssl.conf        # Production SSL reverse proxy configuration
 │   ├── setup-ec2.sh          # Server provisioner
-│   └── create_deployment_zip.py # Packaging utility for EC2 bundles
+│   └── create_deployment_zip.py # Automated packaging utility for EC2 bundles
 └── docker-compose.yml        # Container orchestration
 ```
 
 ---
 
-## Getting Started Locally
+## 6. Getting Started Locally
 
 ### Prerequisites
 - Node.js 18+ and npm
@@ -200,25 +221,40 @@ Create or update `backend/.env`:
 PORT=4000
 NODE_ENV=development
 
-# WhatsApp Cloud API
-WHATSAPP_TOKEN=EAAG...
-WHATSAPP_PHONE_NUMBER_ID=108...
-WHATSAPP_VERIFY_TOKEN=nextsteps_webhook_verify_2026
+# Database Configuration
+DATABASE_URL=postgresql://nextsteps_user:nextsteps_secure_password_123@localhost:5432/nextsteps_db
+SQLITE_DB_PATH=./data/nextsteps.db
 
-# Public App Base URL (Used for WhatsApp deep-links)
-FRONTEND_URL=http://localhost:3000
+# Meta WhatsApp Cloud API Configuration
+WHATSAPP_PHONE_NUMBER_ID=1310073435531536
+WHATSAPP_ACCESS_TOKEN=EAAX1g...
+WHATSAPP_VERIFY_TOKEN=nextsteps_verify_token_2026
+NEXTSTEPS_APP_BASE_URL=https://nextsteps-admin.mdtlabs.org
+
+# Testing User Phone Numbers (Recognized automatically by role)
+TEST_ANM_PHONE=+91XXXXXXXXXX
+TEST_PHC_PHONE=+91XXXXXXXXXX
+TEST_CHC_PHONE=+91XXXXXXXXXX
+
+# Meta WhatsApp Flow IDs (Published natively on Meta Graph API)
+FLOW_ID_REGISTRATION=2334490887381968
+FLOW_ID_REFERRAL=2170160490199477
+FLOW_ID_CLOSURE=2912060949141436
+FLOW_ID_ANC=29323505923923750
 
 # OpenPHC CCE Integration
-CCE_KEYCLOAK_URL=https://keycloak.cce.mdtlabs.org/realms/cce/protocol/openid-connect/token
+CCE_KEYCLOAK_TOKEN_URL=https://keycloak.cce.mdtlabs.org/realms/cce/protocol/openid-connect/token
 CCE_CLIENT_ID=nextstep-emitter
 CCE_CLIENT_SECRET=ZsFq...
 CCE_GATEWAY_URL=https://api.cce.mdtlabs.org/v1/events
+CCE_SOURCE_SYSTEM=nextsteps/rewa-district
 ```
 
 ### 2. Start the Backend Service
 ```bash
 cd backend
 npm install
+npm run build
 npm run dev
 ```
 Backend runs at `http://localhost:4000`.
@@ -241,57 +277,57 @@ Admin portal runs at `http://localhost:5174`.
 
 ---
 
-## WhatsApp Bot Setup & Testing
+## 7. Meta WhatsApp Flow Publishing Automation
 
-### 1. Webhook Verification
-In your Meta App Dashboard under WhatsApp > Configuration:
-- **Callback URL**: `https://<YOUR_DOMAIN>/api/whatsapp/webhook`
-- **Verify Token**: Match the value in `WHATSAPP_VERIFY_TOKEN` (e.g. `nextsteps_webhook_verify_2026`)
-- **Webhook Fields**: Subscribe to `messages`.
+Next Steps includes programmatic CLI scripts to create, upload JSON assets, and publish WhatsApp Flows directly via Meta Graph API v21.0:
 
-### 2. Testing Bot Interactions
-Send a WhatsApp message from a registered test phone:
-- Type **`menu`** to view your persona dashboard.
-- Tap **`Worklist`** to inspect pending patients.
-- Type **`role anm`**, **`role phc`**, or **`role chc`** to switch between frontline personas.
-- Type **`language`** or tap **`🌐 भाषा / English`** to switch language.
-- Type **`demo reset`** to restore the initial test scenario.
-
-### 3. Automated Test Suites
-Run the verified automated test suites locally:
 ```bash
-# Verify SQLite sync constraints, deduplication, and greeting session resets
-node tests/test_fixes_verification.mjs
-
-# Verify multi-user concurrent message delivery, bilingual switching, and arrival flows
-node tests/test_concurrency_and_bilingual.mjs
+# Publish all 4 flows to the target WhatsApp Business Account (WABA)
+node scripts/publish_to_new_waba.mjs
 ```
+
+This script:
+1. Validates JSON schemas against Meta Flow JSON specification v6.0.
+2. Posts flow definitions to `https://graph.facebook.com/v21.0/{WABA_ID}/flows`.
+3. Uploads `flow.json` as a `FLOW_JSON` multipart asset to `/{FLOW_ID}/assets`.
+4. Triggers `/{FLOW_ID}/publish` and outputs the resulting IDs for `.env`.
 
 ---
 
-## Deployment to AWS EC2
+## 8. Deployment to AWS EC2 (`13.232.251.63`)
 
-Next Steps is configured to run alongside existing services on AWS EC2 (`13.232.251.63`) using Nginx:
-- **Admin Panel**: `https://nextsteps-admin.mdtlabs.org`
-- **Mobile Web App**: `https://nextsteps-admin.mdtlabs.org/app/`
-- **Backend API & Webhooks**: `https://nextsteps-admin.mdtlabs.org/api/`
+Next Steps is deployed to AWS EC2 alongside existing platform services using Nginx and PM2:
 
-To package and upload updates:
-```bash
-# 1. Build and package the bundle
+### Live Production Endpoints
+* 📱 **Frontline Mobile Web App:** `https://nextsteps-admin.mdtlabs.org/app/`
+* 🖥️ **District Admin Portal:** `https://nextsteps-admin.mdtlabs.org/`
+* 📲 **Android APK Download:** `https://nextsteps-admin.mdtlabs.org/apk`
+* 💬 **WhatsApp Webhook:** `https://nextsteps-api.mdtlabs.org/api/whatsapp/webhook`
+* 📡 **Backend Health:** `https://nextsteps-api.mdtlabs.org/health`
+
+### Automated Build & Deployment Steps
+
+From your local machine:
+```powershell
+# 1. Package the production deployment bundle
 python deploy/create_deployment_zip.py
 
-# 2. Upload to EC2
+# 2. Copy the bundle to the EC2 server
 scp deploy/next_steps_ec2_deployment.zip ubuntu@13.232.251.63:/home/ubuntu/
 
-# 3. Extract and restart on EC2
-ssh ubuntu@13.232.251.63
-sudo unzip -o /home/ubuntu/next_steps_ec2_deployment.zip -d /var/www/next-steps
-sudo systemctl restart nextsteps-backend
+# 3. Deploy and restart services via SSH
+ssh ubuntu@13.232.251.63 "unzip -o /home/ubuntu/next_steps_ec2_deployment.zip -d /home/ubuntu/deployment && cd /home/ubuntu/deployment && chmod +x deploy.sh && ./deploy.sh"
 ```
+
+The `deploy.sh` script automatically:
+* Copies production bundles to `/var/www/next-steps/`.
+* Installs dependencies (`npm install --omit=dev`).
+* Reloads the PM2 process manager (`pm2 start ecosystem.config.cjs`).
+* Validates and reloads Nginx virtual hosts.
+* Verifies local health at `http://127.0.0.1:4000/health`.
 
 ---
 
-## License
+## 📄 License
 
 MIT © Medtronic LABS
