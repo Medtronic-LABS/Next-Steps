@@ -1,19 +1,23 @@
 {
   "short_name": "Next Steps",
   "name": "Next Steps for Maternal Care",
+  "description": "Record, close and track next steps for high-risk pregnancies and NCD patients.",
   "icons": [
     {
-      "src": "/assets/logo-mark.png",
+      "src": "assets/logo-mark.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
-      "src": "/assets/logo-mark.png",
+      "src": "assets/logo-mark.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
     }
   ],
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "background_color": "#1E14BE",
   "theme_color": "#1E14BE",
   "display": "standalone",

@@ -1,4 +1,3 @@
-
 const TODAY = new Date('2026-08-06T00:00:00');
 const TODAY_ISO = '2026-08-06';
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -7,12 +6,14 @@ const CAT = {
   REFERRAL:{label:'Referral', icon:'M5 12h13M13 6l6 6-6 6'},
   ANC_VISIT:{label:'ANC visit', icon:'M8 4h8v3H8zM6 6H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1M9 13l2 2 4-4'},
   PMSMA_VISIT:{label:'PMSMA visit', icon:'M8 2v4M16 2v4M3 9h18M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM12 13v4M10 15h4'},
+  SPEC:{label:'Specialist consultation', icon:'M6 3v6a4 4 0 0 0 8 0V3M10 13v3a5 5 0 0 0 10 0v-2M20 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4'},
   FOLLOW_UP:{label:'Follow up', icon:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M5 21a7 7 0 0 1 14 0'},
   LAB:{label:'Lab', icon:'M9 3h6M10 3v6l-5 8a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-8V3'},
   IMAGING:{label:'Ultrasound', icon:'M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M3 12h18'},
   TREATMENT:{label:'Follow up', icon:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M5 21a7 7 0 0 1 14 0'},
   HOME_VISIT:{label:'Home visit', icon:'M3 11l9-7 9 7M5 10v10h14V10'},
-  HBNC:{label:'HBNC visit', icon:'M3 11l9-7 9 7M5 10v10h14V10M12 14a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2'},
+  HOME_PNC:{label:'Home PNC · ANM visit', icon:'M3 11l9-7 9 7M5 10v10h14V10M12 13v5M9.5 15.5h5'},
+  HBNC:{label:'HBNC / ASHA visit', icon:'M3 11l9-7 9 7M5 10v10h14V10M12 14a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2'},
   REF_PW:{label:'Referral · PN woman', icon:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M5 21a7 7 0 0 1 9-6.7M16 18h5M18.5 15.5L21 18l-2.5 2.5'},
   REF_NB:{label:'Referral · Newborn', icon:'M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 18a6 6 0 0 1 10-4.5M16 18h5M18.5 15.5L21 18l-2.5 2.5'},
   PNC_VISIT:{label:'PNC follow up', icon:'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 21a6 6 0 0 1 12 0M18 6v6M15 9h6'},
@@ -20,36 +21,49 @@ const CAT = {
   BP_CHECK:{label:'BP check', icon:'M20 12h-3l-2 5-3-10-2 5H4'},
   SUGAR_TEST:{label:'Blood sugar test', icon:'M12 21a6 6 0 0 0 6-6c0-4-6-12-6-12S6 11 6 15a6 6 0 0 0 6 6z'},
   REFILL:{label:'Medicine refill', icon:'M10.5 20.5a5 5 0 0 1-7-7l10-10a5 5 0 0 1 7 7zM8 8l8 8'},
+  IV_IS:{label:'IV Iron Sucrose', icon:'M12 2v6M9 5h6M8 8h8l-1 13H9zM10 13h4'},
+  IV_FCM:{label:'IV FCM (Ferric Carboxymaltose)', icon:'M12 2v6M9 5h6M8 8h8l-1 13H9zM10 13h4M10 17h4'},
+  BT:{label:'Blood transfusion', icon:'M12 21a6 6 0 0 0 6-6c0-4-6-12-6-12S6 11 6 15a6 6 0 0 0 6 6zM10 15h4M12 13v4'},
+  DEL_NORMAL:{label:'Normal delivery', icon:'M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10zM9 12l2 2 4-4'},
+  DEL_CSEC:{label:'C-section', icon:'M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10zM8.5 12h7'},
 };
 
 const LVL = {
   SUBCENTRE:{label:'Sub-centre', short:'SC', c:'#2E9E6B', s:'#D9F7E8', facility:'Sub-centre Ghurehta', tag:'ANM'},
   PHC:{label:'PHC', short:'PHC', c:'#6165DE', s:'#E7E7FB', facility:'PHC Sirmour', tag:'MO + SN'},
   CHC:{label:'CHC', short:'CHC', c:'#1E14BE', s:'#EFEDFF', facility:'CHC Teonthar', tag:'FRU'},
-  DH:{label:'District Hospital', short:'DH', c:'#994242', s:'#F7E3E3', facility:'DH Rewa', tag:'Specialist'},
+  SDH:{label:'Sub-district Hospital', short:'SDH', c:'#655AD0', s:'#ECEAFB', facility:'SDH Ballabhgarh', tag:'FRU'},
+  DH:{label:'BK DH', short:'DH', c:'#994242', s:'#F7E3E3', facility:'BK DH', tag:'Specialist'},
   TERTIARY:{label:'Tertiary', short:'TER', c:'#C35721', s:'#FBE7DC', facility:'Medical College, Jabalpur', tag:'Advanced'},
 };
-const LADDER = ['SUBCENTRE','PHC','CHC','DH','TERTIARY'];
-const FUP = {SUBCENTRE:'AAM', PHC:'PHC', CHC:'CHC', DH:'DH', TERTIARY:'Tertiary care'};
+const LADDER = ['SUBCENTRE','PHC','CHC','SDH','DH','TERTIARY'];
+const FUP = {SUBCENTRE:'AAM', PHC:'PHC', CHC:'CHC', SDH:'SDH', DH:'DH', TERTIARY:'Tertiary care'};
 const AVA = ['#1E14BE','#6165DE','#994242','#C35721','#2E9E6B','#655AD0'];
 
 const OPTMETA = {
   REFERRAL:{label:'Referral'},
   ANC_VISIT:{label:'ANC visit'},
   PMSMA_VISIT:{label:'PMSMA visit'},
+  SPEC:{label:'Specialist consultation'},
   FOLLOW_UP:{label:'Follow up'},
   LAB:{label:'Lab'},
   IMAGING:{label:'Ultrasound'},
   TREATMENT:{label:'Follow up'},
   PNC_VISIT:{label:'PNC follow up'},
   NB_CHECK:{label:'Newborn follow up'},
-  HBNC:{label:'HBNC visit'},
+  HBNC:{label:'HBNC / ASHA visit'},
+  HOME_PNC:{label:'Home PNC · ANM visit'},
   REF_PW:{label:'Referral · PN woman'},
   REF_NB:{label:'Referral · Newborn'},
   BP_CHECK:{label:'BP check'},
   SUGAR_TEST:{label:'Blood sugar test'},
   REFILL:{label:'Medicine refill'},
   HOME_VISIT:{label:'Home visit'},
+  IV_IS:{label:'IV Iron Sucrose'},
+  IV_FCM:{label:'IV FCM'},
+  BT:{label:'Blood transfusion'},
+  DEL_NORMAL:{label:'Normal delivery'},
+  DEL_CSEC:{label:'C-section'},
 };
 
 const ROLES = {
@@ -57,55 +71,95 @@ const ROLES = {
     options:[], refUp:[], refDown:[],
     icon:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z'},
   anm:{name:'AAM', short:'AAM', facility:'Sub-centre Ghurehta', accent:'#2E9E6B', level:'SUBCENTRE',
-    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT'], refUp:['PHC','CHC','DH','TERTIARY'], refDown:[],
+    options:['REFERRAL','FOLLOW_UP','ANC_VISIT'], refUp:['PHC','CHC','SDH','DH','TERTIARY'], refDown:[],
     icon:'M12 2l2.4 5 5.6.5-4.3 3.7 1.4 5.5L12 19l-5.1 2.7 1.4-5.5L4 12.5 9.6 12z'},
   phc_sn:{name:'PHC Staff Nurse', short:'PHC SN', facility:'PHC Sirmour', accent:'#6165DE', level:'PHC',
-    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT','LAB','IMAGING'], refUp:['CHC','DH','TERTIARY'], refDown:['SUBCENTRE'],
+    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:['CHC','SDH','DH','TERTIARY'], refDown:['SUBCENTRE'],
     icon:'M12 3a6 6 0 0 0-6 6c0 5-2 6-2 6h16s-2-1-2-6a6 6 0 0 0-6-6zM10 20a2 2 0 0 0 4 0'},
-  chc_sn:{name:'CHC Staff Nurse', short:'CHC SN', facility:'CHC Teonthar', accent:'#1E14BE', level:'CHC',
-    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT','LAB','IMAGING'], refUp:['DH','TERTIARY'], refDown:['PHC','SUBCENTRE'],
+  chc_sn:{name:'CHC Staff Nurse', short:'CHC CC', facility:'CHC Teonthar', accent:'#1E14BE', level:'CHC',
+    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:['SDH','DH','TERTIARY'], refDown:['PHC','SUBCENTRE'],
     icon:'M12 5v14M5 12h14'},
-  dh_sn:{name:'DH Staff Nurse', short:'DH SN', facility:'District Hospital, Rewa', accent:'#994242', level:'DH',
-    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT','LAB','IMAGING'], refUp:['TERTIARY'], refDown:['CHC','PHC','SUBCENTRE'],
+  dh_sn:{name:'DH Staff Nurse', short:'DH CC', facility:'BK DH', accent:'#994242', level:'DH',
+    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:['TERTIARY'], refDown:['SDH','CHC','PHC','SUBCENTRE'],
     icon:'M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3'},
   tert_sn:{name:'Tertiary Staff Nurse', short:'TER SN', facility:'Medical College, Jabalpur', accent:'#C35721', level:'TERTIARY',
-    options:['REFERRAL','FOLLOW_UP','LAB','IMAGING'], refUp:[], refDown:['DH','CHC','PHC','SUBCENTRE'],
+    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:[], refDown:['DH','SDH','CHC','PHC','SUBCENTRE'],
     icon:'M4 21V8l8-5 8 5v13M9 21v-6h6v6M9 12h.01M15 12h.01'},
 };
 ROLES.phc_mo = {name:'PHC Medical Officer', short:'PHC MO', facility:'PHC Sirmour', accent:'#655AD0', level:'PHC',
   tabs:['insights','worklist','lookup','alerts'],
-  options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT','LAB','IMAGING'], refUp:['CHC','DH','TERTIARY'], refDown:['SUBCENTRE'],
+  options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:['CHC','SDH','DH','TERTIARY'], refDown:['SUBCENTRE'],
   icon:'M3 20V10l9-6 9 6v10M9 20v-6h6v6M12 7v0'};
 ROLES.chc_mo = {...ROLES.phc_mo, name:'CHC Medical Officer', short:'CHC MO', facility:'CHC Teonthar', level:'CHC',
-  refUp:['DH','TERTIARY'], refDown:['PHC','SUBCENTRE']};
-ROLES.dh_mo = {...ROLES.phc_mo, name:'District Programme Officer', short:'DPO', facility:'District Hospital, Rewa', level:'DH',
-  refUp:['TERTIARY'], refDown:['CHC','PHC','SUBCENTRE']};
-ROLES.phc_nurse = {name:'PHC Nurse — all services', short:'SN', facility:'PHC Sirmour', sub:'PHC Sirmour · ANC · PNC & newborn · NCD', accent:'#1E14BE', level:'PHC',
+  refUp:['SDH','DH','TERTIARY'], refDown:['PHC','SUBCENTRE']};
+ROLES.dh_mo = {...ROLES.phc_mo, name:'District Programme Officer', short:'DPO', facility:'BK DH', level:'DH',
+  refUp:['TERTIARY'], refDown:['SDH','CHC','PHC','SUBCENTRE']};
+ROLES.phc_nurse = {name:'PHC Nurse — all services', short:'SN', facility:'PHC Sirmour', sub:'PHC Sirmour · HRP · PNW/NB · NCD', accent:'#1E14BE', level:'PHC',
   services:true, tabs:['home','worklist','lookup','alerts'],
-  options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT','LAB','IMAGING'], refUp:['CHC','DH','TERTIARY'], refDown:['SUBCENTRE'],
+  options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:['CHC','SDH','DH','TERTIARY'], refDown:['SUBCENTRE'],
   icon:'M4 7h16v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM9 4h6l1 3H8zM12 11v6M9 14h6'};
 
-const capUsers = (anmLabel, svc) => [{k:'asha'},{k:'anm', label:'AAM ('+anmLabel+')'},{k:'phc_sn'},{k:'chc_sn'},{k:'dh_sn'},{k:'tert_sn'}]
+ROLES.del_phc = {...ROLES.phc_sn, name:'PHC Staff Nurse', short:'PHC SN', facility:'PHC Dayalpur'};
+ROLES.del_chc = {...ROLES.chc_sn, name:'CHC Staff Nurse', short:'CHC CC', facility:'CHC Faridabad'};
+ROLES.sdh_sn = {...ROLES.dh_sn, name:'SDH Staff Nurse', short:'SDH CC', facility:'SDH Ballabhgarh', accent:'#655AD0', level:'SDH', refUp:['DH','TERTIARY'], refDown:['CHC','PHC','SUBCENTRE']};
+ROLES.del_sdh = {...ROLES.sdh_sn, name:'SDH Staff Nurse', short:'SDH CC', facility:'SDH Ballabhgarh'};
+ROLES.del_bk = {...ROLES.tert_sn, name:'BK DH Staff Nurse', short:'BK DH SN', facility:'BK DH', level:'DH', options:ROLES.dh_sn.options};
+const DFAC = {
+  PHC_DAY:{label:'PHC Dayalpur', level:'PHC', sub:'Primary health centre · normal delivery'},
+  PHC_CHI:{label:'PHC Chiansaa', level:'PHC', sub:'Primary health centre · normal delivery'},
+  SDH_BGH:{label:'SDH Ballabhgarh', level:'SDH', sub:'Sub-district hospital · FRU · C-section'},
+  BK:{label:'BK DH', level:'DH', sub:'BK DH, Faridabad · FRU'},
+  FRU_OTH:{label:'Other FRUs', level:'CHC', sub:'Any other first referral unit'},
+  AIIMS:{label:'AIIMS Delhi', level:'TERTIARY', sub:'Tertiary care · advanced obstetric care'},
+  FRU1:{label:'FRU 1', level:'CHC', sub:'First referral unit'},
+  FRU2:{label:'FRU 2', level:'CHC', sub:'First referral unit'},
+  FRU3:{label:'FRU 3', level:'CHC', sub:'First referral unit'},
+  OTHER_FAC:{label:'Other facility', level:'CHC', sub:'Any other public facility'},
+};
+const DEL_ROLE = {
+  anm:{opts:['REFERRAL'], refs:['PHC_DAY','PHC_CHI','SDH_BGH','BK','FRU_OTH'], lab:{}},
+  del_phc:{opts:['DEL_NORMAL','REFERRAL'], refs:['SDH_BGH','BK','FRU_OTH'], lab:{DEL_NORMAL:'Normal delivery at PHC'}},
+  del_chc:{opts:['DEL_NORMAL','REFERRAL'], refs:['SDH_BGH','BK','FRU_OTH'], lab:{DEL_NORMAL:'Delivered at CHC'}},
+  del_sdh:{opts:['DEL_NORMAL','DEL_CSEC','REFERRAL'], refs:['BK','FRU_OTH','AIIMS'], lab:{DEL_NORMAL:'Normal delivery at SDH', DEL_CSEC:'C-section at SDH'}},
+  del_bk:{opts:['DEL_NORMAL','DEL_CSEC','REFERRAL'], refs:['FRU1','FRU2','FRU3','OTHER_FAC'], lab:{DEL_NORMAL:'Normal delivery at BK DH', DEL_CSEC:'C-section at BK DH'}},
+};
+const CAP2INS = {del_phc:'ins_phc', del_chc:'ins_chc', del_sdh:'ins_sdh', del_bk:'ins_tert', asha:'ins_asha', anm:'ins_aam', phc_sn:'ins_phc', chc_sn:'ins_chc', sdh_sn:'ins_sdh', dh_sn:'ins_dh', tert_sn:'ins_tert'};
+const capUsers = (anmLabel, svc) => [{k:'asha'},{k:'anm', label:'AAM ('+anmLabel+')'},{k:'phc_sn'},{k:'chc_sn'},{k:'sdh_sn'},{k:'dh_sn'},{k:'tert_sn'}]
   .map(u=>({...u, svc}));
 
 ROLES.ins_aam = {...ROLES.phc_mo, name:'AAM (ANM)', short:'AAM', facility:'Sub-centre Ghurehta', level:'SUBCENTRE',
-  refUp:['PHC','CHC','DH','TERTIARY'], refDown:[]};
+  refUp:['PHC','CHC','SDH','DH','TERTIARY'], refDown:[]};
 ROLES.ins_asha = {...ROLES.phc_mo, name:'ASHA', short:'ASHA', facility:'Village Ghurehta', level:'SUBCENTRE',
-  refUp:['PHC','CHC','DH','TERTIARY'], refDown:[]};
+  refUp:['PHC','CHC','SDH','DH','TERTIARY'], refDown:[]};
 ROLES.ins_phc = {...ROLES.phc_mo, name:'PHC', short:'PHC', facility:'PHC Sirmour', level:'PHC'};
 ROLES.ins_chc = {...ROLES.phc_mo, name:'CHC', short:'CHC', facility:'CHC Teonthar', level:'CHC',
-  refUp:['DH','TERTIARY'], refDown:['PHC','SUBCENTRE']};
-ROLES.ins_dh = {...ROLES.phc_mo, name:'DH', short:'DH', facility:'District Hospital, Rewa', level:'DH',
-  refUp:['TERTIARY'], refDown:['CHC','PHC','SUBCENTRE']};
+  refUp:['SDH','DH','TERTIARY'], refDown:['PHC','SUBCENTRE']};
+ROLES.ins_sdh = {...ROLES.phc_mo, name:'SDH', short:'SDH', facility:'SDH Ballabhgarh', level:'SDH',
+  refUp:['DH','TERTIARY'], refDown:['CHC','PHC','SUBCENTRE']};
+ROLES.ins_dh = {...ROLES.phc_mo, name:'DH', short:'DH', facility:'BK DH', level:'DH',
+  refUp:['TERTIARY'], refDown:['SDH','CHC','PHC','SUBCENTRE']};
 ROLES.ins_tert = {...ROLES.phc_mo, name:'Tertiary Care', short:'TERT', facility:'Medical College, Jabalpur', level:'TERTIARY',
-  refUp:[], refDown:['DH','CHC','PHC','SUBCENTRE']};
+  refUp:[], refDown:['DH','SDH','CHC','PHC','SUBCENTRE']};
+
+const NS_LOGINS = [
+  {k:'asha', label:'ASHA', hi:'आशा', facility:'ASHA Samta · Village Gharonda'},
+  {k:'anm', label:'AAM – ANM', hi:'आयुष्मान आरोग्य मंदिर – एएनएम', facility:'Sub-centre Ghurehta'},
+  {k:'phc_sn', label:'PHC SN', hi:'पीएचसी स्टाफ नर्स', facility:'PHC Sirmour'},
+  {k:'chc_sn', label:'CHC CC', hi:'सीएचसी स्टाफ नर्स', facility:'CHC Teonthar'},
+  {k:'sdh_sn', label:'SDH CC', hi:'एसडीएच स्टाफ नर्स', facility:'SDH Ballabhgarh'},
+  {k:'dh_sn', label:'DH CC', hi:'डीएच स्टाफ नर्स', facility:'BK DH'},
+  {k:'tert_sn', label:'TC', hi:'तृतीयक देखभाल', facility:'Tertiary Care · Medical College, Jabalpur'},
+].map(u=>({...u, screen:'lookup', svc:'ANC'}));
+const NS2MC = {asha:'mc_asha', anm:'mc_anm'};
+const NS_TABS = ['lookup','insights','alerts'];
 
 const INS_LOGINS = [
   {k:'ins_aam', facility:'Sub-centre Ghurehta · all services'},
   {k:'ins_asha', facility:'Village Ghurehta · all services'},
   {k:'ins_phc', facility:'PHC Sirmour · all services'},
   {k:'ins_chc', facility:'CHC Teonthar · all services'},
-  {k:'ins_dh', facility:'District Hospital, Rewa · all services'},
+  {k:'ins_sdh', facility:'SDH Ballabhgarh · all services'},
+  {k:'ins_dh', facility:'BK DH · all services'},
   {k:'ins_tert', facility:'Medical College, Jabalpur · all services'},
 ].map(u=>({...u, screen:'insights', svc:'ANC', insights:true}));
 
@@ -124,22 +178,23 @@ const MC_LOGINS = [
 ].map(u=>({...u, screen:'mcdash', svc:'ANC'}));
 
 const FOLDERS = {
-  capture:{name:'NS Capture', hi:'नेक्स्ट स्टेप्स दर्ज करें', sub:'Record & close next steps', accent:'#1E14BE',
+  capture:{name:'Next Steps', hi:'नेक्स्ट स्टेप्स', sub:'Record, close & track next steps', accent:'#1E14BE',
     icon:'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9',
-    title:'NS Capture', tagline:'Pick the care register you are working in today.',
+    title:'Next Steps', tagline:'Pick the care register you are working in today.',
     subs:{
-      ANC:{name:'ANC', hi:'गर्भावस्था की देखफ़ाल', sub:'Pregnancy · ANC, PMSMA, referrals', accent:'#1E14BE',
+      ANC:{name:'HRP', hi:'गर्भावस्था की देखफ़ाल', sub:'High risk pregnancy · next steps', accent:'#1E14BE',
         icon:'M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10z',
-        title:'ANC', tagline:'Antenatal care — next steps from sub-centre to tertiary.', users:capUsers('ANM','ANC')},
-      PNC:{name:'PNC & Newborn', hi:'प्रसव के बाद और नवजात', sub:'Mother & baby after delivery', accent:'#2E9E6B',
+        title:'HRP', tagline:'High risk pregnancy — next steps from sub-centre to tertiary.', users:capUsers('ANM','ANC')},
+      DELIVERY:{name:'Delivery care', hi:'प्रसव देखभाल', sub:'Delivery & referral for delivery', accent:'#6165DE',
+        icon:'M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3',
+        title:'Delivery care', tagline:'Record where she delivers — or where she is referred for delivery.',
+        users:[{k:'anm', label:'AAM (ANM)'},{k:'del_phc'},{k:'del_chc'},{k:'del_sdh'},{k:'del_bk'}].map(u=>({...u, svc:'DELIVERY'}))},
+      PNC:{name:'PNW/NB', hi:'प्रसव के बाद और नवजात', sub:'Mother & baby after delivery', accent:'#2E9E6B',
         icon:'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 21a6 6 0 0 1 12 0M18 6v6M15 9h6',
-        title:'PNC & Newborn', tagline:'Postnatal and newborn care — mother and baby followed together.', users:capUsers('ANM','PNC')},
+        title:'PNW/NB', tagline:'Postnatal and newborn care — mother and baby followed together.', users:capUsers('ANM','PNC')},
       NCD:{name:'NCDs', hi:'मधुमेह व रक्तचाप', sub:'Diabetes & hypertension', accent:'#C35721',
         icon:'M20 12h-3l-2 5-3-10-2 5H4',
         title:'NCDs', tagline:'Diabetes and hypertension — follow-up, refills and lab tests.', users:capUsers('CHO','NCD')},
-      CANCER:{name:'Cancer', hi:'कैंसर जाँच', sub:'Screening & treatment follow-up', accent:'#994242',
-        icon:'M12 3a4 4 0 0 1 4 4c2.5 0 4 1.8 4 4s-1.8 4-4 4a4 4 0 0 1-8 0c-2.2 0-4-1.8-4-4s1.5-4 4-4a4 4 0 0 1 4-4z',
-        title:'Cancer', tagline:'Screening positives — confirm, treat and follow up.', users:capUsers('ANM','CANCER')},
     }},
   insights:{name:'NS Insights', hi:'रिपोर्ट और आँकड़े', sub:'Dashboard & indicators', accent:'#2E9E6B',
     icon:'M4 20V10M10 20V4M16 20v-7M22 20H2',
@@ -152,24 +207,24 @@ const FOLDERS = {
 };
 
 const SVC = {
-  ANC:{key:'ANC', label:'ANC', full:'Antenatal care', line:'ANC visits, PMSMA, referrals',
-    ac:'#1E14BE', sf:'#EFEDFF', icon:'M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10z',
-    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','PMSMA_VISIT','LAB','IMAGING'],
+  ANC:{key:'ANC', label:'HRP', full:'High risk pregnancy', line:'ANC visits, referrals',
+    ac:'#B42318', sf:'#FDE8E6', icon:'M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10z',
+    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'],
     journey:'Full pregnancy journey', findTitle:'Find a pregnant woman', enrol:'Register a pregnant woman',
-    regNote:'Name and mobile are required. No clinical details — ever.',
+    regNote:'Name, mobile and LMP are required. No clinical details — ever.',
     dateLabel:'LMP (last menstrual period)', hasDate:true, flag:{HRP:'HRP', Normal:'Normal'}},
-  PNC:{key:'PNC', label:'PNC & Newborn', full:'Postnatal & newborn care', line:'PNC visits, follow-up, referrals',
+  PNC:{key:'PNC', label:'PNW/NB', full:'Postnatal & newborn care', line:'PNC visits, follow-up, referrals',
     ac:'#2E9E6B', sf:'#D9F7E8', icon:'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 21a6 6 0 0 1 12 0M18 6v6M15 9h6',
-    options:['REFERRAL','PNC_VISIT','NB_CHECK'],
+    options:['REFERRAL','PNC_VISIT','NB_CHECK','HBNC','HOME_PNC'],
     journey:'Postnatal & newborn journey', findTitle:'Find a postnatal mother', enrol:'Register a postnatal mother',
-    regNote:'Mother and baby are followed together. No clinical details — ever.',
+    regNote:'Name, mobile and date of delivery are required. Mother and baby are followed together.',
     dateLabel:'Date of delivery', hasDate:true, flag:{HRP:'Danger signs', Normal:'Both well'}},
   NCD:{key:'NCD', label:'NCD', full:'Diabetes & hypertension', line:'Follow-up, refills, lab tests',
-    ac:'#C35721', sf:'#FBE7DC', icon:'M20 12h-3l-2 5-3-10-2 5H4',
+    ac:'#1E14BE', sf:'#EFEDFF', icon:'M20 12h-3l-2 5-3-10-2 5H4',
     options:['REFERRAL','FOLLOW_UP','REFILL','LAB'],
     journey:'NCD care journey', findTitle:'Find an NCD client', enrol:'Register an NCD client',
     regNote:'Readings stay in the NCD register — this records only what happens next.',
-    dateLabel:'', hasDate:false, flag:{HRP:'Uncontrolled', Normal:'Controlled'}},
+    dateLabel:'', hasDate:false, flag:{HRP:'NCD', Normal:'NCD'}},
 };
 SVC.CANCER = {key:'CANCER', label:'Cancer', full:'Cancer screening & care', line:'Confirmation, treatment, follow-up',
   ac:'#994242', sf:'#F6EBEB', icon:'M12 3a4 4 0 0 1 4 4c2.5 0 4 1.8 4 4s-1.8 4-4 4a4 4 0 0 1-8 0c-2.2 0-4-1.8-4-4s1.5-4 4-4a4 4 0 0 1 4-4z',
@@ -178,8 +233,15 @@ SVC.CANCER = {key:'CANCER', label:'Cancer', full:'Cancer screening & care', line
   regNote:'Screening outcome stays in the register — this records only what happens next.',
   dateLabel:'', hasDate:false, flag:{HRP:'Screen positive', Normal:'Under follow-up'}};
 
-const SVC_KEYS = ['ANC','PNC','NCD'];
-const DATED = ['ANC_VISIT','PNC_VISIT','NB_CHECK','BP_CHECK','SUGAR_TEST','REFILL','HOME_VISIT'];
+SVC.DELIVERY = {key:'DELIVERY', label:'Delivery', full:'Delivery care', line:'Delivery & referral for delivery',
+  ac:'#6165DE', sf:'#E7E7FB', icon:'M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3',
+  options:['REFERRAL'],
+  journey:'Delivery care journey', findTitle:'Find a woman due for delivery', enrol:'Register a woman for delivery care',
+  regNote:'Name, mobile and LMP are required. No clinical details — ever.',
+  dateLabel:'LMP (last menstrual period)', hasDate:true, flag:{HRP:'HRP', Normal:'Normal'}};
+
+const SVC_KEYS = ['ANC','NCD'];
+const DATED = ['HOME_PNC','BT','ANC_VISIT','PNC_VISIT','NB_CHECK','BP_CHECK','SUGAR_TEST','REFILL','HOME_VISIT'];
 
 const INS_SCOPES = {
   ins_asha:{mul:.085, list:[{id:'all', label:'Village Ghurehta', f:1, q:1.04, villages:[]}]},
@@ -189,7 +251,12 @@ const INS_SCOPES = {
     {id:'sir', label:'PHC Sirmour', f:.38, q:1.04, villages:[]},
     {id:'bai', label:'PHC Baikunthpur', f:.34, q:.94, villages:[]},
     {id:'cha', label:'PHC Chakghat', f:.28, q:.88, villages:[]}]},
-  ins_dh:{mul:.55, list:[{id:'all', label:'District Hospital, Rewa', f:1, q:1, villages:[]}]},
+  ins_sdh:{mul:3.4, list:[
+    {id:'all', label:'All CHCs & PHCs', f:1, q:1, villages:[]},
+    {id:'teo', label:'CHC Teonthar', f:.4, q:1.02, villages:[]},
+    {id:'day', label:'PHC Dayalpur', f:.32, q:.96, villages:[]},
+    {id:'chn', label:'PHC Chiansaa', f:.28, q:.9, villages:[]}]},
+  ins_dh:{mul:.55, list:[{id:'all', label:'BK DH', f:1, q:1, villages:[]}]},
   ins_tert:{mul:.32, list:[{id:'all', label:'Medical College, Jabalpur', f:1, q:1, villages:[]}]},
 };
 const INS_SC = [
@@ -204,7 +271,6 @@ const INS_BASE = {
   actions:[
     {key:'ref', label:'Referrals pending', n:14, color:'#C35721', soft:'#FBEDE4', sub:'Referral raised, not yet closed at the receiving facility'},
     {key:'anc', label:'ANC overdue', n:21, color:'#EB956A', soft:'#FDF0E8', sub:'Next scheduled ANC visit is past its due date'},
-    {key:'pmsma', label:'PMSMA overdue', n:11, color:'#6165DE', soft:'#EFEDFF', sub:'Missed or not yet scheduled for a PMSMA session'},
     {key:'drop', label:'At risk of drop-out', n:9, color:'#994242', soft:'#F6EBEB', sub:'Pending action and could not be contacted'},
     {key:'lost', label:'Lost to follow-up', n:5, color:'#751A1A', soft:'#F4E7E7', sub:'Declined the recommended care'},
   ],
@@ -223,34 +289,31 @@ const INS_BASE = {
 };
 const INS_SVC = {
   ANC:{registered:412, hrp:78, metric:'HRP share of registrations', cohort:'HRPs', unit:'PW',
-    denLine:(h,r)=>h+' high-risk of '+r+' registered pregnant women',
+    denLine:(h,r)=>h+' high-risk of '+r+' registered pregnant women · excludes PW past EDD + 30 days with no pregnancy outcome',
     metricFac:'HRP share of women seen here', denLineFac:(h,r)=>h+' high-risk of '+r+' women with a next step created, pending or provided at this facility',
     refTitle:'HRPs by referral closure', trackLine:'responded to follow-up or completed the recommended journey',
+    hideRef:true,
+    trackSplit:{hrp:{num:62, den:78}, nrm:{num:271, den:334}},
     actions:[
-      {key:'ref', label:'Referrals pending', n:14, color:'#C35721', soft:'#FBEDE4', sub:'Referral raised, not yet closed at the receiving facility'},
-      {key:'anc', label:'ANC overdue', n:21, color:'#EB956A', soft:'#FDF0E8', sub:'Next scheduled ANC visit is past its due date'},
-      {key:'pmsma', label:'PMSMA overdue', n:11, color:'#6165DE', soft:'#EFEDFF', sub:'Missed or not yet scheduled for a PMSMA session'},
-      {key:'drop', label:'At risk of drop-out', n:9, color:'#994242', soft:'#F6EBEB', sub:'Pending action and could not be contacted'},
-      {key:'lost', label:'Lost to follow-up', n:5, color:'#751A1A', soft:'#F4E7E7', sub:'Declined the recommended care'},
+      {key:'over', pk:'anc', label:'Overdue', nrm:18, hrp:12, color:'#C35721', soft:'#FBEDE4', sub:'Next step open for more than 3 days past its due date'},
+      {key:'pend', pk:'ref', label:'Pending actions', nrm:22, hrp:9, color:'#EB956A', soft:'#FDF0E8', sub:'Next step open for 1–3 days past its due date'},
+      {key:'unr', pk:'drop', label:'Unreachable', nrm:7, hrp:5, color:'#B7791F', soft:'#FBF1DC', sub:'3 call attempts without a reply'},
+      {key:'lost', label:'Lost to follow-up', nrm:4, hrp:3, color:'#70706E', soft:'#EEEDEA', sub:'More than 3 call attempts and/or declined care'},
     ],
     secs:[
-      {title:'ANC compliance', sub:'ANC status as per schedule',
-        rows:[{label:'1 ANC by 12 weeks', num:68, den:74},{label:'2 ANC by 26 weeks', num:49, den:61},{label:'3 ANC by 36 weeks', num:27, den:38},{label:'4 ANC by 40 weeks', num:15, den:24}]},
-      {title:'PMSMA attendance', sub:'PMSMA attendance as per schedule',
-        rows:[{label:'1 PMSMA by 26 weeks', num:44, den:61},{label:'4 PMSMA by 40 weeks', num:9, den:24}]},
-      {title:'Diagnostics completion', sub:"Diagnostics completed as per doctor's advice",
-        rows:[{label:'HRPs with labs completed', num:58, den:72},{label:'HRPs with USG completed', num:41, den:63}]},
+      {title:'HRP journey', hrpTitle:true, sub:"HRPs who completed each step as advised",
+        rows:[{label:'Lab tests', num:58, den:72},{label:'Ultrasound', num:41, den:63},{label:'Blood transfusion', num:9, den:14},
+              {label:'Follow up', num:54, den:70},{label:'Specialist consult', num:22, den:31}]},
     ]},
-  PNC:{registered:298, hrp:54, metric:'High-risk share of mothers', cohort:'mothers', unit:'mothers',
-    denLine:(h,r)=>h+' high-risk of '+r+' postnatal mothers registered',
-    metricFac:'High-risk share of mothers seen here', denLineFac:(h,r)=>h+' high-risk of '+r+' mothers with a next step created, pending or provided at this facility',
+  PNC:{registered:298, hrp:54, metric:'High risk PNW / NB', cohort:'mothers', unit:'mothers',
+    denLine:(h,r)=>h+' high risk PNW / NB of '+r+' registered',
+    metricFac:'High risk PNW / NB seen here', denLineFac:(h,r)=>h+' high risk PNW / NB of '+r+' with a next step created, pending or provided at this facility',
     refTitle:'Mothers by referral closure', trackLine:'responded to follow-up or completed the postnatal schedule',
     actions:[
-      {key:'ref', label:'Referrals pending', n:9, color:'#C35721', soft:'#FBEDE4', sub:'Mother or newborn referred, not yet closed at the receiving facility'},
-      {key:'pnc', label:'PNC visits overdue', n:16, color:'#EB956A', soft:'#FDF0E8', sub:'Next scheduled postnatal visit is past its due date'},
-      {key:'nb', label:'NB visits overdue', n:12, color:'#6165DE', soft:'#EFEDFF', sub:'Next scheduled newborn visit is past its due date'},
-      {key:'drop', label:'At risk of drop-out', n:7, color:'#994242', soft:'#F6EBEB', sub:'Pending action and could not be contacted'},
-      {key:'lost', label:'Lost to follow-up', n:4, color:'#751A1A', soft:'#F4E7E7', sub:'Declined the recommended care'},
+      {key:'over', pk:'pnc', label:'Overdue', nrmP:9, hnb:5, hpw:6, color:'#C35721', soft:'#FBEDE4', sub:'Next step open for more than 3 days past its due date'},
+      {key:'pend', pk:'ref', label:'Pending actions', nrmP:11, hnb:4, hpw:5, color:'#EB956A', soft:'#FDF0E8', sub:'Next step open for 1–3 days past its due date'},
+      {key:'unr', pk:'drop', label:'Unreachable', nrmP:4, hnb:2, hpw:3, color:'#B7791F', soft:'#FBF1DC', sub:'3 call attempts without a reply'},
+      {key:'lost', label:'Lost to follow-up', nrmP:2, hnb:1, hpw:2, color:'#70706E', soft:'#EEEDEA', sub:'More than 3 call attempts and/or declined care'},
     ],
     secs:[
       {title:'PNC compliance', sub:'Postnatal visits as per schedule',
@@ -260,27 +323,23 @@ const INS_SVC = {
       {title:'PN women', sub:'Postnatal women next steps closed',
         rows:[{label:'PN referral closed', num:33, den:41},{label:'PN follow up completed', num:47, den:54}]},
     ]},
-  NCD:{registered:1240, hrp:214, metric:'Uncontrolled share of clients', cohort:'clients', unit:'clients',
-    denLine:(h,r)=>h+' uncontrolled of '+r+' clients on treatment',
-    metricFac:'High-need share of clients seen here', denLineFac:(h,r)=>h+' high-need of '+r+' clients with a next step created, pending or provided at this facility',
-    refTitle:'Clients by referral closure', trackLine:'responded to follow-up or stayed in continuous care',
+  NCD:{registered:1240, hrp:214, metric:'Patients needing action', cohort:'patients', unit:'patients',
+    denLine:(h,r)=>h+' needing action of '+r+' patients on treatment',
+    metricFac:'High-need share of patients seen here', denLineFac:(h,r)=>h+' high-need of '+r+' patients with a next step created, pending or provided at this facility',
+    refTitle:'Patients by referral closure', hideRef:true,
+    trackSplit:{htn:{num:452, den:560}, dm:{num:301, den:380}, both:{num:228, den:300}}, trackLine:'responded to follow-up or stayed in continuous care',
     actions:[
-      {key:'ref', label:'Referrals pending', n:22, color:'#C35721', soft:'#FBEDE4', sub:'Referral raised, not yet closed at the receiving facility'},
-      {key:'fup', label:'Follow-up overdue', n:41, color:'#EB956A', soft:'#FDF0E8', sub:'Next scheduled review visit is past its due date'},
-      {key:'refill', label:'Refills overdue', n:34, color:'#6165DE', soft:'#EFEDFF', sub:'Medicine refill not collected on time'},
-      {key:'drop', label:'At risk of drop-out', n:18, color:'#994242', soft:'#F6EBEB', sub:'Pending action and could not be contacted'},
-      {key:'lost', label:'Lost to follow-up', n:11, color:'#751A1A', soft:'#F4E7E7', sub:'Declined the recommended care'},
+      {key:'over', pk:'fup', label:'Overdue', dm:14, htn:19, both:8, color:'#C35721', soft:'#FBEDE4', sub:'Next step open for more than 3 days past its due date'},
+      {key:'pend', pk:'ref', label:'Pending actions', dm:16, htn:22, both:9, color:'#EB956A', soft:'#FDF0E8', sub:'Next step open for 1–3 days past its due date'},
+      {key:'unr', pk:'drop', label:'Unreachable', dm:6, htn:8, both:4, color:'#B7791F', soft:'#FBF1DC', sub:'3 call attempts without a reply'},
+      {key:'lost', label:'Lost to follow-up', dm:3, htn:5, both:3, color:'#70706E', soft:'#EEEDEA', sub:'More than 3 call attempts and/or declined care'},
     ],
     secs:[
-      {title:'Follow-up compliance', sub:'Follow-up next steps closed as per schedule',
-        rows:[{label:'Monthly follow-ups', num:161, den:214},{label:'Quarterly review visit with doctor', num:132, den:214},
-              {label:'Monthly medicine refill compliance', num:141, den:214},{label:'Lab test completed as advised', num:96, den:134}]},
-      {title:'Average duration taken to', sub:'Median days from next step created to closed',
-        durs:[{label:'Close referrals', days:9, note:'Referral raised → closed at receiving facility'},
-              {label:'Complete follow-ups', days:6, note:'Follow-up scheduled → visit recorded'},
-              {label:'Get medicine refills', days:4, note:'Refill due → medicine collected'}]},
-      {title:'Diagnostics completion', sub:"Lab tests completed as per doctor's advice",
-        rows:[{label:'Lab test advised and completed', num:96, den:134}]},
+      {title:'Care journey', sub:'Patients who completed each step as advised — HTN / DM / Both',
+        rows:[{label:'Referral', htn:{num:62, den:84}, dm:{num:41, den:58}, both:{num:37, den:55}},
+              {label:'Follow up', htn:{num:430, den:530}, dm:{num:288, den:360}, both:{num:230, den:290}},
+              {label:'Medicine refill', htn:{num:455, den:548}, dm:{num:300, den:372}, both:{num:236, den:296}},
+              {label:'Lab', htn:{num:98, den:150}, dm:{num:120, den:164}, both:{num:92, den:128}}]},
     ]},
   CANCER:{registered:186, hrp:48, metric:'Screen-positive share', cohort:'clients', unit:'clients',
     denLine:(h,r)=>h+' screen-positive of '+r+' clients screened',
@@ -308,7 +367,7 @@ const INS_SVC = {
     ]},
 };
 const INS_PEOPLE = {
-  ref:[{name:'Rekha Kumari', meta:'Amiliya · Tertiary, 9d overdue', pill:'9d', sc:'ghu'},{name:'Radha Prasad', meta:'Amiliya · CHC Teonthar, 4d overdue', pill:'4d', sc:'ghu'},{name:'Anita Yadav', meta:'Baghwar · CHC, due today', pill:'Today', sc:'bha'},{name:'Meena Devi', meta:'Sirmour · DH Rewa, 6d overdue', pill:'6d', sc:'dih'}],
+  ref:[{name:'Rekha Kumari', meta:'Amiliya · Tertiary, 9d overdue', pill:'9d', sc:'ghu'},{name:'Radha Prasad', meta:'Amiliya · CHC Teonthar, 4d overdue', pill:'4d', sc:'ghu'},{name:'Anita Yadav', meta:'Baghwar · CHC, due today', pill:'Today', sc:'bha'},{name:'Meena Devi', meta:'Sirmour · BK DH, 6d overdue', pill:'6d', sc:'dih'}],
   anc:[{name:'Sunita Devi', meta:'Ghurehta · 3rd ANC due at 34 wks', pill:'11d', sc:'ghu'},{name:'Pushpa Bai', meta:'Baghwar · 2nd ANC due at 24 wks', pill:'8d', sc:'bha'},{name:'Lakshmi Bai', meta:'Sirmour · 4th ANC due at 38 wks', pill:'4d', sc:'dih'},{name:'Kavita Saket', meta:'Gharonda · 2nd ANC due at 25 wks', pill:'13d', sc:'kat'}],
   pmsma:[{name:'Gita Sharma', meta:'Ghurehta · missed 9 Aug session', pill:'Missed', sc:'ghu'},{name:'Radha Prasad', meta:'Amiliya · no PMSMA at 28 wks', pill:'0 visits', sc:'ghu'},{name:'Laxmi Gupta', meta:'Semri · missed 9 Aug session', pill:'Missed', sc:'bha'}],
   drop:[{name:'Rekha Kumari', meta:'Amiliya · 3 attempts, unreachable', pill:'3 tries', sc:'ghu'},{name:'Anita Yadav', meta:'Baghwar · phone off, lab open', pill:'2 tries', sc:'bha'},{name:'Usha Pandey', meta:'Rampur Kothi · migrated, ASHA verifying', pill:'Migrated', sc:'kat'}],
@@ -351,6 +410,7 @@ const TABMETA = {
   training:{label:'Training', icon:'M4 5.5A2 2 0 0 1 6 4h5v16H6a2 2 0 0 1-2-2zM11 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7'},
   library:{label:'My library', icon:'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5'},
   ask:{label:'Ask', icon:'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z'},
+  microcoach:{label:'Microcoach', icon:'M12 3l9 4.5-9 4.5L3 7.5zM7 10.5V16c0 1.7 2.2 3 5 3s5-1.3 5-3v-5.5'},
 };
 
 // ================= MICRO-COACH =================
@@ -486,4 +546,24 @@ const VILLAGES = [
   {name:'Chandpur', asha:'Phulmani Devi'},
   {name:'Nayagaon', asha:'Kiran Devi'},
 ];
+const AAM_ASHAS = ['ASHA Samta','Sunita Devi','Rekha Kumari','Kiran Devi'];
+const FBD_WARDS = [
+  {name:'Ward 3 · NIT Faridabad', asha:'Pooja Sharma'},
+  {name:'Ward 11 · Sector 55', asha:'Meena Rani'},
+  {name:'Ward 18 · Ballabhgarh', asha:'Suman Bala'},
+  {name:'Ward 24 · Sanjay Colony', asha:'Nisha Kumari'},
+  {name:'Village Tigaon', asha:'Kamlesh Devi'},
+  {name:'Village Dhauj', asha:'Sarita Devi'},
+  {name:'Village Mohna', asha:'Rajbala'},
+  {name:'Village Pali', asha:'Babita Yadav'},
+];
+const USN_VILLAGES = [
+  {name:'Ward 4 · Rudrapur', asha:'Geeta Bisht'},
+  {name:'Ward 9 · Kashipur', asha:'Kamla Rawat'},
+  {name:'Village Gadarpur', asha:'Nirmala Joshi'},
+  {name:'Village Sitarganj', asha:'Pushpa Negi'},
+];
+const MAPPED_DISTRICTS = ['Faridabad','Udham Singh Nagar'];
+const DISTRICTS = ['Faridabad','Udham Singh Nagar','Ghaziabad','Delhi','Gurugram','Gautam Buddh Nagar','Palwal','Mewat','Mahendargarh','Dadri','Jhajjar','Meerut','Bulandshahr'];
+const vwList = (d)=> d==='Faridabad' ? FBD_WARDS : d==='Udham Singh Nagar' ? USN_VILLAGES : [];
 

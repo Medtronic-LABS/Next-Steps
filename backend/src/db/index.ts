@@ -140,6 +140,13 @@ export function initDatabase() {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    -- ai-care-demo PWA: one row per beneficiary record (with its steps) as JSON
+    CREATE TABLE IF NOT EXISTS pwa_records (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `);
 
   try {

@@ -104,6 +104,9 @@ whatsappRouter.post(['/', '/webhook'], async (req: Request, res: Response) => {
   // Acknowledge receipt to Meta immediately (prevents duplicate HTTP retries)
   res.sendStatus(200);
 
+  // Bot switched off: Meta still gets its 200, but nothing is routed or replied to.
+  if (!config.features.whatsappBot) return;
+
   try {
     const body = req.body;
     if (!body || body.object !== 'whatsapp_business_account') return;

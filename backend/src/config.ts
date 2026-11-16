@@ -14,6 +14,11 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   databaseUrl: process.env.DATABASE_URL || 'postgresql://nextsteps_user:nextsteps_secure_password_123@localhost:5432/nextsteps_db',
   sqliteDbPath: process.env.SQLITE_DB_PATH || './data/nextsteps.db',
+  // ai-care-demo: the WhatsApp bot and CCE delivery are switched off unless explicitly enabled.
+  features: {
+    whatsappBot: process.env.WHATSAPP_BOT_ENABLED === 'true',
+    cce: process.env.CCE_ENABLED === 'true',
+  },
   cce: {
     keycloakTokenUrl: process.env.CCE_KEYCLOAK_TOKEN_URL || 'https://keycloak.cce.mdtlabs.org/realms/cce/protocol/openid-connect/token',
     clientId: process.env.CCE_CLIENT_ID || 'nextstep-emitter',

@@ -155,6 +155,11 @@ const SVG_ATTR_MAP: Record<string, string> = {
   'fill-rule': 'fillRule',
   'clip-rule': 'clipRule',
   'mix-blend-mode': 'mixBlendMode',
+  'font-family': 'fontFamily',
+  'font-size': 'fontSize',
+  'font-weight': 'fontWeight',
+  'text-anchor': 'textAnchor',
+  readonly: 'readOnly',
 };
 
 function stripComments(css: string): string {

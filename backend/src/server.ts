@@ -7,6 +7,7 @@ import { syncRouter } from './routes/syncRoutes.js';
 import { adminRouter } from './routes/adminRoutes.js';
 import { alertsRouter } from './routes/alertsRoutes.js';
 import { whatsappRouter } from './whatsapp/webhook.js';
+import { pwaRouter } from './routes/pwaRoutes.js';
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use('/api/sync', syncRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/alerts', alertsRouter); // CPHC demo bridge (token-protected, see routes/alertsRoutes.ts)
+app.use('/api/pwa', pwaRouter); // ai-care-demo PWA record storage
 app.use('/api/whatsapp', whatsappRouter);
 app.use('/webhook', whatsappRouter);
 
@@ -42,8 +44,15 @@ console.log('[Database] Initializing Next-Steps data store...');
 initDatabase();
 
 // Start transactional outbox worker for CCE
-console.log('[CCE] Starting outbox dispatcher daemon...');
-startOutboxWorker();
+if (config.features.cce) {
+  console.log('[CCE] Starting outbox dispatcher daemon...');
+  startOutboxWorker();
+} else {
+  console.log('[CCE] Disconnected (CCE_ENABLED is not "true") — outbox events are kept but not sent.');
+}
+if (!config.features.whatsappBot) {
+  console.log('[WhatsApp] Bot disconnected (WHATSAPP_BOT_ENABLED is not "true") — inbound messages are acknowledged and ignored.');
+}
 
 app.listen(config.port, () => {
   console.log(`====================================================`);

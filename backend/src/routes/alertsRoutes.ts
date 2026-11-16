@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { Router, Request, Response } from 'express';
+import { config } from '../config.js';
 import { getWhatsAppClient } from '../whatsapp/client.js';
 import { resolveSender } from '../whatsapp/senderResolution.js';
 import { handleAlerts } from '../whatsapp/workflows/alertsWorkflow.js';
@@ -22,6 +23,9 @@ function tokenOk(header: string | undefined): boolean {
 alertsRouter.post('/push', async (req: Request, res: Response) => {
   if (!tokenOk(req.get('X-Bridge-Token'))) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+  if (!config.features.whatsappBot) {
+    return res.status(503).json({ success: false, error: 'WhatsApp bot is switched off' });
   }
   const phone = typeof req.body?.phone === 'string' ? req.body.phone : '';
   const user = phone ? resolveSender(phone) : null;
