@@ -26,7 +26,10 @@ export default class App extends React.Component<any, any> {
     let maxSid = 0;
     saved.forEach(w=>(w.steps||[]).forEach(s=>{ const m=/^s(\d+)$/.exec(s.id||''); if(m) maxSid=Math.max(maxSid, +m[1]); }));
     bumpSid(maxSid);
-    this.setState({women:saved}, ()=>{ this._persist = true; });
+    // Fictional non-resident (NR) demo women: added once to existing data (matched by id only), then saved like any record.
+    const have=new Set(saved.map(w=>w.id)), extra=this.nrDemo().filter(w=>!have.has(w.id));
+    this.setState({women:saved.concat(extra)}, ()=>{ this._persist = true;
+      if(extra.length){ this._dirty = new Set(extra.map(w=>w.id)); this.flushSaves(); } });
   }
   componentDidUpdate(_p, prev){
     const now=this.state.women;
@@ -297,7 +300,33 @@ export default class App extends React.Component<any, any> {
         {svc:'DELIVERY', id:'d4', name:'Sonia Yadav', hi:'सोनिया यादव', phone:'+919812345404', village:'Ghurehta', vhi:'घुरेहटा', lmp:'2025-10-20', dod:'2026-08-03', delPlace:'Institution', risk:'Normal', sc:'Sub-centre Ghurehta', consent:true,
           steps:[ mk({reg:'DELIVERY', cat:'REFERRAL', level:'PHC', fac:'PHC_DAY', sent:'2026-08-02', status:'DONE', cdate:'2026-08-02', csrc:'AT_CLOSING_FACILITY', clevel:'PHC', cby:'PHC SN · PHC Dayalpur'}),
                   mk({reg:'DELIVERY', cat:'DEL_NORMAL', level:'PHC', ddate:'2026-08-03', disdate:'2026-08-05', status:'DONE', cdate:'2026-08-03', csrc:'AT_CLOSING_FACILITY', clevel:'PHC', cby:'PHC SN · PHC Dayalpur'}) ]},
-      ]);
+      ]).concat(this.nrDemo());
+  }
+  // Fictional NR women (district outside Faridabad / Udham Singh Nagar, no ASHA) with steps due at AAM Ghurehta, PHC Sirmour,
+  // PHC Dayalpur and SDH Ballabhgarh — for discussing non-residents at each level.
+  nrDemo(){
+    const mk=(o)=>({id:uid(), status:'OPEN', rem:null, ...o});
+    const nr=(o)=>({pid:o.id, hi:'', vhi:'', sc:'Outside Ballabhgarh catchment', asha:'', consent:true, outside:true, ...o});
+    return [
+      nr({svc:'ANC', id:'nr2', name:'Rukhsana Begum', hi:'रुख़साना बेगम', phone:'+919812346402', village:'Hathin, Palwal', district:'Palwal', lmp:'2026-03-02', risk:'HRP',
+        regBy:'anm', regFac:'Sub-centre Ghurehta', regName:'AAM',
+        steps:[ mk({cat:'ANC_VISIT', level:'SUBCENTRE', due:'2026-08-02', owner:'anm'}) ]}),
+      nr({svc:'ANC', id:'nr3', name:'Kavita Rathi', hi:'कविता राठी', phone:'+919812346403', village:'Sohna, Gurugram', district:'Gurugram', lmp:'2026-01-20', risk:'HRP',
+        regBy:'phc_sn', regFac:'PHC Sirmour', regName:'PHC Staff Nurse',
+        steps:[ mk({cat:'FOLLOW_UP', level:'PHC', due:'2026-08-03', owner:'phc_sn'}), mk({cat:'LAB', level:'PHC', due:'2026-08-09', owner:'phc_sn'}) ]}),
+      nr({svc:'NCD', id:'nr4', name:'Nasreen Bano', hi:'नसरीन बानो', phone:'+919812346404', village:'Nuh, Mewat', district:'Mewat', cond:'Hypertension', since:'Mar 2026', risk:'Normal',
+        regBy:'anm', regFac:'Sub-centre Ghurehta', regName:'AAM',
+        steps:[ mk({cat:'FOLLOW_UP', level:'SUBCENTRE', due:'2026-07-30', owner:'anm', rem:'failed', unreach:3}) ]}),
+      nr({svc:'NCD', id:'nr5', name:'Sushila Devi', hi:'सुशीला देवी', phone:'+919812346405', village:'Hodal, Palwal', district:'Palwal', cond:'Diabetes + hypertension', since:'Jan 2026', risk:'Normal',
+        regBy:'del_phc', regFac:'PHC Dayalpur', regName:'PHC Staff Nurse',
+        steps:[ mk({cat:'FOLLOW_UP', level:'PHC', fac:'PHC_DAY', due:'2026-08-01', owner:'del_phc'}), mk({cat:'REFILL', level:'PHC', due:'2026-08-11', owner:'phc_sn'}) ]}),
+      nr({svc:'ANC', id:'nr6', name:'Anjali Kumari', hi:'अंजलि कुमारी', phone:'+919812346406', village:'Pataudi, Gurugram', district:'Gurugram', lmp:'2026-01-05', risk:'HRP',
+        regBy:'sdh_sn', regFac:'SDH Ballabhgarh', regName:'SDH Staff Nurse',
+        steps:[ mk({cat:'IMAGING', level:'SDH', due:'2026-07-31', owner:'sdh_sn'}), mk({cat:'SPEC', level:'SDH', due:'2026-08-12', owner:'sdh_sn'}) ]}),
+      nr({svc:'NCD', id:'nr7', name:'Shahida Parveen', hi:'शाहिदा परवीन', phone:'+919812346407', village:'Punhana, Mewat', district:'Mewat', cond:'Diabetes', since:'Jun 2026', risk:'Normal',
+        regBy:'sdh_sn', regFac:'SDH Ballabhgarh', regName:'SDH Staff Nurse',
+        steps:[ mk({cat:'LAB', level:'SDH', due:'2026-08-05', owner:'sdh_sn'}) ]}),
+    ];
   }
 
   // ---------- helpers ----------
@@ -671,7 +700,7 @@ export default class App extends React.Component<any, any> {
     const r=ROLES[u.k];
     const scr=u.screen||(r.tabs||['lookup','worklist','alerts'])[0];
     this.setState({role:u.k, screen:scr, tab:scr, svc:u.svc||'ANC', selId:null, query:'', dialog:null, lkCombo:false, lkVil:null,
-      filter:'ALL', riskFilter:'ALL', insSeg:'actions', wlSeg:null, wlTab:null, wlNr:false, wlOpen:null, wlAll:null, taExp:null, taDone:null}, ()=>this.alertNote());
+      filter:'ALL', riskFilter:'ALL', insSeg:'actions', wlSeg:null, wlTab:null, wlNr:false, wlOpen:null, wlAll:null, taExp:null, taDone:null, lkSeg:null}, ()=>this.alertNote());
   }
   // On sign-in: tell the user how the alert count moved since they last looked (count kept per role on this device).
   alertNote(){
@@ -1259,7 +1288,8 @@ export default class App extends React.Component<any, any> {
     const r=this.state.role, lv=(ROLES[r]||{}).level, mat=this.isMat(w);
     if(r==='asha') return mat && (w.regBy==='asha' || (w.regBy==='anm' && w.nrAsha===ROLES.asha.name));
     if(r==='anm'){ const ownAsha=w.regBy==='asha' && (!w.regName || AAM_ASHAS.indexOf(w.regName)>-1), ownAnm=w.regBy==='anm' && (!w.regFac || w.regFac===ROLES.anm.facility);
-      return mat ? (ownAsha || ownAnm) : (ownAnm || (w.steps||[]).some(s=>s.level==='SUBCENTRE')); }
+      const dueAtAam=(w.steps||[]).some(s=>s.status==='OPEN' && s.level==='SUBCENTRE' && !s.fac); // NR: also where her step is due
+      return mat ? (ownAsha || ownAnm || dueAtAam) : (ownAnm || (w.steps||[]).some(s=>s.level==='SUBCENTRE')); }
     return this.nrReg(w) || (w.steps||[]).some(s=>s.status==='OPEN' && this.atMyFac(s, ROLES[r]));
   }
   nrReg(w){ const r=this.state.role; return !!w.regBy && (w.regBy===r || w.regFac===(ROLES[r]||{}).facility); }
@@ -1331,7 +1361,7 @@ export default class App extends React.Component<any, any> {
         const sec=tn==='overdue'?'od':tn==='unreach'?'unr':tn==='lost'?'lost':d>=1?'pend':d>=-7?'soon':null;
         const key=w.pid||w.id; if(!people.has(key)) people.set(key, []);
         people.get(key).push({s,w,sec,d}); }); });
-    const PRI={od:0,pend:1,soon:2,unr:3,lost:4}, R={wk:[],od:[],pend:[],soon:[],unr:[],lost:[],out:[]};
+    const PRI={od:0,pend:1,soon:2,unr:3,lost:4}, R={wk:[],od:[],pend:[],soon:[],unr:[],lost:[]};
     const savedRow=(id)=>({id, isSaved:true, notSaved:false, savedText:sv.text, onUndo:()=>this.undoSave()});
     people.forEach(items=>{
       const vis=items.filter(i=>i.sec).sort((a,b)=>PRI[a.sec]-PRI[b.sec] || b.d-a.d); if(!vis.length) return;
@@ -1346,20 +1376,20 @@ export default class App extends React.Component<any, any> {
         line:this.wlStepName(s)+' · '+this.wlPlace(s), late, lateFg:sec==='od'?'#B42318':(sec==='pend'||(sec==='soon'&&d>=-1))?'#A87800':'#526078',
         single:n===1, multi:n>1, nLabel:n+' steps', isExp:ex, isStep:true, isOutcome:false, chev:ex?'M6 15l6-6 6 6':'M6 9l6 6 6-6',
         onOpen:()=>this.openWoman(w.id), onToggle:()=>this.setState({taExp:ex?null:s.id, taDone:null}), ...cv}); });
-    // No pregnancy outcome yet: 42 weeks or more (from LMP) goes to the red "42 weeks" section at the top;
-    // past EDD but under 42 weeks is "Outcome due". 42 weeks = EDD + 14 days, so the former EDD + 15 rule falls inside the red section.
+    // Preg outcome due: 42 completed weeks or more (from LMP) with no outcome recorded — one red section at the top.
+    // Under 42 weeks her steps simply stay in the normal sections.
     const seenP={};
     if(seg!=='NCD' && tab!=='mine') (st.women||[]).filter(w=>['ANC','DELIVERY'].indexOf(w.svc||'ANC')>-1 && !w.dod && !w.delivered && !w.pregEnd && w.lmp
         && !(w.outside && !this.nrVisible(w)) && (!nrOnly || w.outside)
         && (isAsha || (hiOnly ? (w.steps.some(s=>this.atMyFac(s,role)) || (w.outside && this.nrVisible(w))) : this.inCatchment(w))))
       .forEach(w=>{ const p=w.pid||w.id; if(seenP[p]) return; seenP[p]=1;
-        const dd=this.diff(this.edd(w)), wk=this.weeks(w)||0, k42=wk>=42; if(dd<0) return; const id='out:'+w.id, ex=st.taExp===id;
-        (k42?R.wk:R.out).push({id, d:dd, isSaved:false, notSaved:true, name:this.lname(w), isNr:!!w.outside, nrLabel:this.nrTag(w), rowBg:k42?'#FEF3F2':'#fff', ...this.regTagsVM(w),
+        const dd=this.diff(this.edd(w)), wk=this.weeks(w)||0, k42=wk>=42; if(!k42) return; const id='out:'+w.id, ex=st.taExp===id;
+        R.wk.push({id, d:dd, isSaved:false, notSaved:true, name:this.lname(w), isNr:!!w.outside, nrLabel:this.nrTag(w), rowBg:k42?'#FEF3F2':'#fff', ...this.regTagsVM(w),
           icon:k42?WL_IC.wk:CAT.DEL_NORMAL.icon, iconFg:k42?'#B42318':'#526078', lineFg:k42?'#B42318':'#3B4763',
           line:k42?(wk+' wks · no delivery recorded'):('Pregnancy outcome · EDD '+this.fmt(this.edd(w))), late:k42?'':('EDD +'+dd), lateFg:'#B42318', single:true, multi:false, nLabel:'', isExp:ex, isStep:false, isOutcome:true,
           chev:ex?'M6 15l6-6 6 6':'M6 9l6 6 6-6', onOpen:()=>this.openWoman(w.id), onToggle:()=>this.setState({taExp:ex?null:id, taDone:null}),
           onOutcome:()=>{ this.setState({taExp:null}); this.openPregEnd(w.id); }}); });
-    const DEF=[['wk','42 weeks · no delivery','#B42318'],['od','Overdue','#B42318'],['pend','Pending','#A87800'],['soon','Due soon','#526078'],['unr','Unreachable','#526078'],['lost','Lost to follow-up','#526078'],['out','Outcome due','#B42318']];
+    const DEF=[['wk','Preg outcome due · 42 weeks','#B42318'],['od','Overdue','#B42318'],['pend','Pending','#A87800'],['soon','Due soon','#526078'],['unr','Unreachable','#526078'],['lost','Lost to follow-up','#526078']];
     const OPEN0={wk:true, od:true}, openMap=st.wlOpen||OPEN0, allMap=st.wlAll||{};
     const sections=DEF.filter(([k])=>k!=='wk' || R.wk.length).map(([k,t,c])=>{ const rows=R[k].sort((a,b)=>b.d-a.d), on=!!openMap[k] && rows.length>0, all=!!allMap[k];
       return {id:k, title:t, count:rows.length+'', countFg:rows.length?c:'#6B7891', hdFg:!rows.length?'#6B7891':k==='wk'?'#B42318':'#101F50', isOpen:on, sign:on?'−':'+',
@@ -1775,7 +1805,7 @@ export default class App extends React.Component<any, any> {
       base.onBell=()=>this.setState({screen:'alerts', selId:null, dialog:null}); }
 
     const svcSub = this.hasSvc() ? (this.svcMeta().full+' · '+ROLES[st.role].name.split(' — ')[0]) : (role.name+' · '+role.facility);
-    const titles={home:['Services', role.name+' · PHC Sirmour'], lookup:['Find',''], worklist:['Work list',''], alerts:['Alerts', role.name+' · '+role.facility], register:['Register', role.facility], insights:['Insights',''], villages:['Villages',''], edit:['Edit details','']};
+    const titles={home:['Services', role.name+' · PHC Sirmour'], lookup:['Find',''], worklist:['Work list',''], alerts:['Alerts', role.name+' · '+role.facility], register:['Register', role.facility], insights:['Insights',''], villages:[this.isHiLang()?'गाँव/वार्ड':'Village/Ward',''], edit:['Edit details','']};
     if(titles[scr]){ base.headerTitle=titles[scr][0]; base.headerSub=titles[scr][1]; }
     else if(scr==='journey'){ const w=this.byId(st.selId); base.headerTitle=w?w.name:'Journey'; base.headerSub=SVC[(w&&w.svc)||this.svc()].journey; }
     else if(scr==='profile'){ const w=this.byId(st.selId); base.headerTitle='Primary health profile'; base.headerSub=w?(w.name+' · one person, three registers'):''; }
@@ -1861,19 +1891,24 @@ export default class App extends React.Component<any, any> {
       const q=(st.query||'').trim(), digits=q.replace(/\D/g,''), isName=/[a-zA-Zऀ-ॿ]/.test(q), vil=st.lkVil||null;
       base.query=st.query||''; base.onQuery=(e)=>this.setState({query:e.target.value});
       base.scanLabel=q?'Cancel':'Scan'; base.scanIcon=!q; base.onScanOrCancel=()=>q?this.setState({query:''}):this.openScan();
-      base.showVilLine=st.role!=='asha'; base.vilLabel=vil||'All villages'; base.onVillages=()=>this.setState({screen:'villages', vilPick:vil});
+      const HI=this.isHiLang(), lkSeg=st.lkSeg||'ALL', canReg=st.role!=='asha';
+      base.showVilLine=canReg; base.vilLabel=vil||(HI?'सभी गाँव/वार्ड':'All villages/wards'); base.onVillages=()=>this.setState({screen:'villages', vilPick:vil});
+      // Service filter: narrows the list to women in the HRP or NCD register (same colours as the tags).
+      base.lkSegs=[['ALL','All'],['HRP','HRP'],['NCD','NCD']].map(([k,l])=>({label:l, on:lkSeg===k, bg:lkSeg===k?'#fff':'transparent', fg:lkSeg===k?(k==='HRP'?REG_TONE.HRP.fg:k==='NCD'?REG_TONE.NCD.fg:'#101F50'):'#526078', sh:lkSeg===k?'0 1px 3px rgba(16,31,80,.12)':'none', onTap:()=>this.setState({lkSeg:k})}));
       const seen={};
       let list=this.liveWomen().concat((st.women||[]).filter(w=>this.staleAnc(w))).filter(w=>{ const p=w.pid||w.id; if(seen[p]) return false; seen[p]=1; return true; });
       if(vil) list=list.filter(w=>w.village===vil);
+      if(lkSeg!=='ALL') list=list.filter(w=>this.regTagsVM(w).tags.some(t=>lkSeg==='HRP' ? t.label==='HRP' : t.label!=='HRP'));
       const searching=isName ? q.length>=3 : digits.length>=4;
       if(searching) list=isName ? list.filter(w=>w.name.toLowerCase().includes(q.toLowerCase()) || (w.hi||'').includes(q))
         : list.filter(w=>(w.phone||'').replace(/\D/g,'').includes(digits) || this.abhaOf(w).replace(/\D/g,'').includes(digits));
-      const active=searching || (!!vil && !q);
+      const active=searching || (!q && (!!vil || lkSeg!=='ALL'));
       base.showResults=active; base.noMatch=active && !list.length;
       base.results=active ? list.map(w=>{ const {tags}=this.regTagsVM(w);
         return {id:w.id, name:this.lname(w), tags, sub:[this.vl(w), '●●●● '+(w.phone||'').replace(/\D/g,'').slice(-4)].filter(Boolean).join(' · '),
           onOpen:()=>{ const pw=this.primaryRec(w), k=pw.svc||'ANC'; this.setState({svc:k, sub:k, screen:'journey', selId:pw.id, dialog:null}); }}; }) : [];
-      base.showAddNew=!!q && st.role!=='asha'; base.addNewLabel='Add “'+q+'” as new';
+      base.showAddNew=!!q && canReg; base.addNewLabel=HI?('“'+q+'” नया जोड़ें'):('Add “'+q+'” as new');
+      base.showAddRest=!q && canReg; base.addRestLabel=HI?'नया जोड़ें':'Add new';
       base.onAddNew=()=>this.openRegister([], isName?{name:q}:{phone:digits});
     }
 
@@ -1882,7 +1917,7 @@ export default class App extends React.Component<any, any> {
     if(scr==='villages'){ const pick=st.vilPick||null, m={};
       this.liveWomen().filter(w=>this.inCatchment(w)).forEach(w=>{ if(!w.village) return; if(!m[w.village]) m[w.village]=w.asha||''; });
       const who=(a)=>a?(/^ASHA /.test(a)?a:'ASHA '+a):'';
-      const row=(v,a)=>({id:v||'all', name:v||'All villages', asha:who(a), on:pick===v, onTap:()=>this.setState({vilPick:v})});
+      const row=(v,a)=>({id:v||'all', name:v||(this.isHiLang()?'सभी गाँव/वार्ड':'All villages/wards'), asha:who(a), on:pick===v, onTap:()=>this.setState({vilPick:v})});
       base.vilRows=[row(null,'')].concat(Object.keys(m).sort().map(v=>row(v, m[v]||this.vilAsha(v))));
       base.onVilShow=()=>this.setState({lkVil:pick, screen:'lookup', query:''}); }
 
