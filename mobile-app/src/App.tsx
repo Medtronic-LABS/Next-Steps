@@ -1707,8 +1707,8 @@ export default class App extends React.Component<any, any> {
       const HI = st.lang==='hi';
       base.onLangEn=()=>this.setState({lang:'en'});
       base.onLangHi=()=>this.setState({lang:'hi'});
-      base.enBg = HI?'transparent':'#fff'; base.enInk = HI?'#C9D5EE':'#101F50';
-      base.hiBg = HI?'#fff':'transparent'; base.hiInk = HI?'#101F50':'#C9D5EE';
+      base.enBg = HI?'transparent':'#fff'; base.enInk = HI?'#526078':'#101F50'; base.enOn=!HI;
+      base.hiBg = HI?'#fff':'transparent'; base.hiInk = HI?'#101F50':'#526078'; base.hiOn=HI;
       base.homeTitle = HI?'नेक्स्ट स्टेप्स':'Next Steps';
       base.homeLine1 = HI?'अपना फ़ोल्डर चुनें':'Choose your work folder.';
       base.homeLine2 = HI?'Choose your work folder':'अपना फ़ोल्डर चुनें';
