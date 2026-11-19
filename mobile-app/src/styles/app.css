@@ -1,4 +1,3 @@
-@import './tokens/fonts.css';
 @import './tokens/colors.css';
 @import './tokens/typography.css';
 @import './tokens/spacing.css';
@@ -15,8 +14,8 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background: #E8E6E0;
-  font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
+  background: #F3F6FB;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -31,7 +30,7 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: radial-gradient(120% 120% at 50% 0%, #F3F1EC 0%, #E4E1DB 70%);
+  background: #E6ECF5;
 }
 
 .mobile-app-shell {
@@ -45,7 +44,7 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 20px 60px -15px rgba(30, 20, 190, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 60px -15px rgba(16, 31, 80, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 @media (max-width: 480px) {
@@ -117,4 +116,10 @@ a:hover {
 button {
   font-family: inherit;
   user-select: none;
+}
+
+/* Narrow phones: step action buttons keep their words; the icons drop out first. */
+@media (max-width: 359px) {
+  .ns-act-ic { display: none; }
+  .ns-act { font-size: 14px !important; }
 }

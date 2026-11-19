@@ -2,7 +2,7 @@
 // Pages: network first (so a new deploy shows up), cached copy when offline.
 // Built assets (hashed names), fonts and images: cache first.
 // /api is never cached — records always come from the backend.
-const CACHE = 'next-steps-shell-v1';
+const CACHE = 'next-steps-shell-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', 'index.html', 'manifest.json'])));

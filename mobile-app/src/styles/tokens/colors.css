@@ -7,7 +7,7 @@
 
 :root {
   /* ---- Primary ---------------------------------------------------------- */
-  --ml-blue: #1E14BE;            /* MEDIUM BLUE — RGB(30,20,190). Core brand. */
+  --ml-blue: #245FD1;            /* Next Steps primary action (was Medium Blue #1E14BE) */
   --ml-blue-60: #2514BE;         /* Medium Blue 60% (printed reference) */
   --ml-periwinkle: #6165DE;      /* RGB(97,101,222) — lighter brand blue */
   --ml-seafoam: #54CC90;         /* SEAFOAM — RGB(84,204,144) */
@@ -29,16 +29,16 @@
 
   /* ---- Neutrals --------------------------------------------------------- */
   --ml-white: #FFFFFF;
-  --ml-offwhite: #FCFBF9;        /* OFFWHITE — RGB(252,251,249) */
-  --ml-grey: #DEDDD8;            /* GREY — RGB(222,221,216) */
+  --ml-offwhite: #F3F6FB;        /* OFFWHITE — RGB(252,251,249) */
+  --ml-grey: #DCE3EE;            /* GREY — RGB(222,221,216) */
   --ml-black: #000000;
 
   /* Ink ramp — dark text greys observed across the guide */
-  --ml-ink-900: #010101;         /* headlines / primary text */
-  --ml-ink-800: #2A2826;         /* body on light */
-  --ml-ink-600: #595959;         /* secondary text */
-  --ml-ink-500: #70706E;         /* captions / muted */
-  --ml-ink-400: #909090;         /* disabled / hint */
+  --ml-ink-900: #101F50;         /* headlines / primary text */
+  --ml-ink-800: #202B42;         /* body on light */
+  --ml-ink-600: #526078;         /* secondary text */
+  --ml-ink-500: #526078;         /* captions / muted */
+  --ml-ink-400: #6B7891;         /* disabled / hint */
 
   /* ---- Image gradient (Brand Guide: Image Gradient) --------------------- */
   /* START #994242 100% -> FINISH #BCB5F7 30% */
@@ -52,22 +52,25 @@
 
   /* Brand / accent */
   --ml-brand: var(--ml-blue);
-  --ml-brand-hover: #1A11A6;     /* blue darkened ~8% for hover */
-  --ml-brand-active: #150E8C;    /* blue darkened more for press */
+  --ml-brand-hover: #1D4FB3;     /* blue darkened ~8% for hover */
+  --ml-brand-active: #1D4FB3;    /* blue darkened more for press */
   --ml-accent: var(--ml-seafoam);
 
   /* Surfaces */
   --surface-page: var(--ml-offwhite);
   --surface-card: var(--ml-white);
   --surface-sunken: var(--ml-offwhite);
-  --surface-brand: var(--ml-blue);        /* indigo hero / nav blocks */
-  --surface-brand-soft: #EFEDFF;          /* pale indigo wash */
+  --surface-brand: #101F50;        /* indigo hero / nav blocks */
+  --surface-brand-soft: #EAF1FD;          /* pale indigo wash */
   --surface-muted: var(--ml-grey);
 
   /* Text */
   --text-strong: var(--ml-ink-900);
   --text-body: var(--ml-ink-800);
   --text-muted: var(--ml-ink-500);
+  --text-teal: #08796F;
+  --text-primary: #101F50;
+  --text-secondary: #526078;
   --text-subtle: var(--ml-ink-400);
   --text-on-brand: var(--ml-white);
   --text-brand: var(--ml-blue);
@@ -75,7 +78,7 @@
 
   /* Borders */
   --border-subtle: var(--ml-grey);
-  --border-default: #CFCEC8;
+  --border-default: #DCE3EE;
   --border-strong: var(--ml-ink-800);
   --border-brand: var(--ml-blue);
 
@@ -90,5 +93,10 @@
   --status-info-soft: var(--ml-blue-30);
 
   /* Focus ring */
-  --focus-ring: var(--ml-periwinkle);
+  --focus-ring: #245FD1;
+  /* Next Steps brand (logo / decorative only) */
+  --ns-navy: #101F50;
+  --ns-teal: #19C6B3;
+  --ns-blue: #3478F6;
+  --ns-amber: #FFB52E;
 }

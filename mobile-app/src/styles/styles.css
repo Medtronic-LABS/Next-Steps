@@ -2,7 +2,6 @@
    Global entry point. Consumers link this single file.
    Order matters: fonts -> tokens -> base layer. */
 
-@import "tokens/fonts.css";
 @import "tokens/colors.css";
 @import "tokens/typography.css";
 @import "tokens/spacing.css";

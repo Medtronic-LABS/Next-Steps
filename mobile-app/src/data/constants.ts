@@ -7,7 +7,7 @@ export const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct',
 
 export const CAT = {
   REFERRAL:{label:'Referral', icon:'M5 12h13M13 6l6 6-6 6'},
-  ANC_VISIT:{label:'ANC visit', icon:'M8 4h8v3H8zM6 6H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1M9 13l2 2 4-4'},
+  ANC_VISIT:{label:'Follow up', icon:'M8 4h8v3H8zM6 6H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1M9 13l2 2 4-4'},
   PMSMA_VISIT:{label:'PMSMA visit', icon:'M8 2v4M16 2v4M3 9h18M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM12 13v4M10 15h4'},
   SPEC:{label:'Specialist consultation', icon:'M6 3v6a4 4 0 0 0 8 0V3M10 13v3a5 5 0 0 0 10 0v-2M20 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4'},
   FOLLOW_UP:{label:'Follow up', icon:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M5 21a7 7 0 0 1 14 0'},
@@ -45,7 +45,7 @@ export const AVA = ['#1E14BE','#6165DE','#994242','#C35721','#2E9E6B','#655AD0']
 
 export const OPTMETA = {
   REFERRAL:{label:'Referral'},
-  ANC_VISIT:{label:'ANC visit'},
+  ANC_VISIT:{label:'Follow up'},
   PMSMA_VISIT:{label:'PMSMA visit'},
   SPEC:{label:'Specialist consultation'},
   FOLLOW_UP:{label:'Follow up'},
@@ -74,24 +74,24 @@ export const ROLES = {
     options:[], refUp:[], refDown:[],
     icon:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z'},
   anm:{name:'AAM', short:'AAM', facility:'Sub-centre Ghurehta', accent:'#2E9E6B', level:'SUBCENTRE',
-    options:['REFERRAL','FOLLOW_UP','ANC_VISIT'], refUp:['PHC','CHC','SDH','DH','TERTIARY'], refDown:[],
+    options:['REFERRAL','FOLLOW_UP'], refUp:['PHC','CHC','SDH','DH','TERTIARY'], refDown:[],
     icon:'M12 2l2.4 5 5.6.5-4.3 3.7 1.4 5.5L12 19l-5.1 2.7 1.4-5.5L4 12.5 9.6 12z'},
   phc_sn:{name:'PHC Staff Nurse', short:'PHC SN', facility:'PHC Sirmour', accent:'#6165DE', level:'PHC',
-    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:['CHC','SDH','DH','TERTIARY'], refDown:['SUBCENTRE'],
+    options:['REFERRAL','FOLLOW_UP','LAB','IMAGING','BT'], refUp:['CHC','SDH','DH','TERTIARY'], refDown:['SUBCENTRE'],
     icon:'M12 3a6 6 0 0 0-6 6c0 5-2 6-2 6h16s-2-1-2-6a6 6 0 0 0-6-6zM10 20a2 2 0 0 0 4 0'},
   chc_sn:{name:'CHC Staff Nurse', short:'CHC CC', facility:'CHC Teonthar', accent:'#1E14BE', level:'CHC',
-    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:['SDH','DH','TERTIARY'], refDown:['PHC','SUBCENTRE'],
+    options:['REFERRAL','FOLLOW_UP','LAB','IMAGING','BT'], refUp:['SDH','DH','TERTIARY'], refDown:['PHC','SUBCENTRE'],
     icon:'M12 5v14M5 12h14'},
   dh_sn:{name:'DH Staff Nurse', short:'DH CC', facility:'BK DH', accent:'#994242', level:'DH',
-    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:['TERTIARY'], refDown:['SDH','CHC','PHC','SUBCENTRE'],
+    options:['REFERRAL','FOLLOW_UP','LAB','IMAGING','BT'], refUp:['TERTIARY'], refDown:['SDH','CHC','PHC','SUBCENTRE'],
     icon:'M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3'},
   tert_sn:{name:'Tertiary Staff Nurse', short:'TER SN', facility:'Medical College, Jabalpur', accent:'#C35721', level:'TERTIARY',
-    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:[], refDown:['DH','SDH','CHC','PHC','SUBCENTRE'],
+    options:['REFERRAL','FOLLOW_UP','LAB','IMAGING','BT'], refUp:[], refDown:['DH','SDH','CHC','PHC','SUBCENTRE'],
     icon:'M4 21V8l8-5 8 5v13M9 21v-6h6v6M9 12h.01M15 12h.01'},
 };
 ROLES.phc_mo = {name:'PHC Medical Officer', short:'PHC MO', facility:'PHC Sirmour', accent:'#655AD0', level:'PHC',
   tabs:['insights','worklist','lookup','alerts'],
-  options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:['CHC','SDH','DH','TERTIARY'], refDown:['SUBCENTRE'],
+  options:['REFERRAL','FOLLOW_UP','LAB','IMAGING','BT'], refUp:['CHC','SDH','DH','TERTIARY'], refDown:['SUBCENTRE'],
   icon:'M3 20V10l9-6 9 6v10M9 20v-6h6v6M12 7v0'};
 ROLES.chc_mo = {...ROLES.phc_mo, name:'CHC Medical Officer', short:'CHC MO', facility:'CHC Teonthar', level:'CHC',
   refUp:['SDH','DH','TERTIARY'], refDown:['PHC','SUBCENTRE']};
@@ -99,7 +99,7 @@ ROLES.dh_mo = {...ROLES.phc_mo, name:'District Programme Officer', short:'DPO', 
   refUp:['TERTIARY'], refDown:['SDH','CHC','PHC','SUBCENTRE']};
 ROLES.phc_nurse = {name:'PHC Nurse — all services', short:'SN', facility:'PHC Sirmour', sub:'PHC Sirmour · HRP · PNW/NB · NCD', accent:'#1E14BE', level:'PHC',
   services:true, tabs:['home','worklist','lookup','alerts'],
-  options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'], refUp:['CHC','SDH','DH','TERTIARY'], refDown:['SUBCENTRE'],
+  options:['REFERRAL','FOLLOW_UP','LAB','IMAGING','BT'], refUp:['CHC','SDH','DH','TERTIARY'], refDown:['SUBCENTRE'],
   icon:'M4 7h16v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM9 4h6l1 3H8zM12 11v6M9 14h6'};
 
 ROLES.del_phc = {...ROLES.phc_sn, name:'PHC Staff Nurse', short:'PHC SN', facility:'PHC Dayalpur'};
@@ -154,7 +154,7 @@ export const NS_LOGINS = [
   {k:'tert_sn', label:'TC', hi:'तृतीयक देखभाल', facility:'Tertiary Care · Medical College, Jabalpur'},
 ].map(u=>({...u, screen:'lookup', svc:'ANC'}));
 export const NS2MC = {asha:'mc_asha', anm:'mc_anm'};
-export const NS_TABS = ['lookup','insights','alerts'];
+export const NS_TABS = ['lookup','worklist','insights'];
 
 export const INS_LOGINS = [
   {k:'ins_aam', facility:'Sub-centre Ghurehta · all services'},
@@ -210,9 +210,9 @@ export const FOLDERS = {
 };
 
 export const SVC = {
-  ANC:{key:'ANC', label:'HRP', full:'High risk pregnancy', line:'ANC visits, referrals',
-    ac:'#B42318', sf:'#FDE8E6', icon:'M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10z',
-    options:['REFERRAL','FOLLOW_UP','ANC_VISIT','LAB','IMAGING','BT'],
+  ANC:{key:'ANC', label:'HRP', full:'High risk pregnancy', line:'Follow ups, referrals',
+    ac:'#B0215A', sf:'#FCE8EF', icon:'M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10z',
+    options:['REFERRAL','FOLLOW_UP','LAB','IMAGING','BT'],
     journey:'Full pregnancy journey', findTitle:'Find a pregnant woman', enrol:'Register a pregnant woman',
     regNote:'Name, mobile and LMP are required. No clinical details — ever.',
     dateLabel:'LMP (last menstrual period)', hasDate:true, flag:{HRP:'HRP', Normal:'Normal'}},
@@ -223,7 +223,7 @@ export const SVC = {
     regNote:'Name, mobile and date of delivery are required. Mother and baby are followed together.',
     dateLabel:'Date of delivery', hasDate:true, flag:{HRP:'Danger signs', Normal:'Both well'}},
   NCD:{key:'NCD', label:'NCD', full:'Diabetes & hypertension', line:'Follow-up, refills, lab tests',
-    ac:'#1E14BE', sf:'#EFEDFF', icon:'M20 12h-3l-2 5-3-10-2 5H4',
+    ac:'#08796F', sf:'#E0F4F1', icon:'M20 12h-3l-2 5-3-10-2 5H4',
     options:['REFERRAL','FOLLOW_UP','REFILL','LAB'],
     journey:'NCD care journey', findTitle:'Find an NCD client', enrol:'Register an NCD client',
     regNote:'Readings stay in the NCD register — this records only what happens next.',
@@ -237,7 +237,7 @@ SVC.CANCER = {key:'CANCER', label:'Cancer', full:'Cancer screening & care', line
   dateLabel:'', hasDate:false, flag:{HRP:'Screen positive', Normal:'Under follow-up'}};
 
 SVC.DELIVERY = {key:'DELIVERY', label:'Delivery', full:'Delivery care', line:'Delivery & referral for delivery',
-  ac:'#6165DE', sf:'#E7E7FB', icon:'M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3',
+  ac:'#B0215A', sf:'#FCE8EF', icon:'M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3',
   options:['REFERRAL'],
   journey:'Delivery care journey', findTitle:'Find a woman due for delivery', enrol:'Register a woman for delivery care',
   regNote:'Name, mobile and LMP are required. No clinical details — ever.',
@@ -273,7 +273,7 @@ export const INS_BASE = {
   registered:412, hrp:78,
   actions:[
     {key:'ref', label:'Referrals pending', n:14, color:'#C35721', soft:'#FBEDE4', sub:'Referral raised, not yet closed at the receiving facility'},
-    {key:'anc', label:'ANC overdue', n:21, color:'#EB956A', soft:'#FDF0E8', sub:'Next scheduled ANC visit is past its due date'},
+    {key:'anc', label:'HRP follow up overdue', n:21, color:'#EB956A', soft:'#FDF0E8', sub:'Next HRP step is past its due date'},
     {key:'drop', label:'At risk of drop-out', n:9, color:'#994242', soft:'#F6EBEB', sub:'Pending action and could not be contacted'},
     {key:'lost', label:'Lost to follow-up', n:5, color:'#751A1A', soft:'#F4E7E7', sub:'Declined the recommended care'},
   ],
@@ -371,7 +371,7 @@ export const INS_SVC = {
 };
 export const INS_PEOPLE = {
   ref:[{name:'Rekha Kumari', meta:'Amiliya · Tertiary, 9d overdue', pill:'9d', sc:'ghu'},{name:'Radha Prasad', meta:'Amiliya · CHC Teonthar, 4d overdue', pill:'4d', sc:'ghu'},{name:'Anita Yadav', meta:'Baghwar · CHC, due today', pill:'Today', sc:'bha'},{name:'Meena Devi', meta:'Sirmour · BK DH, 6d overdue', pill:'6d', sc:'dih'}],
-  anc:[{name:'Sunita Devi', meta:'Ghurehta · 3rd ANC due at 34 wks', pill:'11d', sc:'ghu'},{name:'Pushpa Bai', meta:'Baghwar · 2nd ANC due at 24 wks', pill:'8d', sc:'bha'},{name:'Lakshmi Bai', meta:'Sirmour · 4th ANC due at 38 wks', pill:'4d', sc:'dih'},{name:'Kavita Saket', meta:'Gharonda · 2nd ANC due at 25 wks', pill:'13d', sc:'kat'}],
+  anc:[{name:'Sunita Devi', meta:'Ghurehta · follow up due at 34 wks', pill:'11d', sc:'ghu'},{name:'Pushpa Bai', meta:'Baghwar · follow up due at 24 wks', pill:'8d', sc:'bha'},{name:'Lakshmi Bai', meta:'Sirmour · follow up due at 38 wks', pill:'4d', sc:'dih'},{name:'Kavita Saket', meta:'Gharonda · follow up due at 25 wks', pill:'13d', sc:'kat'}],
   pmsma:[{name:'Gita Sharma', meta:'Ghurehta · missed 9 Aug session', pill:'Missed', sc:'ghu'},{name:'Radha Prasad', meta:'Amiliya · no PMSMA at 28 wks', pill:'0 visits', sc:'ghu'},{name:'Laxmi Gupta', meta:'Semri · missed 9 Aug session', pill:'Missed', sc:'bha'}],
   drop:[{name:'Rekha Kumari', meta:'Amiliya · 3 attempts, unreachable', pill:'3 tries', sc:'ghu'},{name:'Anita Yadav', meta:'Baghwar · phone off, lab open', pill:'2 tries', sc:'bha'},{name:'Usha Pandey', meta:'Rampur Kothi · migrated, ASHA verifying', pill:'Migrated', sc:'kat'}],
   lost:[{name:'Savitri Lodhi', meta:'Dihiya · declined referral to DH', pill:'Declined', sc:'dih'},{name:'Pushpa Rajak', meta:'Naugaon · declined USG at CHC', pill:'Declined', sc:'kat'}],
@@ -405,15 +405,15 @@ export const INS_PEOPLE_SVC = {
 export const TABMETA = {
   home:{label:'Services', icon:'M4 7h6l1.6 2H20v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z'},
   insights:{label:'Insights', icon:'M4 20V10M10 20V4M16 20v-7M22 20H2'},
-  lookup:{label:'Lookup', icon:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5'},
-  worklist:{label:'Worklist', icon:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'},
+  lookup:{label:'Find', icon:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5'},
+  worklist:{label:'Work list', icon:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'},
   alerts:{label:'Alerts', icon:'M12 3a6 6 0 0 0-6 6c0 5-2 6-2 6h16s-2-1-2-6a6 6 0 0 0-6-6zM10 20a2 2 0 0 0 4 0'},
   mcdash:{label:'My progress', icon:'M4 20V10M10 20V4M16 20v-7M22 20H2'},
   coach:{label:'Refresher', icon:'M12 3l9 4.5-9 4.5L3 7.5zM7 10.5V16c0 1.7 2.2 3 5 3s5-1.3 5-3v-5.5'},
   training:{label:'Training', icon:'M4 5.5A2 2 0 0 1 6 4h5v16H6a2 2 0 0 1-2-2zM11 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7'},
   library:{label:'My library', icon:'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5'},
   ask:{label:'Ask', icon:'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z'},
-  microcoach:{label:'Microcoach', icon:'M12 3l9 4.5-9 4.5L3 7.5zM7 10.5V16c0 1.7 2.2 3 5 3s5-1.3 5-3v-5.5'},
+  microcoach:{label:'Learn', icon:'M12 3l9 4.5-9 4.5L3 7.5zM7 10.5V16c0 1.7 2.2 3 5 3s5-1.3 5-3v-5.5'},
 };
 
 // ================= MICRO-COACH =================
@@ -573,3 +573,24 @@ export const vwList = (d)=> d==='Faridabad' ? FBD_WARDS : d==='Udham Singh Nagar
 
 // IDs are generated as s1, s2, … — after loading saved records, start numbering above the highest id in use.
 export function bumpSid(n){ if(n>SID) SID=n; }
+
+// Icons (24-unit stroke paths, one style everywhere) for Work list sections and step actions — always shown next to a word.
+export const WL_IC = {
+  wk:'M10.3 3.9 2.4 18a1.8 1.8 0 0 0 1.6 2.7h16a1.8 1.8 0 0 0 1.6-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0zM12 9v5M12 17h.01',
+  od:'M12 7v5l3 2M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9z',
+  pend:'M6 3h12M6 21h12M7 3v3a5 5 0 0 0 10 0V3M7 21v-3a5 5 0 0 1 10 0v3',
+  soon:'M8 2v4M16 2v4M3 9h18M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z',
+  unr:'M3 3l18 18M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4',
+  lost:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM17 8l5 5M22 8l-5 5',
+  out:'M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10z',
+  done:'M20 6L9 17l-5-5',
+  noreply:'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2zM15 3l6 6M21 3l-6 6',
+  declined:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9l-6 6M9 9l6 6',
+  yta:'M12 7v5l3 2M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9z',
+  moved:'M12 7v5l3 2M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9z',
+  migrated:'M5 12h13M13 6l6 6-6 6',
+  deceased:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 12h8',
+  active:'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
+};
+// HRP and NCD are told apart by colour (clinical lead): HRP in rose, NCD in teal. Always paired with a word.
+export const REG_TONE = {HRP:{fg:'#B0215A', bg:'#FCE8EF'}, NCD:{fg:'#08796F', bg:'#E0F4F1'}};

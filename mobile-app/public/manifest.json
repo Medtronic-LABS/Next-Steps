@@ -4,22 +4,16 @@
   "description": "Record, close and track next steps for high-risk pregnancies and NCD patients.",
   "icons": [
     {
-      "src": "assets/logo-mark.png",
+      "src": "assets/ns-mark.png",
       "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any"
-    },
-    {
-      "src": "assets/logo-mark.png",
-      "type": "image/png",
-      "sizes": "512x512",
+      "sizes": "500x500",
       "purpose": "any"
     }
   ],
   "start_url": "./",
   "scope": "./",
-  "background_color": "#1E14BE",
-  "theme_color": "#1E14BE",
+  "background_color": "#101F50",
+  "theme_color": "#101F50",
   "display": "standalone",
   "orientation": "portrait"
 }

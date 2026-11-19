@@ -6,11 +6,8 @@
           </button>
           <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:28px;padding:20px 0">
             <div style="display:flex;align-items:center;gap:10px">
-              <img src="assets/logo-mark.png" alt="Medtronic LABS" style="width:34px;height:34px;object-fit:contain">
-              <div style="display:flex;flex-direction:column;gap:1px">
-                <span style="font-size:15px;font-weight:700;color:var(--ml-blue)">OpenPHC</span>
-                <span style="font-size:11px;color:var(--text-secondary)">Connected care for health systems</span>
-              </div>
+              <img src="assets/ns-mark.png" alt="" style="width:40px;height:40px;object-fit:contain">
+              <span style="font-size:18px;font-weight:700;color:var(--text-primary)">Next Steps</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px">
               <div style="font-size:26px;font-weight:600;line-height:1.15;color:var(--text-primary);text-wrap:pretty">{{ signFacility }}</div>
@@ -28,7 +25,7 @@
                 <input value="{{ signId }}" readOnly="{{ true }}" style="height:48px;padding:0 14px;border:1.5px solid var(--border-default);border-radius:12px;background:#fff;font-family:inherit;font-size:15px;color:var(--text-primary)">
               </label>
               <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--text-primary)">Password
-                <input type="password" value="openphc2026" readOnly="{{ true }}" style="height:48px;padding:0 14px;border:1.5px solid var(--border-default);border-radius:12px;background:#fff;font-family:inherit;font-size:15px;color:var(--text-primary)">
+                <input type="password" value="nextsteps26" readOnly="{{ true }}" style="height:48px;padding:0 14px;border:1.5px solid var(--border-default);border-radius:12px;background:#fff;font-family:inherit;font-size:15px;color:var(--text-primary)">
               </label>
             </div>
             <button onClick="{{ onSignIn }}" style="height:52px;border:none;border-radius:99px;background:var(--ml-blue);color:#fff;font-family:inherit;font-size:16px;font-weight:600;cursor:pointer">Log In</button>
@@ -38,10 +35,10 @@
 
       <!-- ================= LAUNCHER ================= -->
       <sc-if value="{{ isLauncher }}" hint-placeholder-val="{{ true }}">
-        <div style="flex:1;display:flex;flex-direction:column;background:var(--ml-blue);color:#fff;position:relative;overflow:hidden">
+        <div style="flex:1;display:flex;flex-direction:column;background:var(--surface-brand);color:#fff;position:relative;overflow:hidden">
           <div style="position:absolute;inset:0;background-image:url('assets/pattern-lines.png');background-size:cover;opacity:.10;mix-blend-mode:screen"></div>
           <div style="position:relative;padding:70px 26px 18px;flex:1;display:flex;flex-direction:column;overflow-y:auto">
-            <img src="assets/logo-mark.png" alt="Medtronic LABS" style="width:36px;height:36px;object-fit:contain;margin-bottom:18px">
+            <img src="assets/ns-mark.png" alt="Next Steps" style="width:48px;height:48px;object-fit:contain;margin-bottom:16px">
             <div style="font-size:11.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ml-mark-seafoam);margin-bottom:10px">MEDTRONIC LABS</div>
 
             <sc-if value="{{ showFolders }}" hint-placeholder-val="{{ true }}">
@@ -51,7 +48,7 @@
                   <button onClick="{{ onLangHi }}" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:99px;background:{{ hiBg }};color:{{ hiInk }};font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer">हिन्दी</button>
                 </div>
                 <h1 style="font-size:26px;line-height:1.08;font-weight:700;margin:0 0 4px;letter-spacing:-.02em;color:#fff">{{ homeTitle }}</h1>
-                <p style="font-size:13.5px;line-height:1.4;color:#D7D4FA;margin:0 0 12px;max-width:300px">{{ homeLine1 }}</p>
+                <p style="font-size:13.5px;line-height:1.4;color:#C9D5EE;margin:0 0 12px;max-width:300px">{{ homeLine1 }}</p>
                 <div style="display:flex;flex-direction:column;gap:7px">
                   <sc-for list="{{ folders }}" as="f" hint-placeholder-count="3">
                     <button onClick="{{ f.onPick }}" style="--ac:{{ f.accent }};display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:9px 12px;border:none;border-radius:16px;background:rgba(255,255,255,.11);cursor:pointer;transition:background .15s" style-hover="background:rgba(255,255,255,.19)">
@@ -64,7 +61,7 @@
                       <span style="flex:1;min-width:0">
                         <span style="display:block;font-size:15.5px;line-height:1.2;font-weight:700;color:#fff;letter-spacing:-.01em">{{ f.name }}</span>
                         
-                        <span style="display:block;font-size:11.5px;line-height:1.3;color:#A29DE0;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.sub }}</span>
+                        <span style="display:block;font-size:11.5px;line-height:1.3;color:#9FB2D8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.sub }}</span>
                         <sc-if value="{{ f.hasNew }}" hint-placeholder-val="{{ false }}">
                           <span style="display:inline-flex;align-items:center;gap:5px;margin-top:3px;padding:1px 8px;border-radius:99px;background:rgba(196,54,47,.22);color:#FFD9D6;font-size:11.5px;font-weight:700">{{ f.newLabel }}</span>
                         </sc-if>
@@ -83,7 +80,7 @@
                   {{ backLabel }}
                 </button>
                 <h1 style="font-size:27px;line-height:1.1;font-weight:700;margin:0 0 6px;letter-spacing:-.02em;color:#fff">{{ folderTitle }}</h1>
-                <p style="font-size:13.5px;line-height:1.5;color:#D7D4FA;margin:0 0 20px;max-width:300px">{{ folderSub }}</p>
+                <p style="font-size:13.5px;line-height:1.5;color:#C9D5EE;margin:0 0 20px;max-width:300px">{{ folderSub }}</p>
                 <div style="display:flex;flex-direction:column;gap:12px">
                   <sc-for list="{{ subFolders }}" as="f" hint-placeholder-count="0">
                     <button onClick="{{ f.onPick }}" style="--ac:{{ f.accent }};display:flex;align-items:center;gap:15px;text-align:left;width:100%;padding:15px;border:none;border-radius:22px;background:rgba(255,255,255,.11);cursor:pointer;transition:background .15s" style-hover="background:rgba(255,255,255,.19)">
@@ -93,7 +90,7 @@
                       <span style="flex:1;min-width:0">
                         <span style="display:block;font-size:17px;font-weight:700;color:#fff;letter-spacing:-.01em">{{ f.name }}</span>
                         
-                        <span style="display:block;font-size:11.5px;color:#A29DE0;margin-top:3px">{{ f.sub }}</span>
+                        <span style="display:block;font-size:11.5px;color:#9FB2D8;margin-top:3px">{{ f.sub }}</span>
                       </span>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.65;flex:none"><path d="M9 6l6 6-6 6"></path></svg>
                     </button>
@@ -114,8 +111,8 @@
                   </button>
                 </div>
                 <h1 style="font-size:27px;line-height:1.1;font-weight:700;margin:0 0 6px;letter-spacing:-.02em;color:#fff">{{ folderTitle }}</h1>
-                <p style="font-size:13.5px;line-height:1.5;color:#D7D4FA;margin:0 0 20px;max-width:300px">{{ folderSub }}</p>
-                <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8F8AD6;margin:0 0 10px">Choose your login · लॉगिन चुनें</div>
+                <p style="font-size:13.5px;line-height:1.5;color:#C9D5EE;margin:0 0 20px;max-width:300px">{{ folderSub }}</p>
+                <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9FB2D8;margin:0 0 10px">Choose your login · लॉगिन चुनें</div>
               </div>
             </sc-if>
 
@@ -127,14 +124,14 @@
                   </span>
                   <span style="flex:1;min-width:0">
                     <span style="display:block;font-size:14.5px;font-weight:600;color:#fff">{{ r.name }}</span>
-                    <span style="display:block;font-size:12px;color:#C6C2F2;margin-top:2px">{{ r.facility }}</span>
+                    <span style="display:block;font-size:12px;color:#B8C6E4;margin-top:2px">{{ r.facility }}</span>
                   </span>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.6;flex:none"><path d="M9 6l6 6-6 6"></path></svg>
                 </button>
               </sc-for>
             </div>
             <div style="flex:1"></div>
-            <p style="font-size:10.5px;color:#9E99D8;margin:18px 0 6px;line-height:1.5">Prototype · MVP v1.0. Coordination data only — no clinical records are ever stored. Offline-first PWA.</p>
+            <p style="font-size:10.5px;color:#9FB2D8;margin:18px 0 6px;line-height:1.5">Prototype · MVP v1.0. Coordination data only — no clinical records are ever stored. Offline-first PWA.</p>
           </div>
         </div>
       </sc-if>
@@ -143,6 +140,19 @@
       <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
         <div style="flex:1;display:flex;flex-direction:column;min-height:0">
 
+          <sc-if value="{{ mainHead }}" hint-placeholder-val="{{ true }}">
+          <div style="--hb:{{ headBg }};flex:none;padding:46px 14px 8px 16px;background:var(--hb);display:flex;align-items:center;gap:12px">
+            <button onClick="{{ onAccount }}" aria-label="Account" style="--ac:{{ roleAccent }};flex:none;width:34px;height:34px;border-radius:50%;border:none;background:var(--ac);color:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center">{{ userInitial }}</button>
+            <div style="flex:1;min-width:0;font-size:30px;font-weight:700;color:var(--text-strong);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ headerTitle }}</div>
+            <sc-if value="{{ showBell }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ onBell }}" aria-label="{{ bellLabel }}" style="flex:none;position:relative;width:42px;height:42px;border-radius:50%;border:none;background:transparent;color:var(--text-strong);cursor:pointer;display:flex;align-items:center;justify-content:center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0-6 6c0 5-2 6-2 6h16s-2-1-2-6a6 6 0 0 0-6-6zM10 20a2 2 0 0 0 4 0"></path></svg>
+                <sc-if value="{{ alertBadge }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:3px;right:1px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#B42318;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ alertBadge }}</span></sc-if>
+              </button>
+            </sc-if>
+          </div>
+          </sc-if>
+          <sc-if value="{{ subHead }}" hint-placeholder-val="{{ false }}">
           <div style="flex:none;padding:48px 18px 12px;background:var(--surface-card);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:12px">
             <sc-if value="{{ showBack }}" hint-placeholder-val="{{ false }}">
               <button onClick="{{ onBack }}" style="flex:none;width:38px;height:38px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--surface-card);cursor:pointer;display:flex;align-items:center;justify-content:center">
@@ -153,15 +163,11 @@
               <div style="font-size:17px;font-weight:600;color:var(--text-strong);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ headerTitle }}</div>
               <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ headerSub }}</div>
             </div>
-            <button onClick="{{ onSwitchRole }}" title="Switch login" style="--ac:{{ roleAccent }};flex:none;height:38px;padding:0 11px;border-radius:12px;border:none;background:var(--ac);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12.5px;font-family:inherit">{{ roleInitials }}</button>
           </div>
+          </sc-if>
 
           <sc-if value="{{ showQuickNav }}" hint-placeholder-val="{{ true }}">
           <div style="flex:none;display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--surface-page);border-bottom:1px solid var(--border-subtle)">
-            <button onClick="{{ onHome }}" title="Home — Next Steps & Microcoach" style="flex:none;width:34px;height:34px;border-radius:11px;border:1px solid var(--border-default);background:var(--surface-card);color:var(--ml-blue);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:var(--surface-brand-soft)">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7M6 10v9h12v-9"></path></svg>
-            </button>
-            <div style="flex:none;width:1px;height:22px;background:var(--border-subtle)"></div>
             <div class="qn-scroll" style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;min-height:40px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;padding:1px 0">
               <sc-for list="{{ quickNav }}" as="q" hint-placeholder-count="5">
                 <button onClick="{{ q.onTap }}" style="--bg:{{ q.bg }};--fg:{{ q.fg }};--bd:{{ q.bd }};flex:none;padding:7px 13px;border:1px solid var(--bd);border-radius:999px;background:var(--bg);color:var(--fg);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">{{ q.label }}</button>
@@ -198,7 +204,7 @@
                         <span style="display:block;height:8px;border-radius:99px;background:rgba(255,255,255,.22);overflow:hidden;margin:8px 0 6px">
                           <span style="--w:{{ mc.db.compBar }};display:block;width:var(--w);height:100%;border-radius:99px;background:var(--ml-mark-seafoam)"></span>
                         </span>
-                        <span style="display:block;font-size:11.5px;color:#D7D4FA">{{ mc.db.badge.next }}</span>
+                        <span style="display:block;font-size:11.5px;color:#C9D5EE">{{ mc.db.badge.next }}</span>
                       </span>
                       <span style="flex:none;font-size:20px;font-weight:700">{{ mc.db.compPct }}</span>
                     </div>
@@ -208,9 +214,9 @@
                         <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ml-mark-seafoam)">Daily engagement</div>
                         <div style="display:flex;align-items:baseline;gap:7px;margin-top:5px">
                           <span style="font-size:30px;font-weight:700;line-height:1;letter-spacing:-.02em">{{ mc.db.engaged }}</span>
-                          <span style="font-size:13px;color:#D7D4FA">{{ mc.db.engagedOf }}</span>
+                          <span style="font-size:13px;color:#C9D5EE">{{ mc.db.engagedOf }}</span>
                         </div>
-                        <div style="font-size:12.5px;color:#D7D4FA;margin-top:3px">{{ mc.db.streak }} · chat, refresher or training counts</div>
+                        <div style="font-size:12.5px;color:#C9D5EE;margin-top:3px">{{ mc.db.streak }} · chat, refresher or training counts</div>
                       </div>
                     </div>
 
@@ -220,7 +226,7 @@
                           <div style="--bg:{{ d.bg }};width:100%;aspect-ratio:1;max-width:34px;border-radius:11px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:#1E14BE">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{ d.ic }}"></path></svg>
                           </div>
-                          <div style="font-size:10.5px;font-weight:600;color:#C6C2F2">{{ d.d }}</div>
+                          <div style="font-size:10.5px;font-weight:600;color:#B8C6E4">{{ d.d }}</div>
                         </div>
                       </sc-for>
                     </div>
@@ -719,176 +725,94 @@
               </div>
             </sc-if>
 
-            <!-- ===== LOOKUP ===== -->
+            <!-- ===== LOOKUP (Find) ===== -->
             <sc-if value="{{ isLookup }}" hint-placeholder-val="{{ false }}">
-              <div style="padding:14px 16px 26px;background:#F4F4F8;min-height:100%">
-                <div style="display:flex;flex-direction:column">
-                  <div style="display:flex;gap:8px;align-items:center">
-                    <div style="flex:1;min-width:0;height:54px;display:flex;align-items:center;gap:9px;padding:0 8px 0 16px;background:#fff;border:1.5px solid #DCDCE4;border-radius:16px">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A8A96" stroke-width="2" stroke-linecap="round" style="flex:none"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.2-3.2"></path></svg>
-                      <input value="{{ query }}" onInput="{{ onQuery }}" placeholder="{{ searchPlaceholder }}" inputmode="{{ searchInputMode }}" style="flex:1;min-width:0;width:100%;border:none;outline:none;background:transparent;font-size:16.5px;font-family:inherit;color:var(--text-strong)">
-                      <button onClick="{{ onScan }}" title="Scan ABHA QR" style="flex:none;width:34px;height:34px;border-radius:50%;border:none;background:#EEF0FB;color:#1E6BF5;cursor:pointer;display:flex;align-items:center;justify-content:center">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M7 12h10"></path></svg>
-                      </button>
-                    </div>
-                    <sc-if value="{{ canEnrol }}" hint-placeholder-val="{{ true }}">
-                      <button onClick="{{ onEnrol }}" title="{{ enrolLabel }}" style="flex:none;height:54px;padding:0 16px;display:flex;align-items:center;gap:6px;border-radius:14px;border:none;background:#1E6BF5;color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Add
-                      </button>
-                    </sc-if>
-                  </div>
+              <div style="padding:4px 16px 26px;background:#F3F6FB;min-height:100%">
+                <div style="height:56px;display:flex;align-items:center;gap:10px;padding:0 4px 0 16px;background:#fff;border:1.5px solid #DCE3EE;border-radius:16px">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#6B7891" stroke-width="2" stroke-linecap="round" style="flex:none"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.2-3.2"></path></svg>
+                  <input value="{{ query }}" onInput="{{ onQuery }}" placeholder="Name, mobile or ABHA" aria-label="Search" autocomplete="off" style="flex:1;min-width:0;width:100%;border:none;outline:none;background:transparent;font-size:17px;font-family:inherit;color:var(--text-strong)">
+                  <button onClick="{{ onScanOrCancel }}" style="flex:none;display:flex;align-items:center;gap:6px;border:none;background:none;padding:12px;color:#245FD1;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer"><sc-if value="{{ scanIcon }}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z"></path></svg></sc-if>{{ scanLabel }}</button>
                 </div>
-
-                <sc-if value="{{ showTake }}" hint-placeholder-val="{{ true }}">
-                  <div style="display:flex;flex-direction:column;gap:14px">
-                    <div style="display:flex;align-items:center;gap:8px;margin:18px 4px -4px">
-                      <span style="font-size:19px;font-weight:700;letter-spacing:-.01em;color:#16161D">Take action</span>
-                      <sc-if value="{{ hasTake }}" hint-placeholder-val="{{ true }}">
-                        <span style="min-width:24px;height:24px;padding:0 7px;border-radius:99px;background:#E5322D;color:#fff;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ takeCount }}</span>
-                      </sc-if>
-                    </div>
-                    <sc-if value="{{ hasScopeChips }}" hint-placeholder-val="{{ false }}">
-                      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;background:#E9E9F0;border-radius:14px">
-                        <sc-for list="{{ lkScope }}" as="sc" hint-placeholder-count="2">
-                          <button onClick="{{ sc.onTap }}" style="--bg:{{ sc.bg }};--fg:{{ sc.fg }};height:38px;border:none;border-radius:11px;background:var(--bg);color:var(--fg);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">{{ sc.label }}</button>
-                        </sc-for>
-                      </div>
-                    </sc-if>
-                    <sc-for list="{{ take }}" as="sec" hint-placeholder-count="2">
-                      <div style="background:#fff;border-radius:20px;box-shadow:0 1px 3px rgba(30,20,190,.06),0 1px 1px rgba(0,0,0,.03);overflow:hidden">
-                        <div style="--hb:{{ sec.bg }};--hf:{{ sec.fg }};display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid #EEEEF3">
-                          <span style="flex:none;width:10px;height:10px;border-radius:50%;background:var(--hf)"></span>
-                          <span style="font-size:14px;font-weight:700;color:#16161D">{{ sec.title }}</span>
-                          <span style="flex:none;min-width:22px;height:20px;padding:0 6px;border-radius:99px;background:var(--hb);color:var(--hf);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ sec.countLabel }}</span>
-                          <span style="flex:1"></span>
-                          <sc-if value="{{ sec.hasMore }}" hint-placeholder-val="{{ false }}">
-                            <button onClick="{{ sec.onViewAll }}" style="flex:none;display:flex;align-items:center;gap:3px;border:none;background:transparent;padding:0;color:var(--hf);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer">{{ sec.viewLabel }}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></button>
-                          </sc-if>
-                        </div>
-                        <sc-for list="{{ sec.rows }}" as="s" hint-placeholder-count="2">
-                          <div style="--xb:{{ s.xBg }};--xl:{{ s.xLine }};background:var(--xb);border-left:3px solid var(--xl);border-bottom:1px solid #EEEEF3">
-                            <div style="display:flex;align-items:center;gap:12px;padding:12px 12px 12px 11px">
-                              <sc-if value="{{ s.hasIcons }}" hint-placeholder-val="{{ false }}">
-                                <button onClick="{{ s.onOpen }}" title="{{ s.mainIc.title }}" style="--ac:{{ s.mainIc.ac }};--sf:{{ s.mainIc.sf }};flex:none;width:46px;height:46px;border-radius:50%;border:2px solid var(--ac);position:relative;background:var(--sf);color:var(--ac);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.mainIc.icon }}"></path></svg><sc-if value="{{ s.mainIc.hasSub }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:8.5px;font-weight:800;line-height:1;padding:2px 4px;border-radius:5px;background:var(--ac);color:#fff;letter-spacing:.01em">{{ s.mainIc.sub }}</span></sc-if></button>
-                              </sc-if>
-                              <sc-if value="{{ s.noIcons }}" hint-placeholder-val="{{ true }}">
-                                <button onClick="{{ s.onOpen }}" style="--avb:{{ s.avBg }};--avf:{{ s.avFg }};flex:none;width:46px;height:46px;border-radius:50%;border:none;background:var(--avb);color:var(--avf);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">{{ s.initials }}</button>
-                              </sc-if>
-                              <div onClick="{{ s.onOpen }}" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;cursor:pointer">
-                                <div style="display:flex;align-items:center;gap:6px;min-width:0">
-                                  <span style="min-width:0;font-size:15.5px;font-weight:700;color:#16161D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.womanName }}</span>
-                                  <span style="--rbg:{{ s.riskBg }};--rfg:{{ s.riskFg }};flex:none;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--rbg);color:var(--rfg)">{{ s.riskLabel }}</span>
-                                  <sc-for list="{{ s.extraIcs }}" as="ic" hint-placeholder-count="0">
-                                    <span title="{{ ic.title }}" style="--ac:{{ ic.ac }};--sf:{{ ic.sf }};flex:none;width:20px;height:20px;border-radius:50%;background:var(--sf);border:1.5px solid var(--ac);display:flex;align-items:center;justify-content:center;color:var(--ac)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.icon }}"></path></svg></span>
-                                  </sc-for>
-                                </div>
-                                <div style="--dc:{{ s.dueFg }};display:flex;align-items:baseline;gap:6px;min-width:0;font-size:13.5px">
-                                  <span style="flex:0 1 auto;min-width:0;max-width:100%;font-weight:700;color:var(--dc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.dueText }}</span>
-                                  <span style="flex:1 1 0;min-width:0;color:#4A4A55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.stepTitle }}</span>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:6px;min-width:0;font-size:12px;color:#8A8A96">
-                                  <span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.tagLine }}</span>
-                                  <sc-if value="{{ s.isIncomplete }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:10.5px;font-weight:700;color:#B8650E;background:#FFF5E6;border-radius:5px;padding:1px 6px">Incomplete</span></sc-if>
-                                </div>
-                                <sc-if value="{{ s.downgraded }}" hint-placeholder-val="{{ false }}">
-                                  <span style="font-size:11.5px;font-weight:700;color:#C62F2F">{{ s.downNote }}</span>
-                                </sc-if>
-                              </div>
-                              <button onClick="{{ s.onToggle }}" title="Update" style="--cb:{{ s.chBg }};--cf:{{ s.chFg }};flex:none;width:38px;height:38px;border-radius:50%;border:none;background:var(--cb);color:var(--cf);display:flex;align-items:center;justify-content:center;cursor:pointer">
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.chev }}"></path></svg>
-                              </button>
-                            </div>
-                            <sc-if value="{{ s.isExp }}" hint-placeholder-val="{{ false }}">
-                              <div style="margin:0 14px;padding:12px 0 14px;border-top:1px solid #DCE3F5;display:flex;flex-direction:column;gap:8px">
-                                <sc-if value="{{ s.inlineActs }}" hint-placeholder-val="{{ false }}"><div style="--ac:{{ s.actCount }};display:grid;grid-template-columns:repeat(var(--ac),minmax(0,1fr));gap:8px"><sc-for list="{{ s.actions }}" as="a" hint-placeholder-count="2"><button onClick="{{ a.onTap }}" style="--ab:{{ a.bg }};--af:{{ a.fg }};--ad:{{ a.bd }};height:46px;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:12px;border:1px solid var(--ad);background:var(--ab);color:var(--af);font-family:inherit;font-size:14.5px;font-weight:700;white-space:nowrap;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ a.icon }}"></path></svg>{{ a.label }}</button></sc-for></div></sc-if>
-                                <sc-if value="{{ s.stackActs }}" hint-placeholder-val="{{ true }}"><button onClick="{{ s.doneAct.onTap }}" style="--ab:{{ s.doneAct.bg }};--af:{{ s.doneAct.fg }};--ad:{{ s.doneAct.bd }};width:100%;height:46px;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:12px;border:1px solid var(--ad);background:var(--ab);color:var(--af);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">
-                                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.doneAct.icon }}"></path></svg>
-                                  {{ s.doneAct.label }}
-                                </button></sc-if>
-                                <sc-if value="{{ s.hasLowWarn }}" hint-placeholder-val="{{ false }}">
-                                  <div style="display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:11px;background:#FDECEC;border:1px solid #F3BDBD">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C62F2F" stroke-width="2.2" stroke-linecap="round" style="flex:none"><path d="M12 9v5M12 17h.01M10.3 3.9 2.4 18a1.8 1.8 0 0 0 1.6 2.7h16a1.8 1.8 0 0 0 1.6-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0z"></path></svg>
-                                    <span style="font-size:12.5px;font-weight:700;color:#C62F2F">{{ s.lowWarn }}</span>
-                                  </div>
-                                </sc-if>
-                                <sc-if value="{{ s.showDone }}" hint-placeholder-val="{{ false }}">
-                                  <div style="--cols:{{ s.doneCols }};display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:6px">
-                                    <sc-for list="{{ s.doneOpts }}" as="o" hint-placeholder-count="3">
-                                      <button onClick="{{ o.onTap }}" style="min-height:42px;display:flex;align-items:center;justify-content:center;padding:7px 8px;border-radius:11px;border:1.5px solid #8FD3B2;background:#fff;color:#16161D;font-family:inherit;font-size:13px;font-weight:600;line-height:1.25;text-align:center;cursor:pointer" style-active="transform:scale(.97);background:#E6F8EE">{{ o.label }}</button>
-                                    </sc-for>
-                                  </div>
-                                </sc-if>
-                                <sc-if value="{{ s.restStack }}" hint-placeholder-val="{{ true }}">
-                                  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
-                                    <sc-for list="{{ s.restActs }}" as="a" hint-placeholder-count="2">
-                                      <button onClick="{{ a.onTap }}" style="--ab:{{ a.bg }};--af:{{ a.fg }};--ad:{{ a.bd }};height:42px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;border:1px solid var(--ad);background:var(--ab);color:var(--af);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="{{ a.icon }}"></path></svg>
-                                        {{ a.label }}
-                                      </button>
-                                    </sc-for>
-                                  </div>
-                                </sc-if>
-                                <sc-if value="{{ s.showPend }}" hint-placeholder-val="{{ false }}">
-                                  <div style="display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:14px;background:#FBE7DC;border:1px solid #EDC2A8">
-                                    <span style="font-size:12px;font-weight:700;color:#8A3D14;padding:0 2px">Why can't this step be completed?</span>
-                                    <sc-for list="{{ s.pendOpts }}" as="o" hint-placeholder-count="3">
-                                      <button onClick="{{ o.onTap }}" style="min-height:46px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:8px 14px;border-radius:11px;border:1px solid #EDC2A8;background:#fff;color:#16161D;font-family:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer">
-                                        {{ o.label }}
-                                        <span style="font-size:11.5px;font-weight:500;color:#5C5B57">Closes all her open steps</span>
-                                      </button>
-                                    </sc-for>
-                                  </div>
-                                </sc-if>
-                              </div>
-                            </sc-if>
-                          </div>
-                        </sc-for>
-                      </div>
-                    </sc-for>
-                    <sc-if value="{{ takeEmpty }}" hint-placeholder-val="{{ false }}">
-                      <div style="background:#fff;border-radius:20px;box-shadow:0 1px 3px rgba(30,20,190,.06),0 1px 1px rgba(0,0,0,.03);padding:28px 20px;text-align:center;font-size:14px;color:#8A8A96">Nothing pending right now.</div>
-                    </sc-if>
-                  </div>
+                <sc-if value="{{ showVilLine }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ onVillages }}" style="margin:10px 2px 0;display:flex;align-items:center;gap:2px;border:none;background:none;padding:8px 2px;color:#526078;font-size:15px;font-weight:500;font-family:inherit;cursor:pointer">{{ vilLabel }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></button>
                 </sc-if>
-
                 <sc-if value="{{ showResults }}" hint-placeholder-val="{{ false }}">
-                  <div style="font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8A8A96;margin:20px 4px 10px">{{ resultsLabel }}</div>
-                  <div style="background:#fff;border-radius:20px;box-shadow:0 1px 3px rgba(30,20,190,.06),0 1px 1px rgba(0,0,0,.03);overflow:hidden">
+                  <div style="margin-top:14px;background:#fff;border-radius:20px;box-shadow:0 1px 3px rgba(16,31,80,.06),0 1px 1px rgba(0,0,0,.03);overflow:hidden">
                     <sc-for list="{{ results }}" as="w" hint-placeholder-count="4">
-                      <div onClick="{{ w.onOpen }}" role="button" style="--rb:{{ w.lifeRowBg }};--lop:{{ w.lifeOp }};text-align:left;width:100%;box-sizing:border-box;padding:14px;background:var(--rb);filter:grayscale(var(--gs,0));border-bottom:1px solid #EEEEF3;cursor:pointer;display:flex;align-items:center;gap:12px;font-family:inherit" style-hover="background:#F7F8FC">
-                        <sc-if value="{{ w.hasIcons }}" hint-placeholder-val="{{ false }}">
-                          <span title="{{ w.mainIc.title }}" style="--ac:{{ w.mainIc.ac }};--sf:{{ w.mainIc.sf }};opacity:var(--lop);flex:none;width:46px;height:46px;border-radius:50%;border:2px solid var(--ac);position:relative;background:var(--sf);color:var(--ac);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ w.mainIc.icon }}"></path></svg><sc-if value="{{ w.mainIc.hasSub }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:8.5px;font-weight:800;line-height:1;padding:2px 4px;border-radius:5px;background:var(--ac);color:#fff;letter-spacing:.01em">{{ w.mainIc.sub }}</span></sc-if></span>
-                        </sc-if>
-                        <sc-if value="{{ w.noIcons }}" hint-placeholder-val="{{ true }}">
-                          <span style="flex:none;width:46px;height:46px;border-radius:50%;background:#F0F0F5;display:flex;align-items:center;justify-content:center;color:#2A2A33;font-weight:700;font-size:15px">{{ w.initials }}</span>
-                        </sc-if>
-                        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
-                          <span style="display:flex;align-items:center;gap:7px;min-width:0"><span style="opacity:var(--lop);font-size:16px;font-weight:700;color:#16161D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ w.name }}</span><span style="font-size:12px;color:#8A8A96;flex:none;white-space:nowrap">{{ w.nameHi }}</span><sc-if value="{{ w.hasLife }}" hint-placeholder-val="{{ false }}"><span style="--lb:{{ w.lifeBg }};--lf:{{ w.lifeFg }};flex:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--lb);color:var(--lf);white-space:nowrap">{{ w.lifeLabel }}</span></sc-if></span>
-                          <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-                            <sc-if value="{{ w.hasIcons }}" hint-placeholder-val="{{ false }}">
-                              <span style="display:flex;gap:5px">
-                                <sc-for list="{{ w.extraIcs }}" as="ic" hint-placeholder-count="0">
-                                  <span title="{{ ic.title }}" style="--ac:{{ ic.ac }};--sf:{{ ic.sf }};flex:none;width:22px;height:22px;border-radius:50%;background:var(--sf);border:1.5px solid var(--ac);display:flex;align-items:center;justify-content:center;color:var(--ac)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.icon }}"></path></svg></span>
-                                </sc-for>
-                              </span>
-                            </sc-if>
-                            <sc-if value="{{ w.noIcons }}" hint-placeholder-val="{{ true }}">
-                              <span style="--rbg:{{ w.riskBg }};--rfg:{{ w.riskFg }};flex:none;font-size:11px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--rbg);color:var(--rfg)">{{ w.riskLabel }}</span>
-                            </sc-if>
-                            <span style="font-size:13px;color:#4A4A55">{{ w.village }}</span>
+                      <button onClick="{{ w.onOpen }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 12px 13px 16px;border:none;border-bottom:1px solid #E8EDF4;background:#fff;text-align:left;font-family:inherit;cursor:pointer" style-hover="background:#F3F6FB">
+                        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                          <span style="display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px;min-width:0">
+                            <span style="flex:0 1 auto;min-width:0;max-width:100%;font-size:17px;font-weight:700;color:#101F50;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ w.name }}</span>
+                            <sc-for list="{{ w.tags }}" as="t" hint-placeholder-count="1"><span style="--tb:{{ t.bg }};--tf:{{ t.fg }};flex:0 1 auto;max-width:100%;font-size:12px;font-weight:600;line-height:1.35;padding:2px 7px;border-radius:6px;background:var(--tb);color:var(--tf)">{{ t.label }}</span></sc-for>
                           </span>
-                          <span style="font-size:12.5px;color:#8A8A96">{{ w.contactLine }}</span>
+                          <span style="font-size:14px;color:#526078;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums">{{ w.sub }}</span>
                         </span>
-                        <sc-if value="{{ w.hasOpen }}" hint-placeholder-val="{{ false }}">
-                          <span style="--ac:{{ w.openTone }};flex:none;min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:var(--ac);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ w.openCount }}</span>
-                        </sc-if>
-                        <span style="flex:none;width:34px;height:34px;border-radius:50%;background:#EEF0F6;color:#1E6BF5;display:flex;align-items:center;justify-content:center">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
-                        </span>
-                      </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7891" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 6l6 6-6 6"></path></svg>
+                      </button>
                     </sc-for>
+                    <sc-if value="{{ noMatch }}" hint-placeholder-val="{{ false }}">
+                      <div style="padding:16px;font-size:14px;color:#6B7891">No match</div>
+                    </sc-if>
                   </div>
                 </sc-if>
+                <sc-if value="{{ showAddNew }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ onAddNew }}" style="margin:12px 2px 0;display:flex;align-items:center;gap:2px;max-width:100%;border:none;background:none;padding:8px 2px;color:#245FD1;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;text-align:left"><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ addNewLabel }}</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 6l6 6-6 6"></path></svg></button>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- ===== VILLAGE PICKER ===== -->
+            <sc-if value="{{ isVillages }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:14px 16px 26px;background:#F3F6FB;min-height:100%;display:flex;flex-direction:column;gap:14px">
+                <div style="background:#fff;border-radius:20px;box-shadow:0 1px 3px rgba(16,31,80,.06),0 1px 1px rgba(0,0,0,.03);overflow:hidden">
+                  <sc-for list="{{ vilRows }}" as="v" hint-placeholder-count="5">
+                    <button onClick="{{ v.onTap }}" aria-pressed="{{ v.on }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 16px;border:none;border-bottom:1px solid #E8EDF4;background:#fff;text-align:left;font-family:inherit;cursor:pointer">
+                      <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:15.5px;font-weight:600;color:#101F50">{{ v.name }}</span><sc-if value="{{ v.asha }}" hint-placeholder-val="{{ true }}"><span style="font-size:13px;color:#526078">{{ v.asha }}</span></sc-if></span>
+                      <sc-if value="{{ v.on }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#245FD1" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M20 6L9 17l-5-5"></path></svg></sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+                <button onClick="{{ onVilShow }}" style="height:52px;border:none;border-radius:14px;background:var(--ml-blue);color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer">Show</button>
+              </div>
+            </sc-if>
+
+            <!-- ===== EDIT DETAILS ===== -->
+            <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:16px 16px 30px;display:flex;flex-direction:column;gap:14px">
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:600;color:var(--text-strong)">Name</span>
+                  <input value="{{ ed.name }}" onInput="{{ ed.onName }}" autocomplete="off" style="padding:14px;border:1.5px solid #DCE3EE;border-radius:14px;background:#fff;font-size:16px;font-family:inherit;color:var(--text-strong)"></label>
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:600;color:var(--text-strong)">Mobile</span>
+                  <input value="{{ ed.phone }}" onInput="{{ ed.onPhone }}" type="tel" autocomplete="off" style="padding:14px;border:1.5px solid #DCE3EE;border-radius:14px;background:#fff;font-size:16px;font-family:inherit;color:var(--text-strong);font-variant-numeric:tabular-nums"></label>
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:600;color:var(--text-strong)">Village or ward</span>
+                  <select value="{{ ed.village }}" onChange="{{ ed.onVillage }}" style="padding:14px;border:1.5px solid #DCE3EE;border-radius:14px;background:#fff;font-size:16px;font-family:inherit;color:var(--text-strong)">
+                    <sc-for list="{{ ed.villages }}" as="v" hint-placeholder-count="4"><option value="{{ v.value }}">{{ v.label }}</option></sc-for>
+                  </select>
+                  <sc-if value="{{ ed.asha }}" hint-placeholder-val="{{ true }}"><span style="font-size:13px;color:#526078;padding:0 2px">{{ ed.asha }}</span></sc-if></label>
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:600;color:var(--text-strong)">ABHA / RCH ID</span>
+                  <input value="{{ ed.abha }}" onInput="{{ ed.onAbha }}" autocomplete="off" style="padding:14px;border:1.5px solid #DCE3EE;border-radius:14px;background:#fff;font-size:16px;font-family:inherit;color:var(--text-strong);font-variant-numeric:tabular-nums"></label>
+                <sc-if value="{{ ed.err }}" hint-placeholder-val="{{ false }}"><div role="alert" style="font-size:13.5px;font-weight:600;color:#B42318;padding:0 2px">{{ ed.err }}</div></sc-if>
+                <button onClick="{{ ed.onSave }}" style="height:52px;border:none;border-radius:14px;background:var(--ml-blue);color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer">Save changes</button>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:10px"><span style="flex:none;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)">Her status</span><span style="flex:1;height:1px;background:#DCE3EE"></span></div>
+                <div style="background:#fff;border:1px solid #E8EDF4;border-radius:16px;overflow:hidden">
+                  <sc-for list="{{ ed.statusRows }}" as="r" hint-placeholder-count="3">
+                    <button onClick="{{ r.onTap }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:15px 14px 15px 16px;border:none;border-bottom:1px solid #E8EDF4;background:#fff;text-align:left;font-family:inherit;cursor:pointer">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#526078" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none" aria-hidden="true"><path d="{{ r.icon }}"></path></svg>
+                      <span style="flex:1;font-size:16px;font-weight:600;color:#101F50">{{ r.label }}</span>
+                      <sc-if value="{{ r.on }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:13px;color:#526078">Current</span></sc-if>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7891" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 6l6 6-6 6"></path></svg>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- ===== PREGNANCY ENDED · SUCCESS ===== -->
+            <sc-if value="{{ isEnded }}" hint-placeholder-val="{{ false }}">
+              <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px 24px;text-align:center;background:#fff">
+                <span style="width:88px;height:88px;border-radius:50%;background:#346538;display:flex;align-items:center;justify-content:center;margin-bottom:8px"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>
+                <div role="status" style="font-size:24px;font-weight:700;color:#20411F;letter-spacing:-.01em">Journey closed</div>
+                <div style="font-size:15px;color:#3B4763">{{ endedSub }}</div>
+                <button onClick="{{ onEndedDone }}" style="margin-top:22px;width:100%;max-width:340px;height:52px;border:none;border-radius:14px;background:var(--ml-blue);color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer">Done</button>
               </div>
             </sc-if>
 
@@ -1040,7 +964,7 @@
                         <input value="{{ bk.date }}" onInput="{{ bk.onDate }}" type="date" max="{{ reg.lmpMax }}" style="width:100%;padding:12px 14px;border:1.5px solid var(--border-default);border-radius:14px;background:var(--surface-page);font-size:15px;font-family:inherit;color:var(--text-strong);outline:none" style-focus="border-color:var(--ml-blue)">
                         <div style="font-size:11.5px;color:var(--text-muted);margin-top:5px;line-height:1.4">{{ bk.dateNote }}</div>
                         <sc-if value="{{ bk.overTerm }}" hint-placeholder-val="{{ false }}">
-                          <div style="margin-top:8px;padding:10px 12px;border-radius:12px;background:#FFF5F5;border:1px solid #F3C7C7;color:#B42318;font-size:13px;font-weight:600;line-height:1.4">Over 42 weeks ({{ bk.overWk }} wk) · ANC can't be registered. Confirm LMP and gestational age, or register under PNW/NB with delivery details.</div>
+                          <div style="margin-top:8px;padding:10px 12px;border-radius:12px;background:#FFF5F5;border:1px solid #F3C7C7;color:#B42318;font-size:13px;font-weight:600;line-height:1.4">Over 42 weeks ({{ bk.overWk }} wk) · HRP can't be registered. Confirm LMP and gestational age, or register under PNW/NB with delivery details.</div>
                         </sc-if>
                       </div>
                     </sc-if>
@@ -1082,227 +1006,90 @@
               </div>
             </sc-if>
 
-            <!-- ===== WORKLIST ===== -->
+            <!-- ===== WORK LIST ===== -->
             <sc-if value="{{ isWorklist }}" hint-placeholder-val="{{ false }}">
-              <div style="padding:14px 16px 24px">
-
-                <sc-if value="{{ wlAll }}" hint-placeholder-val="{{ false }}">
-                  <sc-if value="{{ showGrp }}" hint-placeholder-val="{{ false }}">
-                  <div style="display:flex;padding:3px;background:#EEEEF3;border-radius:12px;gap:3px;margin-bottom:12px">
-                    <sc-for list="{{ grpChips }}" as="g" hint-placeholder-count="2">
-                      <button onClick="{{ g.onTap }}" style="--bg:{{ g.bg }};--fg:{{ g.fg }};flex:1;padding:9px 10px;border-radius:9px;border:none;background:var(--bg);color:var(--fg);font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap">{{ g.label }}</button>
-                    </sc-for>
-                  </div>
-                  </sc-if>
-
-                  <sc-if value="{{ byPerson }}" hint-placeholder-val="{{ true }}">
-                    <div style="display:flex;flex-direction:column;gap:14px">
-                      <sc-for list="{{ cmb.sections }}" as="sec" hint-placeholder-count="2">
-                        <div style="background:#fff;border:1px solid #E6E6EE;border-radius:16px;overflow:hidden">
-                          <div style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid #EEEEF3">
-                            <span style="--d:{{ sec.dot }};flex:none;width:9px;height:9px;border-radius:50%;background:var(--d)"></span>
-                            <span style="flex:1;font-size:14px;font-weight:700;color:#16161D">{{ sec.title }}</span>
-                            <span style="--d:{{ sec.dot }};--p:{{ sec.pill }};flex:none;font-size:12px;font-weight:700;color:var(--d);background:var(--p);border-radius:999px;padding:2px 9px">{{ sec.count }}</span>
-                          </div>
-                          <sc-for list="{{ sec.rows }}" as="p" hint-placeholder-count="2">
-                        <button onClick="{{ p.onOpen }}" style="--rb:{{ p.rowBg }};width:100%;border:none;border-bottom:1px solid #EEEEF3;background:var(--rb, #fff);padding:12px 12px 12px 14px;display:flex;align-items:center;gap:12px;text-align:left;font-family:inherit;cursor:pointer" style-hover="background:#F7F7FB">
-                          <sc-if value="{{ p.hasIcons }}" hint-placeholder-val="{{ false }}"><span title="{{ p.mainIc.title }}" style="--ac:{{ p.mainIc.ac }};--sf:{{ p.mainIc.sf }};flex:none;width:44px;height:44px;border-radius:50%;border:2px solid var(--ac);position:relative;background:var(--sf);color:var(--ac);display:flex;align-items:center;justify-content:center"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ p.mainIc.icon }}"></path></svg><sc-if value="{{ p.mainIc.hasSub }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:8.5px;font-weight:800;line-height:1;padding:2px 4px;border-radius:5px;background:var(--ac);color:#fff;letter-spacing:.01em">{{ p.mainIc.sub }}</span></sc-if></span></sc-if>
-                          <sc-if value="{{ p.noIcons }}" hint-placeholder-val="{{ true }}"><span style="flex:none;width:44px;height:44px;border-radius:50%;background:#F0F0F5;color:#2A2A33;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700">{{ p.initials }}</span></sc-if>
-                          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
-                            <span style="display:flex;align-items:center;gap:6px;min-width:0">
-                              <span style="min-width:0;font-size:15.5px;font-weight:700;color:#16161D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span>
-                              <span style="--rbg:{{ p.riskBg }};--rfg:{{ p.riskFg }};flex:none;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--rbg);color:var(--rfg)">{{ p.riskLabel }}</span>
-                              <sc-for list="{{ p.extraIcs }}" as="ic" hint-placeholder-count="0"><span title="{{ ic.title }}" style="--ac:{{ ic.ac }};--sf:{{ ic.sf }};flex:none;width:20px;height:20px;border-radius:50%;background:var(--sf);border:1.5px solid var(--ac);display:flex;align-items:center;justify-content:center;color:var(--ac)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.icon }}"></path></svg></span></sc-for>
-                            </span>
-                            <span style="--dc:{{ p.dueFg }};display:flex;align-items:baseline;gap:6px;min-width:0;font-size:13.5px">
-                              <span style="flex:0 1 auto;min-width:0;max-width:100%;font-weight:700;color:var(--dc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.dueText }}</span>
-                              <span style="flex:1 1 0;min-width:0;color:#4A4A55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.stepTitle }}</span>
-                              <sc-if value="{{ p.hasMore }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:12px;font-weight:700;color:var(--ml-blue)">{{ p.more }}</span></sc-if>
-                            </span>
-                            <span style="font-size:12px;color:#8A8A96;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.village }} · {{ p.phoneMask }}</span>
-                          </span>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5B5C0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 6l6 6-6 6"></path></svg>
-                        </button>
-                          </sc-for>
-                        </div>
+              <div style="padding:2px 16px 26px;background:#F3F6FB;min-height:100%">
+                  <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
+                    <div role="tablist" aria-label="Register" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;background:#E4EAF3;border-radius:14px">
+                      <sc-for list="{{ wl.segs }}" as="t" hint-placeholder-count="3">
+                        <button onClick="{{ t.onTap }}" role="tab" aria-selected="{{ t.on }}" style="--bg:{{ t.bg }};--fg:{{ t.fg }};--sh:{{ t.sh }};height:38px;border:none;border-radius:11px;background:var(--bg);color:var(--fg);box-shadow:var(--sh);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">{{ t.label }}</button>
                       </sc-for>
                     </div>
-                  </sc-if>
-
-                  <sc-if value="{{ byVillage }}" hint-placeholder-val="{{ false }}">
-                    <div style="display:flex;flex-direction:column;gap:10px">
-                      <sc-for list="{{ cmb.villages }}" as="v" hint-placeholder-count="3">
-                        <div style="background:#fff;border:1px solid #E6E6EE;border-radius:16px;overflow:hidden">
-                          <button onClick="{{ v.onToggle }}" style="width:100%;border:none;background:transparent;padding:13px 14px;display:flex;align-items:center;gap:11px;text-align:left;font-family:inherit;cursor:pointer">
-                            <span style="flex:none;width:40px;height:40px;border-radius:12px;background:var(--ml-peppermint);color:#1B6B47;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"></path><path d="M12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path></svg></span>
-                            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
-                              <span style="display:flex;align-items:baseline;gap:8px"><span style="font-size:15.5px;font-weight:700;color:#16161D">{{ v.name }}</span><span style="font-size:12.5px;color:#8A8A96">{{ v.count }}</span></span>
-                              <span style="display:flex;gap:5px;flex-wrap:wrap">
-                                <sc-for list="{{ v.stats }}" as="t" hint-placeholder-count="1"><span style="--ac:{{ t.ac }};--sf:{{ t.sf }};font-size:11px;font-weight:700;color:var(--ac);background:var(--sf);border-radius:6px;padding:2px 7px;white-space:nowrap">{{ t.label }}</span></sc-for>
-                              </span>
-                            </span>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ml-blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="{{ v.chev }}"></path></svg>
+                    <sc-if value="{{ wl.isFac }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:flex;align-items:center;gap:16px;padding:0 4px;border-bottom:1px solid #DCE3EE">
+                        <sc-for list="{{ wl.tabs }}" as="t" hint-placeholder-count="2">
+                          <button onClick="{{ t.onTap }}" aria-pressed="{{ t.on }}" style="--fg:{{ t.fg }};--ul:{{ t.ul }};flex:none;border:none;background:none;padding:10px 0;margin-bottom:-1px;border-bottom:2px solid var(--ul);color:var(--fg);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">{{ t.label }}</button>
+                        </sc-for>
+                        <button onClick="{{ wl.onNr }}" role="switch" aria-checked="{{ wl.nrOn }}" style="flex:none;margin-left:auto;display:flex;align-items:center;gap:8px;border:none;background:none;padding:8px 0;color:#3B4763;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer">NR only<span style="--tb:{{ wl.nrTrack }};position:relative;flex:none;width:34px;height:20px;border-radius:10px;background:var(--tb)"><span style="--tx:{{ wl.nrKnobX }};position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(var(--tx))"></span></span></button>
+                      </div>
+                    </sc-if>
+                    <div style="background:#fff;border-radius:20px;box-shadow:0 1px 3px rgba(16,31,80,.06),0 1px 1px rgba(0,0,0,.03);overflow:hidden">
+                      <sc-for list="{{ wl.sections }}" as="sec" hint-placeholder-count="6">
+                        <div style="border-bottom:1px solid #E8EDF4">
+                          <button onClick="{{ sec.onToggle }}" aria-expanded="{{ sec.isOpen }}" style="--hb:{{ sec.hdBg }};width:100%;display:flex;align-items:center;gap:10px;padding:14px 14px 14px 16px;border:none;background:var(--hb);font-family:inherit;cursor:pointer;text-align:left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{ sec.iconFg }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none" aria-hidden="true"><path d="{{ sec.icon }}"></path></svg>
+                            <span style="--hf:{{ sec.hdFg }};flex:1;min-width:0;font-size:17px;font-weight:700;color:var(--hf)">{{ sec.title }}</span>
+                            <span style="--cf:{{ sec.countFg }};flex:none;font-size:16px;font-weight:700;color:var(--cf);font-variant-numeric:tabular-nums">{{ sec.count }}</span>
+                            <span aria-hidden="true" style="flex:none;width:20px;text-align:center;font-size:19px;line-height:1;color:#6B7891">{{ sec.sign }}</span>
                           </button>
-                          <sc-if value="{{ v.isOpen }}" hint-placeholder-val="{{ false }}">
-                            <div style="border-top:1px solid #EEEEF3">
-                              <sc-for list="{{ v.people }}" as="p" hint-placeholder-count="3">
-                        <button onClick="{{ p.onOpen }}" style="--rb:{{ p.rowBg }};width:100%;border:none;border-bottom:1px solid #EEEEF3;background:var(--rb, #fff);padding:12px 12px 12px 14px;display:flex;align-items:center;gap:12px;text-align:left;font-family:inherit;cursor:pointer" style-hover="background:#F7F7FB">
-                          <sc-if value="{{ p.hasIcons }}" hint-placeholder-val="{{ false }}"><span title="{{ p.mainIc.title }}" style="--ac:{{ p.mainIc.ac }};--sf:{{ p.mainIc.sf }};flex:none;width:44px;height:44px;border-radius:50%;border:2px solid var(--ac);position:relative;background:var(--sf);color:var(--ac);display:flex;align-items:center;justify-content:center"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ p.mainIc.icon }}"></path></svg><sc-if value="{{ p.mainIc.hasSub }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:8.5px;font-weight:800;line-height:1;padding:2px 4px;border-radius:5px;background:var(--ac);color:#fff;letter-spacing:.01em">{{ p.mainIc.sub }}</span></sc-if></span></sc-if>
-                          <sc-if value="{{ p.noIcons }}" hint-placeholder-val="{{ true }}"><span style="flex:none;width:44px;height:44px;border-radius:50%;background:#F0F0F5;color:#2A2A33;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700">{{ p.initials }}</span></sc-if>
-                          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
-                            <span style="display:flex;align-items:center;gap:6px;min-width:0">
-                              <span style="min-width:0;font-size:15.5px;font-weight:700;color:#16161D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span>
-                              <span style="--rbg:{{ p.riskBg }};--rfg:{{ p.riskFg }};flex:none;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--rbg);color:var(--rfg)">{{ p.riskLabel }}</span>
-                              <sc-for list="{{ p.extraIcs }}" as="ic" hint-placeholder-count="0"><span title="{{ ic.title }}" style="--ac:{{ ic.ac }};--sf:{{ ic.sf }};flex:none;width:20px;height:20px;border-radius:50%;background:var(--sf);border:1.5px solid var(--ac);display:flex;align-items:center;justify-content:center;color:var(--ac)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.icon }}"></path></svg></span></sc-for>
-                            </span>
-                            <span style="--dc:{{ p.dueFg }};display:flex;align-items:baseline;gap:6px;min-width:0;font-size:13.5px">
-                              <span style="flex:0 1 auto;min-width:0;max-width:100%;font-weight:700;color:var(--dc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.dueText }}</span>
-                              <span style="flex:1 1 0;min-width:0;color:#4A4A55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.stepTitle }}</span>
-                              <sc-if value="{{ p.hasMore }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:12px;font-weight:700;color:var(--ml-blue)">{{ p.more }}</span></sc-if>
-                            </span>
-                            <span style="font-size:12px;color:#8A8A96;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.village }} · {{ p.phoneMask }}</span>
-                          </span>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5B5C0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 6l6 6-6 6"></path></svg>
-                        </button>
-                              </sc-for>
-                            </div>
-                          </sc-if>
-                        </div>
-                      </sc-for>
-                    </div>
-                  </sc-if>
-
-                  <sc-if value="{{ cmb.empty }}" hint-placeholder-val="{{ false }}">
-                    <div style="text-align:center;padding:48px 20px;color:var(--text-muted)"><div style="font-size:15px;font-weight:600;color:var(--text-body);margin-bottom:4px">Nothing pending</div><div style="font-size:13px">No open steps in any service right now.</div></div>
-                  </sc-if>
-                </sc-if>
-
-                <sc-if value="{{ wlSvc }}" hint-placeholder-val="{{ true }}">
-                <sc-if value="{{ showSvcFilters }}" hint-placeholder-val="{{ true }}">
-                <sc-if value="{{ showCatChips }}" hint-placeholder-val="{{ false }}">
-                <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin:0 -16px 4px;padding-left:16px;padding-right:16px">
-                  <sc-for list="{{ filterChips }}" as="c" hint-placeholder-count="4">
-                    <button onClick="{{ c.onTap }}" style="--bg:{{ c.bg }};--fg:{{ c.fg }};--bd:{{ c.bd }};flex:none;padding:7px 13px;border-radius:999px;border:1.5px solid var(--bd);background:var(--bg);color:var(--fg);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">{{ c.label }}</button>
-                  </sc-for>
-                </div>
-                </sc-if>
-                <sc-if value="{{ hasScopeChips }}" hint-placeholder-val="{{ true }}">
-                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
-                    <span style="flex:none;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted)">Scope</span>
-                    <sc-for list="{{ scopeChips }}" as="sc" hint-placeholder-count="2">
-                      <button onClick="{{ sc.onTap }}" style="--bg:{{ sc.bg }};--fg:{{ sc.fg }};--bd:{{ sc.bd }};flex:none;padding:6px 12px;border-radius:999px;border:1.5px solid var(--bd);background:var(--bg);color:var(--fg);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">{{ sc.label }}</button>
-                    </sc-for>
-                  </div>
-                </sc-if>
-                <sc-if value="{{ showRiskRow }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
-                  <span style="flex:none;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted)">Risk</span>
-                  <sc-for list="{{ riskChips }}" as="rc" hint-placeholder-count="3">
-                    <button onClick="{{ rc.onTap }}" style="--bg:{{ rc.bg }};--fg:{{ rc.fg }};--bd:{{ rc.bd }};flex:none;padding:6px 12px;border-radius:999px;border:1.5px solid var(--bd);background:var(--bg);color:var(--fg);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">{{ rc.label }}</button>
-                  </sc-for>
-                </div></sc-if>
-                </sc-if>
-
-                <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
-<sc-for list="{{ worklistSections }}" as="sec" hint-placeholder-count="2">
-                      <div style="background:#fff;border-radius:20px;box-shadow:0 1px 3px rgba(30,20,190,.06),0 1px 1px rgba(0,0,0,.03);overflow:hidden">
-                        <div style="--hb:{{ sec.bg }};--hf:{{ sec.fg }};display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid #EEEEF3">
-                          <span style="flex:none;width:10px;height:10px;border-radius:50%;background:var(--hf)"></span>
-                          <span style="font-size:14px;font-weight:700;color:#16161D">{{ sec.title }}</span>
-                          <span style="flex:none;min-width:22px;height:20px;padding:0 6px;border-radius:99px;background:var(--hb);color:var(--hf);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ sec.countLabel }}</span>
-                          <span style="flex:1"></span>
-                          <sc-if value="{{ sec.hasMore }}" hint-placeholder-val="{{ false }}">
-                            <button onClick="{{ sec.onViewAll }}" style="flex:none;display:flex;align-items:center;gap:3px;border:none;background:transparent;padding:0;color:var(--hf);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer">{{ sec.viewLabel }}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></button>
-                          </sc-if>
-                        </div>
-                        <sc-for list="{{ sec.rows }}" as="s" hint-placeholder-count="2">
-                          <div style="--xb:{{ s.xBg }};--xl:{{ s.xLine }};background:var(--xb);border-left:3px solid var(--xl);border-bottom:1px solid #EEEEF3">
-                            <div style="display:flex;align-items:center;gap:12px;padding:12px 12px 12px 11px">
-                              <sc-if value="{{ s.hasIcons }}" hint-placeholder-val="{{ false }}">
-                                <button onClick="{{ s.onOpen }}" title="{{ s.mainIc.title }}" style="--ac:{{ s.mainIc.ac }};--sf:{{ s.mainIc.sf }};flex:none;width:46px;height:46px;border-radius:50%;border:2px solid var(--ac);position:relative;background:var(--sf);color:var(--ac);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.mainIc.icon }}"></path></svg><sc-if value="{{ s.mainIc.hasSub }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:8.5px;font-weight:800;line-height:1;padding:2px 4px;border-radius:5px;background:var(--ac);color:#fff;letter-spacing:.01em">{{ s.mainIc.sub }}</span></sc-if></button>
-                              </sc-if>
-                              <sc-if value="{{ s.noIcons }}" hint-placeholder-val="{{ true }}">
-                                <button onClick="{{ s.onOpen }}" style="--avb:{{ s.avBg }};--avf:{{ s.avFg }};flex:none;width:46px;height:46px;border-radius:50%;border:none;background:var(--avb);color:var(--avf);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">{{ s.initials }}</button>
-                              </sc-if>
-                              <div onClick="{{ s.onOpen }}" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;cursor:pointer">
-                                <div style="display:flex;align-items:center;gap:6px;min-width:0">
-                                  <span style="min-width:0;font-size:15.5px;font-weight:700;color:#16161D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.womanName }}</span>
-                                  <span style="--rbg:{{ s.riskBg }};--rfg:{{ s.riskFg }};flex:none;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--rbg);color:var(--rfg)">{{ s.riskLabel }}</span>
-                                  <sc-for list="{{ s.extraIcs }}" as="ic" hint-placeholder-count="0">
-                                    <span title="{{ ic.title }}" style="--ac:{{ ic.ac }};--sf:{{ ic.sf }};flex:none;width:20px;height:20px;border-radius:50%;background:var(--sf);border:1.5px solid var(--ac);display:flex;align-items:center;justify-content:center;color:var(--ac)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.icon }}"></path></svg></span>
-                                  </sc-for>
-                                </div>
-                                <div style="--dc:{{ s.dueFg }};display:flex;align-items:baseline;gap:6px;min-width:0;font-size:13.5px">
-                                  <span style="flex:0 1 auto;min-width:0;max-width:100%;font-weight:700;color:var(--dc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.dueText }}</span>
-                                  <span style="flex:1 1 0;min-width:0;color:#4A4A55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.stepTitle }}</span>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:6px;min-width:0;font-size:12px;color:#8A8A96">
-                                  <span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.tagLine }}</span>
-                                  <sc-if value="{{ s.isIncomplete }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:10.5px;font-weight:700;color:#B8650E;background:#FFF5E6;border-radius:5px;padding:1px 6px">Incomplete</span></sc-if>
-                                </div>
-                                <sc-if value="{{ s.downgraded }}" hint-placeholder-val="{{ false }}">
-                                  <span style="font-size:11.5px;font-weight:700;color:#C62F2F">{{ s.downNote }}</span>
-                                </sc-if>
+                          <sc-for list="{{ sec.rows }}" as="r" hint-placeholder-count="2">
+                            <sc-if value="{{ r.isSaved }}" hint-placeholder-val="{{ false }}">
+                              <div role="status" style="display:flex;align-items:center;gap:12px;padding:12px 8px 12px 16px;background:#EDF3EC;border-top:1px solid #E8EDF4">
+                                <span style="flex:none;width:30px;height:30px;border-radius:50%;background:#346538;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>
+                                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;color:#20411F"><span style="font-size:15px;font-weight:700">Saved</span><span style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.savedText }}</span></span>
+                                <button onClick="{{ r.onUndo }}" style="flex:none;border:none;background:none;padding:10px 8px;color:#20411F;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">Undo</button>
                               </div>
-                              <button onClick="{{ s.onToggle }}" title="Update" style="--cb:{{ s.chBg }};--cf:{{ s.chFg }};flex:none;width:38px;height:38px;border-radius:50%;border:none;background:var(--cb);color:var(--cf);display:flex;align-items:center;justify-content:center;cursor:pointer">
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.chev }}"></path></svg>
-                              </button>
-                            </div>
-                            <sc-if value="{{ s.isExp }}" hint-placeholder-val="{{ false }}">
-                              <div style="margin:0 14px;padding:12px 0 14px;border-top:1px solid #DCE3F5;display:flex;flex-direction:column;gap:8px">
-                                <sc-if value="{{ s.inlineActs }}" hint-placeholder-val="{{ false }}"><div style="--ac:{{ s.actCount }};display:grid;grid-template-columns:repeat(var(--ac),minmax(0,1fr));gap:8px"><sc-for list="{{ s.actions }}" as="a" hint-placeholder-count="2"><button onClick="{{ a.onTap }}" style="--ab:{{ a.bg }};--af:{{ a.fg }};--ad:{{ a.bd }};height:46px;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:12px;border:1px solid var(--ad);background:var(--ab);color:var(--af);font-family:inherit;font-size:14.5px;font-weight:700;white-space:nowrap;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ a.icon }}"></path></svg>{{ a.label }}</button></sc-for></div></sc-if>
-                                <sc-if value="{{ s.stackActs }}" hint-placeholder-val="{{ true }}"><button onClick="{{ s.doneAct.onTap }}" style="--ab:{{ s.doneAct.bg }};--af:{{ s.doneAct.fg }};--ad:{{ s.doneAct.bd }};width:100%;height:46px;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:12px;border:1px solid var(--ad);background:var(--ab);color:var(--af);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">
-                                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.doneAct.icon }}"></path></svg>
-                                  {{ s.doneAct.label }}
-                                </button></sc-if>
-                                <sc-if value="{{ s.hasLowWarn }}" hint-placeholder-val="{{ false }}">
-                                  <div style="display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:11px;background:#FDECEC;border:1px solid #F3BDBD">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C62F2F" stroke-width="2.2" stroke-linecap="round" style="flex:none"><path d="M12 9v5M12 17h.01M10.3 3.9 2.4 18a1.8 1.8 0 0 0 1.6 2.7h16a1.8 1.8 0 0 0 1.6-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0z"></path></svg>
-                                    <span style="font-size:12.5px;font-weight:700;color:#C62F2F">{{ s.lowWarn }}</span>
-                                  </div>
-                                </sc-if>
-                                <sc-if value="{{ s.showDone }}" hint-placeholder-val="{{ false }}">
-                                  <div style="--cols:{{ s.doneCols }};display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:6px">
-                                    <sc-for list="{{ s.doneOpts }}" as="o" hint-placeholder-count="3">
-                                      <button onClick="{{ o.onTap }}" style="min-height:42px;display:flex;align-items:center;justify-content:center;padding:7px 8px;border-radius:11px;border:1.5px solid #8FD3B2;background:#fff;color:#16161D;font-family:inherit;font-size:13px;font-weight:600;line-height:1.25;text-align:center;cursor:pointer" style-active="transform:scale(.97);background:#E6F8EE">{{ o.label }}</button>
-                                    </sc-for>
-                                  </div>
-                                </sc-if>
-                                <sc-if value="{{ s.restStack }}" hint-placeholder-val="{{ true }}">
-                                  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
-                                    <sc-for list="{{ s.restActs }}" as="a" hint-placeholder-count="2">
-                                      <button onClick="{{ a.onTap }}" style="--ab:{{ a.bg }};--af:{{ a.fg }};--ad:{{ a.bd }};height:42px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;border:1px solid var(--ad);background:var(--ab);color:var(--af);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="{{ a.icon }}"></path></svg>
-                                        {{ a.label }}
-                                      </button>
-                                    </sc-for>
-                                  </div>
-                                </sc-if>
-                                <sc-if value="{{ s.showPend }}" hint-placeholder-val="{{ false }}">
-                                  <div style="display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:14px;background:#FBE7DC;border:1px solid #EDC2A8">
-                                    <span style="font-size:12px;font-weight:700;color:#8A3D14;padding:0 2px">Why can't this step be completed?</span>
-                                    <sc-for list="{{ s.pendOpts }}" as="o" hint-placeholder-count="3">
-                                      <button onClick="{{ o.onTap }}" style="min-height:46px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:8px 14px;border-radius:11px;border:1px solid #EDC2A8;background:#fff;color:#16161D;font-family:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer">
-                                        {{ o.label }}
-                                        <span style="font-size:11.5px;font-weight:500;color:#5C5B57">Closes all her open steps</span>
-                                      </button>
-                                    </sc-for>
+                            </sc-if>
+                            <sc-if value="{{ r.notSaved }}" hint-placeholder-val="{{ true }}">
+                              <div style="--rb:{{ r.rowBg }};border-top:1px solid #E8EDF4;background:var(--rb)">
+                                <div style="display:flex;align-items:center;gap:10px;padding:11px 8px 11px 16px">
+                                  <button onClick="{{ r.onOpen }}" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;border:none;background:none;padding:2px 0;text-align:left;font-family:inherit;cursor:pointer">
+                                    <span style="display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px;min-width:0;max-width:100%">
+                                      <span style="flex:0 1 auto;min-width:0;max-width:100%;font-size:17px;font-weight:700;color:#101F50;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                                      <sc-if value="{{ r.isNr }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:12px;font-weight:600;padding:2px 6px;border-radius:6px;background:#E4EAF3;color:#3B4763">{{ r.nrLabel }}</span></sc-if>
+                                      <sc-for list="{{ r.tags }}" as="t" hint-placeholder-count="1"><span style="--tb:{{ t.bg }};--tf:{{ t.fg }};flex:0 1 auto;max-width:100%;font-size:12px;font-weight:600;line-height:1.35;padding:2px 7px;border-radius:6px;background:var(--tb);color:var(--tf)">{{ t.label }}</span></sc-for>
+                                    </span>
+                                    <span style="display:flex;align-items:center;gap:6px;max-width:100%;min-width:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ r.iconFg }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none" aria-hidden="true"><path d="{{ r.icon }}"></path></svg><span style="--lc:{{ r.lineFg }};min-width:0;font-size:14px;color:var(--lc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.line }}</span></span>
+                                  </button>
+                                  <span style="--lf:{{ r.lateFg }};flex:none;font-size:14px;font-weight:700;color:var(--lf);font-variant-numeric:tabular-nums;white-space:nowrap">{{ r.late }}</span>
+                                  <sc-if value="{{ r.single }}" hint-placeholder-val="{{ true }}">
+                                    <button onClick="{{ r.onToggle }}" aria-expanded="{{ r.isExp }}" aria-label="Update" style="flex:none;width:40px;height:40px;border-radius:50%;border:none;background:#EAF1FD;color:#245FD1;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{ r.chev }}"></path></svg></button>
+                                  </sc-if>
+                                  <sc-if value="{{ r.multi }}" hint-placeholder-val="{{ false }}">
+                                    <button onClick="{{ r.onOpen }}" style="flex:none;height:40px;display:flex;align-items:center;gap:2px;border:none;background:none;padding:0 4px;color:#245FD1;font-size:14px;font-weight:600;font-family:inherit;white-space:nowrap;cursor:pointer">{{ r.nLabel }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></button>
+                                  </sc-if>
+                                </div>
+                                <sc-if value="{{ r.isExp }}" hint-placeholder-val="{{ false }}">
+                                  <div style="padding:2px 14px 14px 16px;display:flex;flex-direction:column;gap:8px">
+                                    <sc-if value="{{ r.isStep }}" hint-placeholder-val="{{ true }}">
+                                      <div style="--n:{{ r.actCols }};display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:8px">
+                                        <sc-for list="{{ r.acts }}" as="a" hint-placeholder-count="3">
+                                          <button onClick="{{ a.onTap }}" style="--ab:{{ a.bg }};--af:{{ a.fg }};--ad:{{ a.bd }};height:46px;min-width:0;padding:0 4px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:12px;border:1px solid var(--ad);background:var(--ab);color:var(--af);font-family:inherit;font-size:15px;font-weight:600;white-space:nowrap;cursor:pointer" class="ns-act" style-active="background:#F3F6FB"><svg class="ns-act-ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none" aria-hidden="true"><path d="{{ a.icon }}"></path></svg><span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ a.label }}</span></button>
+                                        </sc-for>
+                                      </div>
+                                      <sc-if value="{{ r.showOpts }}" hint-placeholder-val="{{ false }}">
+                                        <div style="--cols:{{ r.optCols }};display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:8px">
+                                          <sc-for list="{{ r.opts }}" as="o" hint-placeholder-count="3">
+                                            <button onClick="{{ o.onTap }}" style="--ob:{{ o.bd }};--ow:{{ o.bw }};min-height:44px;padding:8px;border-radius:12px;border:var(--ow) solid var(--ob);background:#fff;color:#101F50;font-family:inherit;font-size:13.5px;font-weight:600;line-height:1.25;text-align:center;cursor:pointer" style-active="background:#EDF3EC">{{ o.label }}</button>
+                                          </sc-for>
+                                        </div>
+                                      </sc-if>
+                                    </sc-if>
+                                    <sc-if value="{{ r.isOutcome }}" hint-placeholder-val="{{ false }}">
+                                      <button onClick="{{ r.onOutcome }}" style="height:44px;border-radius:12px;border:1px solid #DCE3EE;background:#fff;color:#101F50;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">Pregnancy ended</button>
+                                    </sc-if>
                                   </div>
                                 </sc-if>
                               </div>
                             </sc-if>
-                          </div>
-                        </sc-for>
-                      </div>
-                    </sc-for>
-                </div>
-
-                <sc-if value="{{ worklistEmpty }}" hint-placeholder-val="{{ false }}">
-                  <div style="text-align:center;padding:48px 20px;color:var(--text-muted)">
-                    <div style="font-size:15px;font-weight:600;color:var(--text-body);margin-bottom:4px">Nothing needs attention</div>
-                    <div style="font-size:13px">No open steps at your level right now.</div>
+                          </sc-for>
+                          <sc-if value="{{ sec.hasMore }}" hint-placeholder-val="{{ false }}">
+                            <button onClick="{{ sec.onMore }}" style="width:100%;border:none;border-top:1px solid #E8EDF4;background:none;padding:13px 16px;text-align:left;color:#245FD1;font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer">{{ sec.moreLabel }}</button>
+                          </sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
                   </div>
-                </sc-if>
-                </sc-if>
               </div>
             </sc-if>
 
@@ -1313,14 +1100,14 @@
                   <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="3">
                     <div style="--ac:{{ a.tone }};background:var(--surface-card);border:1px solid var(--border-subtle);border-left:4px solid var(--ac);border-radius:14px;box-shadow:var(--shadow-xs);padding:13px 14px">
                       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                        <span style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ac);white-space:nowrap">{{ a.typeLabel }}</span>
-                        <span style="font-size:10.5px;font-weight:600;color:var(--ac);border:1px solid var(--ac);border-radius:6px;padding:1px 6px;white-space:nowrap">{{ a.who }}</span>
+                        <span style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ac);white-space:nowrap">{{ a.typeLabel }}</span>
+                        <span style="font-size:12px;font-weight:600;color:var(--ac);border:1px solid var(--ac);border-radius:6px;padding:1px 6px;white-space:nowrap">{{ a.who }}</span>
                       </div>
-                      <div style="font-size:14.5px;font-weight:600;color:var(--text-strong)">{{ a.womanName }} <span style="font-weight:400;color:var(--text-muted);font-size:12.5px">{{ a.village }}</span></div>
-                      <div style="font-size:13px;color:var(--text-body);margin-top:3px">{{ a.message }}</div>
+                      <div style="font-size:16px;font-weight:600;color:var(--text-strong)">{{ a.womanName }} <span style="font-weight:400;color:var(--text-muted);font-size:12.5px">{{ a.village }}</span></div>
+                      <div style="font-size:14px;color:var(--text-body);margin-top:3px">{{ a.message }}</div>
                       <div style="display:flex;gap:8px;margin-top:11px">
-                        <button onClick="{{ a.onOpen }}" style="flex:1;padding:9px;border:none;border-radius:10px;background:var(--ml-blue);color:#fff;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer">Open journey</button>
-                        <button onClick="{{ a.onCall }}" style="flex:none;padding:9px 14px;border:1px solid var(--border-default);border-radius:10px;background:var(--surface-card);color:var(--ml-blue);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer">Call</button>
+                        <button onClick="{{ a.onOpen }}" style="flex:1;padding:9px;border:1px solid var(--border-default);border-radius:10px;background:var(--surface-card);color:#101F50;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer">Open journey</button>
+                        <button onClick="{{ a.onCall }}" style="flex:none;padding:9px 14px;border:1px solid var(--border-default);border-radius:10px;background:var(--surface-card);color:var(--ml-blue);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer">Call</button>
                       </div>
                     </div>
                   </sc-for>
@@ -1458,22 +1245,22 @@
                         <div style="flex:none;width:78px;height:78px;border-radius:50%;background:conic-gradient(var(--ml-mark-seafoam) {{ ins.track.deg }}, rgba(255,255,255,.22) 0);display:flex;align-items:center;justify-content:center">
                           <div style="width:57px;height:57px;border-radius:50%;background:var(--ml-blue);display:flex;flex-direction:column;align-items:center;justify-content:center">
                             <span style="font-size:17px;font-weight:700;color:#fff">{{ ins.track.pct }}</span>
-                            <span style="font-size:9px;color:#D7D4FA">tracked</span>
+                            <span style="font-size:9px;color:#C9D5EE">tracked</span>
                           </div>
                         </div>
                         <div style="flex:1;min-width:0">
                           <div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ml-mark-seafoam)">Headline quality measure</div>
                           <div style="font-size:15px;font-weight:700;margin:4px 0 4px">Successful tracking</div>
-                          <div style="font-size:11.5px;line-height:1.45;color:#D7D4FA">{{ ins.track.line }}</div>
+                          <div style="font-size:11.5px;line-height:1.45;color:#C9D5EE">{{ ins.track.line }}</div>
                         </div>
                       </div>
                       <sc-if value="{{ ins.track.hasSplit }}" hint-placeholder-val="{{ false }}">
                         <div style="position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px;margin-top:14px">
                           <sc-for list="{{ ins.track.split }}" as="t" hint-placeholder-count="2">
                             <span style="display:flex;flex-direction:column;gap:2px;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.14)">
-                              <span style="font-size:12px;font-weight:700;color:#D7D4FA">{{ t.label }}</span>
+                              <span style="font-size:12px;font-weight:700;color:#C9D5EE">{{ t.label }}</span>
                               <span style="font-size:20px;line-height:1.1;font-weight:700;color:#fff">{{ t.pct }}</span>
-                              <span style="font-size:11.5px;color:#D7D4FA">{{ t.frac }}</span>
+                              <span style="font-size:11.5px;color:#C9D5EE">{{ t.frac }}</span>
                             </span>
                           </sc-for>
                         </div>
@@ -1611,7 +1398,7 @@
                       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
                         <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:13px 14px">
                           <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted)">Avg turnaround</div>
-                          <div style="font-size:24px;font-weight:800;letter-spacing:-.02em;color:#1E6BF5;margin:5px 0 2px">{{ ins.kpiTurn }}</div>
+                          <div style="font-size:24px;font-weight:800;letter-spacing:-.02em;color:#245FD1;margin:5px 0 2px">{{ ins.kpiTurn }}</div>
                           <div style="font-size:11.5px;color:var(--text-muted)">To complete a care step</div>
                         </div>
                         <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:13px 14px">
@@ -1661,20 +1448,26 @@
             <!-- ===== JOURNEY ===== -->
             <sc-if value="{{ isJourney }}" hint-placeholder-val="{{ false }}">
               <div style="padding:0 0 26px">
+                <sc-if value="{{ flashText }}" hint-placeholder-val="{{ false }}">
+                  <div role="status" style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:#EDF3EC">
+                    <span style="flex:none;width:30px;height:30px;border-radius:50%;background:#346538;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>
+                    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;color:#20411F"><span style="font-size:15px;font-weight:700">Saved</span><span style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ flashText }}</span></span>
+                  </div>
+                </sc-if>
                 <div style="--hb:{{ selWoman.heroBg }};background:var(--hb);padding:14px 16px 16px">
                   <div style="display:flex;gap:12px;align-items:center">
                     <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
-                      <div style="font-size:21px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.2;text-wrap:pretty">{{ selWoman.name }}</div><sc-if value="{{ selWoman.hasLife }}" hint-placeholder-val="{{ false }}"><span style="--lb:{{ selWoman.lifeBg }};--lf:{{ selWoman.lifeFg }};align-self:flex-start;font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:6px;background:var(--lb);color:var(--lf);white-space:nowrap">{{ selWoman.lifeLabel }}</span></sc-if>
-                      <div style="display:flex;align-items:center;gap:6px;min-width:0;font-size:13.5px;font-weight:600;color:#DCD9FA">
+                      <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.2;text-wrap:pretty">{{ selWoman.name }}</div><sc-if value="{{ selWoman.hasLife }}" hint-placeholder-val="{{ false }}"><span style="--lb:{{ selWoman.lifeBg }};--lf:{{ selWoman.lifeFg }};align-self:flex-start;font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:6px;background:var(--lb);color:var(--lf);white-space:nowrap">{{ selWoman.lifeLabel }}</span></sc-if>
+                      <div style="display:flex;align-items:center;gap:6px;min-width:0;font-size:13.5px;font-weight:600;color:#C9D5EE">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"></path><path d="M12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path></svg>
                         <span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ selWoman.villageLine }}</span>
                         <sc-if value="{{ selWoman.isNr }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:5px;background:#fff;color:#1E14BE">{{ selWoman.nrLabel }}</span></sc-if>
                       </div>
-                      <div style="display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:#DCD9FA;font-variant-numeric:tabular-nums">
+                      <div style="display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:#C9D5EE;font-variant-numeric:tabular-nums">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><rect x="6" y="2.5" width="12" height="19" rx="2.5"></rect><path d="M11 18h2"></path></svg>{{ selWoman.phone }}
                       </div>
                     </div>
-                    <button onClick="{{ selWoman.onEdit }}" title="Update status" style="flex:none;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(255,255,255,.55);background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0" style-active="transform:scale(.94)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg></button>
+                    <button onClick="{{ selWoman.onEdit }}" title="Edit details" aria-label="Edit details" style="flex:none;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(255,255,255,.55);background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0" style-active="transform:scale(.94)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg></button>
                     <button onClick="{{ selWoman.onWa }}" title="WhatsApp" style="--op:{{ selWoman.waOpacity }};--wbg:{{ selWoman.waBg }};--wfg:{{ selWoman.waFg }};flex:none;width:46px;height:46px;border-radius:50%;border:none;background:var(--wbg);color:var(--wfg);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:var(--op);box-shadow:0 2px 8px rgba(0,0,0,.18)" style-active="transform:scale(.94)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.4z"></path><path d="M9 8.6c0 3.3 3 6.4 6.4 6.4l1.1-1.4-2-1-.9.8a4.4 4.4 0 0 1-2.4-2.4l.8-.9-1-2-1.4 1.1"></path></svg></button>
                     <button onClick="{{ selWoman.onCall }}" title="Call" style="flex:none;width:46px;height:46px;border-radius:50%;border:none;background:#54CC90;color:#0E3D28;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18)" style-active="transform:scale(.94)"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.4 1.9.6 2.9.8a2 2 0 0 1 1.7 2z"></path></svg></button>
                   </div>
@@ -1697,7 +1490,7 @@
 
                 <div style="padding:12px 16px 0;display:flex;align-items:center;gap:7px;flex-wrap:wrap">
                   <sc-for list="{{ selWoman.svcChips }}" as="c" hint-placeholder-count="1">
-                    <button onClick="{{ c.onTap }}" style="--bg:{{ c.bg }};--fg:{{ c.fg }};--bd:{{ c.bd }};padding:6px 12px;border-radius:999px;border:1.5px solid var(--bd);background:var(--bg);color:var(--fg);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer">{{ c.label }}</button>
+                    <button onClick="{{ c.onTap }}" style="--bg:{{ c.bg }};--fg:{{ c.fg }};--bd:{{ c.bd }};padding:6px 12px;border-radius:999px;border:1.5px solid var(--bd);background:var(--bg);color:var(--fg);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">{{ c.label }}</button>
                   </sc-for>
                   <sc-if value="{{ selWoman.delDone }}" hint-placeholder-val="{{ false }}">
                     <span style="display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1.5px dashed #B5B4AF;background:#F4F3EF;color:#6B6B68;font-size:12px;font-weight:600">{{ selWoman.delDoneLabel }}</span>
@@ -1706,7 +1499,7 @@
                     <button onClick="{{ selWoman.onAddSvc }}" style="flex:none;white-space:nowrap;display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1.5px dashed var(--ml-blue);background:var(--surface-card);color:var(--ml-blue);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Add service</button>
                   </sc-if>
                   <sc-if value="{{ selWoman.canDeliver }}" hint-placeholder-val="{{ false }}">
-                    <button onClick="{{ selWoman.onDeliver }}" style="margin-left:auto;flex:none;white-space:nowrap;display:flex;align-items:center;padding:6px 12px;border-radius:999px;border:1.5px solid #2E9E6B;background:#D9F7E8;color:#1B6B47;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer">Preg outcome</button>
+                    <button onClick="{{ selWoman.onDeliver }}" style="margin-left:auto;flex:none;white-space:nowrap;display:flex;align-items:center;padding:6px 12px;border-radius:999px;border:1.5px solid #2E9E6B;background:#D9F7E8;color:#1B6B47;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer">Pregnancy ended</button>
                   </sc-if>
                 </div>
 
@@ -1731,20 +1524,20 @@
                 </sc-if>
 
                 <sc-if value="{{ isOverTerm }}" hint-placeholder-val="{{ false }}">
-                  <div style="margin:12px 16px 0;padding:11px 13px;border-radius:12px;background:#FFF5F5;border:1px solid #F3C7C7;color:#B42318;font-size:13px;font-weight:600;line-height:1.4">Over 42 weeks ({{ overTermWk }} wk) · ANC steps can't be scheduled. Confirm LMP and gestational age, or record pregnancy outcome.</div>
+                  <div style="margin:12px 16px 0;padding:11px 13px;border-radius:12px;background:#FFF5F5;border:1px solid #F3C7C7;color:#B42318;font-size:13px;font-weight:600;line-height:1.4">Over 42 weeks ({{ overTermWk }} wk) · HRP steps can't be scheduled. Confirm LMP and gestational age, or record pregnancy outcome.</div>
                   <div style="padding:10px 16px 0">
-                    <button onClick="{{ selWoman.onRecordDelivery }}" style="width:100%;padding:13px;border:none;border-radius:14px;background:#B42318;color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:var(--shadow-sm)">Record pregnancy outcome</button>
+                    <button onClick="{{ selWoman.onRecordDelivery }}" style="width:100%;padding:13px;border:none;border-radius:14px;background:#B42318;color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:var(--shadow-sm)">Pregnancy ended</button>
                   </div>
                 </sc-if>
                 <sc-if value="{{ isStale }}" hint-placeholder-val="{{ false }}">
                   <div style="margin:12px 16px 0;padding:11px 13px;border-radius:12px;background:#FFF5F5;border:1px solid #F3C7C7;color:#B42318;font-size:13px;font-weight:600;line-height:1.4">Past EDD + 30 days · no pregnancy outcome. Only action allowed: record pregnancy outcome.</div>
                   <div style="padding:10px 16px 0">
-                    <button onClick="{{ selWoman.onRecordDelivery }}" style="width:100%;padding:13px;border:none;border-radius:14px;background:#B42318;color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:var(--shadow-sm)">Record pregnancy outcome</button>
+                    <button onClick="{{ selWoman.onRecordDelivery }}" style="width:100%;padding:13px;border:none;border-radius:14px;background:#B42318;color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:var(--shadow-sm)">Pregnancy ended</button>
                   </div>
                 </sc-if>
                 <sc-if value="{{ canAddSteps }}" hint-placeholder-val="{{ true }}">
                   <div style="padding:12px 16px 0">
-                    <button onClick="{{ selWoman.onEnter }}" style="width:100%;padding:13px;border:none;border-radius:14px;background:var(--ml-blue);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:var(--shadow-sm)">Enter Next Steps</button>
+                    <button onClick="{{ selWoman.onEnter }}" style="width:100%;padding:13px;border:none;border-radius:14px;background:var(--ml-blue);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:var(--shadow-sm)">Add next step</button>
                   </div>
                 </sc-if>
 
@@ -1763,30 +1556,34 @@
 
                 <div style="padding:14px 16px 7px;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
                   <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)">Open next steps · {{ selWoman.openCount }}</div>
-                  <div style="flex:none;white-space:nowrap;font-size:11.5px;color:var(--text-muted)">Tap to update</div>
                 </div>
 
                 <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
                   <sc-for list="{{ selWoman.openSteps }}" as="step" hint-placeholder-count="2">
+                    <sc-if value="{{ step.isSaved }}" hint-placeholder-val="{{ false }}">
+                      <div role="status" style="display:flex;align-items:center;gap:12px;padding:10px 8px 10px 14px;background:#EDF3EC;border-radius:13px">
+                        <span style="flex:none;width:30px;height:30px;border-radius:50%;background:#346538;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>
+                        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;color:#20411F"><span style="font-size:15px;font-weight:700">Saved</span><span style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ step.savedText }}</span></span>
+                        <button onClick="{{ step.onUndo }}" style="flex:none;border:none;background:none;padding:10px 8px;color:#20411F;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">Undo</button>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ step.notSaved }}" hint-placeholder-val="{{ true }}">
                     <button onClick="{{ step.onOpen }}" style="--ac:{{ step.lc }};--sf:{{ step.lsoft }};--cbg:{{ step.cbg }};--cbd:{{ step.cbd }};text-align:left;width:100%;padding:10px 12px;background:var(--cbg);border:1px solid var(--cbd);border-left:4px solid var(--ac);border-radius:13px;box-shadow:var(--shadow-xs);cursor:pointer;display:flex;align-items:center;gap:11px;font-family:inherit" style-hover="box-shadow:var(--shadow-sm)">
                       <span style="flex:none;width:34px;height:34px;border-radius:10px;background:var(--sf);display:flex;align-items:center;justify-content:center;color:var(--ac)">
                         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ step.icon }}"></path></svg>
                       </span>
                       <span style="flex:1;min-width:0">
-                        <span style="display:flex;align-items:center;gap:6px;min-width:0"><span style="--tc:{{ step.tc }};font-size:14.5px;font-weight:700;color:var(--tc);line-height:1.2;min-width:0">{{ step.title }}</span><sc-if value="{{ step.svcTag }}" hint-placeholder-val="{{ false }}"><span style="--sa:{{ step.svcAc }};--ss:{{ step.svcSf }};flex:none;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--ss);color:var(--sa)">{{ step.svcTag }}</span></sc-if></span>
-                        <span style="--fg:{{ step.dueColor }};display:block;font-size:12.5px;font-weight:500;color:var(--fg);margin-top:1px">{{ step.dueLabel }}</span>
+                        <span style="display:flex;align-items:center;gap:6px;min-width:0"><span style="--tc:{{ step.tc }};font-size:16px;font-weight:600;color:var(--tc);line-height:1.2;min-width:0">{{ step.title }}</span><sc-if value="{{ step.svcTag }}" hint-placeholder-val="{{ false }}"><span style="--sa:{{ step.svcAc }};--ss:{{ step.svcSf }};flex:none;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--ss);color:var(--sa)">{{ step.svcTag }}</span></sc-if></span>
+                        <span style="--fg:{{ step.dueColor }};display:block;font-size:13.5px;font-weight:500;color:var(--fg);margin-top:1px">{{ step.dueLabel }}</span>
                       </span>
                       <span style="flex:none;display:flex;align-items:center;gap:2px;color:var(--ml-blue);font-size:12px;font-weight:600">Update<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></span>
                     </button>
+                    </sc-if>
                   </sc-for>
                   <sc-if value="{{ selWoman.noOpen }}" hint-placeholder-val="{{ false }}">
                     <div style="text-align:center;padding:15px 20px;border:1px dashed var(--border-default);border-radius:13px;color:var(--text-muted)"><span style="font-size:13.5px;font-weight:600;color:var(--text-body)">No open steps</span><span style="font-size:12.5px"> · her journey is up to date</span></div>
                   </sc-if>
                 </div>
-
-                <sc-if value="{{ closeOnly }}" hint-placeholder-val="{{ false }}">
-                  <div style="padding:8px 16px 0;font-size:11.5px;color:var(--text-muted);line-height:1.35">New next steps are added by the ANM or facility staff.</div>
-                </sc-if>
 
                 <div style="padding:15px 16px 0">
                   <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px">Completed · {{ selWoman.doneCount }}</div>
@@ -1796,10 +1593,10 @@
                         <div style="display:flex;align-items:center;gap:9px">
                           <span style="flex:none;width:22px;height:22px;border-radius:7px;background:var(--ml-peppermint);display:flex;align-items:center;justify-content:center;color:#1B6B47"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>
                           <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-                            <span style="font-size:13px;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.title }}</span>
+                            <span style="font-size:14px;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.title }}</span>
                             <span style="display:flex;align-items:center;gap:6px;min-width:0">
                               <sc-if value="{{ d.isPc }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;background:#EFEDFF;color:#1E14BE;white-space:nowrap">Pregnancy completed</span></sc-if>
-                              <span style="flex:0 1 auto;min-width:0;font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.line }}</span>
+                              <span style="flex:0 1 auto;min-width:0;font-size:13px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.line }}</span>
                             </span>
                           </span>
                         </div>
@@ -1833,14 +1630,14 @@
                           <span style="font-size:20px;line-height:1.2;font-weight:700;color:#fff;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ profile.name }}</span>
                           
                         </div>
-                        <div style="font-size:12px;line-height:1.4;color:#B6B1EE;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ profile.sub }}</div>
+                        <div style="font-size:12px;line-height:1.4;color:#AFC0E0;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ profile.sub }}</div>
                       </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap">
                       <button onClick="{{ profile.onCall }}" style="display:flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 5px;border:none;border-radius:10px;background:rgba(255,255,255,.2);font-size:13px;font-weight:600;color:#fff;font-family:inherit;cursor:pointer" style-active="background:rgba(255,255,255,.32)">
                         <span style="flex:none;width:24px;height:24px;border-radius:7px;background:#54CC90;display:flex;align-items:center;justify-content:center;color:#0E3D28"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.4 1.9.6 2.9.8a2 2 0 0 1 1.7 2z"></path></svg></span>{{ profile.phone }}
                       </button>
-                      <span style="display:flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:10px;background:rgba(255,255,255,.13);font-size:13px;font-weight:600;color:#fff"><span style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#B6B1EE">ABHA</span>{{ profile.abha }}</span>
+                      <span style="display:flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:10px;background:rgba(255,255,255,.13);font-size:13px;font-weight:600;color:#fff"><span style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#AFC0E0">ABHA</span>{{ profile.abha }}</span>
                     </div>
                   </div>
                 </div>
@@ -1968,7 +1765,7 @@
                 <button onClick="{{ t.onTap }}" style="--ac:{{ t.color }};flex:1;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;position:relative">
                   <sc-if value="{{ t.badge }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:2px;left:50%;margin-left:6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--ml-merlot);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ t.badge }}</span></sc-if>
                   <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.icon }}"></path></svg>
-                  <span style="--ac:{{ t.color }};font-size:10.5px;font-weight:600;color:var(--ac)">{{ t.label }}</span>
+                  <span style="--ac:{{ t.color }};font-size:12px;font-weight:600;color:var(--ac)">{{ t.label }}</span>
                 </button>
               </sc-for>
             </div>
@@ -2080,7 +1877,7 @@
                 <sc-for list="{{ dlg.lifeOpts }}" as="o" hint-placeholder-count="3">
                   <button onClick="{{ o.onTap }}" style="--bg:{{ o.bg }};--bd:{{ o.bd }};--fg:{{ o.fg }};display:flex;align-items:center;gap:12px;padding:13px 14px;min-height:52px;border:1.5px solid var(--bd);border-radius:14px;background:var(--bg);color:var(--fg);font-family:inherit;cursor:pointer;text-align:left">
                     <span style="--ac:{{ o.ac }};flex:none;width:12px;height:12px;border-radius:50%;background:var(--ac)"></span>
-                    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:700">{{ o.label }}</span><span style="font-size:12px;color:#6B6B78">{{ o.sub }}</span></span>
+                    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:700">{{ o.label }}</span><span style="font-size:12px;color:#526078">{{ o.sub }}</span></span>
                   </button>
                 </sc-for>
               </div>
@@ -2291,64 +2088,61 @@
               <button onClick="{{ dlg.onConfirm }}" style="--dis:{{ dlg.confirmDisabled }};width:100%;padding:15px;border:none;border-radius:14px;background:var(--ml-blue);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;opacity:var(--dis)">Add HBNC visits</button>
             </sc-if>
 
-            <!-- step action sheet (ASHA) -->
+            <!-- account -->
+            <sc-if value="{{ dlgAccount }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+                <span style="--ac:{{ roleAccent }};flex:none;width:46px;height:46px;border-radius:50%;background:var(--ac);color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ userInitial }}</span>
+                <div style="min-width:0"><div style="font-size:18px;font-weight:700;color:var(--text-strong)">{{ dlg.accName }}</div><div style="font-size:13.5px;color:var(--text-muted)">{{ dlg.accSub }}</div></div>
+              </div>
+              <div role="radiogroup" aria-label="Language" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#E4EAF3;border-radius:14px;margin-bottom:12px">
+                <sc-for list="{{ dlg.langs }}" as="l" hint-placeholder-count="2">
+                  <button onClick="{{ l.onTap }}" role="radio" aria-checked="{{ l.on }}" style="--bg:{{ l.bg }};--sh:{{ l.sh }};height:40px;border:none;border-radius:11px;background:var(--bg);box-shadow:var(--sh);color:#101F50;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer">{{ l.label }}</button>
+                </sc-for>
+              </div>
+              <button onClick="{{ dlg.onSignOut }}" style="width:100%;height:50px;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid #DCE3EE;border-radius:14px;background:#fff;color:#101F50;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>Sign out</button>
+            </sc-if>
+
+            <!-- confirm: pregnancy ended / her status -->
+            <sc-if value="{{ dlgConfirm }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:20px;font-weight:700;color:var(--text-strong);letter-spacing:-.01em;margin-bottom:14px">{{ dlg.cfTitle }}</div>
+              <sc-if value="{{ dlg.cfHasDate }}" hint-placeholder-val="{{ false }}">
+                <label style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);margin-bottom:14px">
+                  <span style="flex:1;font-size:15px;font-weight:600;color:var(--text-strong)">Date</span>
+                  <input type="date" value="{{ dlg.cfDate }}" onInput="{{ dlg.onCfDate }}" onChange="{{ dlg.onCfDate }}" min="{{ dlg.cfMin }}" max="{{ dlg.cfMax }}" style="flex:none;padding:9px 10px;border:1px solid #DCE3EE;border-radius:10px;background:#fff;font-size:15px;font-family:inherit;color:var(--text-strong)">
+                </label>
+              </sc-if>
+              <sc-if value="{{ dlg.cfHasSteps }}" hint-placeholder-val="{{ true }}">
+                <div style="font-size:14px;font-weight:600;color:var(--text-body);margin-bottom:8px">{{ dlg.cfStepsHead }}</div>
+                <div style="display:flex;flex-direction:column;gap:1px;background:var(--border-subtle);border:1px solid var(--border-subtle);border-radius:13px;overflow:hidden;margin-bottom:14px">
+                  <sc-for list="{{ dlg.cfSteps }}" as="s" hint-placeholder-count="2">
+                    <div style="background:#fff;padding:10px 12px;font-size:14px;color:var(--text-strong)">{{ s.label }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dlg.cfErr }}" hint-placeholder-val="{{ false }}"><div role="alert" style="font-size:13.5px;font-weight:600;color:#B42318;margin-bottom:10px">{{ dlg.cfErr }}</div></sc-if>
+              <button onClick="{{ dlg.onConfirm }}" style="width:100%;height:52px;border:none;border-radius:14px;background:var(--ml-blue);color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer">{{ dlg.cfLabel }}</button>
+              <button onClick="{{ dlg.onClose }}" style="width:100%;height:46px;margin-top:4px;border:none;background:none;color:var(--text-body);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer">Go back</button>
+            </sc-if>
+
+            <!-- step update sheet -->
             <sc-if value="{{ dlgAct }}" hint-placeholder-val="{{ false }}">
               <button onClick="{{ dlg.onBack }}" style="display:flex;align-items:center;gap:7px;border:none;background:none;padding:0;margin-bottom:13px;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--text-body);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>All steps for {{ dlg.womanName }}</button>
               <div style="display:flex;gap:11px;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--border-subtle)">
                 <span style="--ac:{{ dlg.lc }};--sf:{{ dlg.lsoft }};flex:none;width:44px;height:44px;border-radius:12px;background:var(--sf);display:flex;align-items:center;justify-content:center;color:var(--ac)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ dlg.icon }}"></path></svg></span>
                 <div><div style="font-size:17px;font-weight:700;color:var(--text-strong)">{{ dlg.stepTitle }}</div><div style="--dc:{{ dlg.dueColor }};font-size:12.5px;color:var(--dc);font-weight:500">{{ dlg.dueLabel }}</div></div>
               </div>
-              <div style="display:flex;flex-direction:column">
-                <sc-for list="{{ dlg.rows }}" as="r" hint-placeholder-count="4">
-                  <div style="--rbg:{{ r.rbg }};border-bottom:1px solid var(--border-subtle);background:var(--rbg);border-radius:12px">
-                    <button onClick="{{ r.onTap }}" style="display:flex;align-items:center;gap:12px;padding:9px 8px;border:none;background:none;cursor:pointer;text-align:left;font-family:inherit;width:100%">
-                      <span style="--ac:{{ r.ac }};--sf:{{ r.sf }};flex:none;width:40px;height:40px;border-radius:12px;background:var(--sf);display:flex;align-items:center;justify-content:center;color:var(--ac)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{ r.icon }}"></path></svg></span>
-                      <span style="flex:1;min-width:0"><span style="display:block;font-size:15px;font-weight:600;color:var(--text-strong)">{{ r.label }}</span><span style="display:block;font-size:11.5px;color:var(--text-muted)">{{ r.hint }}</span><sc-if value="{{ r.warn }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:5px;margin-top:5px;font-size:12px;font-weight:700;color:#B42318"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>{{ r.warn }}</span></sc-if></span>
-                    </button>
-                    <sc-if value="{{ r.openComplete }}" hint-placeholder-val="{{ false }}">
-                      <div style="--cols:{{ r.cols }};display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:6px;padding:0 8px 10px">
-                        <sc-for list="{{ r.opts }}" as="o" hint-placeholder-count="4">
-                          <button onClick="{{ o.onTap }}" style="display:flex;align-items:center;gap:6px;min-height:44px;padding:8px;justify-content:center;border:1.5px solid #8FD3B2;border-radius:11px;background:#fff;cursor:pointer;text-align:center;font-family:inherit;font-size:13px;font-weight:600;line-height:1.25;color:var(--text-strong)" style-active="transform:scale(.97);background:#E6F8EE">
-                            <span style="display:flex;flex-direction:column;gap:3px;text-align:left"><span>{{ o.label }}</span><sc-if value="{{ o.warn }}" hint-placeholder-val="{{ false }}"><span style="font-size:11.5px;font-weight:700;color:#B42318">{{ o.warn }}</span></sc-if></span>
-                          </button>
-                        </sc-for>
-                      </div>
-                    </sc-if>
-                    <sc-if value="{{ r.openWa }}" hint-placeholder-val="{{ false }}">
-                      <div style="padding:0 8px 12px">
-                        <sc-if value="{{ r.hasConsent }}" hint-placeholder-val="{{ true }}">
-                          <div style="background:#fff;border:1px solid var(--border-subtle);border-radius:16px 16px 16px 5px;padding:12px 13px;margin-bottom:9px;font-size:13.5px;line-height:1.6;color:var(--ml-ink-900)">{{ r.msg }}</div>
-                          <button onClick="{{ r.onSend }}" style="width:100%;padding:14px;border:none;border-radius:14px;background:#1B6B47;color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">Send on WhatsApp</button>
-                        </sc-if>
-                        <sc-if value="{{ r.noConsent }}" hint-placeholder-val="{{ false }}">
-                          <div style="background:var(--ml-peach);color:#8A3D14;border-radius:12px;padding:11px 13px;font-size:12.5px;font-weight:600;line-height:1.5;margin-bottom:9px">No WhatsApp consent on record — call her instead.</div>
-                          <button onClick="{{ r.onDial }}" style="width:100%;padding:14px;border:none;border-radius:14px;background:#C35721;color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">Call {{ r.phone }}</button>
-                        </sc-if>
-                      </div>
-                    </sc-if>
-                    <sc-if value="{{ r.openLog }}" hint-placeholder-val="{{ false }}">
-                      <div style="padding:0 8px 12px;display:flex;flex-direction:column;gap:8px">
-                        <sc-for list="{{ r.logOpts }}" as="o" hint-placeholder-count="3">
-                          <button onClick="{{ o.onTap }}" style="--fg:{{ o.fg }};--bd:{{ o.bd }};width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border:1.5px solid var(--bd);border-radius:14px;background:#fff;color:var(--fg);font-family:inherit;cursor:pointer;text-align:left">
-                            <span style="font-size:14.5px;font-weight:700">{{ o.label }}</span>
-                            <span style="font-size:12px;color:var(--text-muted)">{{ o.hint }}</span>
-                          </button>
-                        </sc-for>
-                      </div>
-                    </sc-if>
-                    <sc-if value="{{ r.openCall }}" hint-placeholder-val="{{ false }}">
-                      <div style="padding:0 8px 12px;display:flex;flex-direction:column;gap:9px">
-                        <div style="background:#fff;border:1px solid var(--border-subtle);border-radius:14px;padding:13px;text-align:center;font-size:20px;font-weight:700;letter-spacing:.02em;color:var(--text-strong)">{{ r.phone }}</div>
-                        <button onClick="{{ r.onDial }}" style="width:100%;padding:14px;border:none;border-radius:14px;background:#C35721;color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">Open dialler</button>
-                      </div>
-                    </sc-if>
-                  </div>
+              <div style="--n:{{ dlg.actCols }};display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:8px;margin-top:16px">
+                <sc-for list="{{ dlg.acts }}" as="a" hint-placeholder-count="3">
+                  <button onClick="{{ a.onTap }}" style="--ab:{{ a.bg }};--af:{{ a.fg }};--ad:{{ a.bd }};height:48px;min-width:0;padding:0 4px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:12px;border:1px solid var(--ad);background:var(--ab);color:var(--af);font-family:inherit;font-size:15px;font-weight:600;white-space:nowrap;cursor:pointer" class="ns-act" style-active="background:#F3F6FB"><svg class="ns-act-ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none" aria-hidden="true"><path d="{{ a.icon }}"></path></svg><span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ a.label }}</span></button>
                 </sc-for>
               </div>
-              <div style="display:flex;gap:10px;margin-top:16px">
-                <sc-if value="{{ dlg.showDeclined }}" hint-placeholder-val="{{ true }}"><button onClick="{{ dlg.onDeclined }}" style="flex:1;padding:14px;border:none;border-radius:14px;background:var(--ml-peach);color:#8A3D14;font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer">She declined</button></sc-if>
-                <button onClick="{{ dlg.onClose }}" style="flex:1;padding:14px;border:1.5px solid var(--border-default);border-radius:14px;background:#fff;color:var(--text-strong);font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer">Close</button>
-              </div>
+              <sc-if value="{{ dlg.showOpts }}" hint-placeholder-val="{{ false }}">
+                <div style="--cols:{{ dlg.optCols }};display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:8px;margin-top:8px">
+                  <sc-for list="{{ dlg.opts }}" as="o" hint-placeholder-count="3">
+                    <button onClick="{{ o.onTap }}" style="--ob:{{ o.bd }};--ow:{{ o.bw }};min-height:48px;padding:8px;border-radius:12px;border:var(--ow) solid var(--ob);background:#fff;color:var(--text-strong);font-family:inherit;font-size:14px;font-weight:600;line-height:1.25;text-align:center;cursor:pointer" style-active="background:#EDF3EC">{{ o.label }}</button>
+                  </sc-for>
+                </div>
+              </sc-if>
             </sc-if>
 
             <!-- reschedule due date -->
@@ -2413,8 +2207,7 @@
 
             <!-- scan dialog -->
             <sc-if value="{{ dlgScan }}" hint-placeholder-val="{{ false }}">
-              <div style="font-size:16px;font-weight:700;color:var(--text-strong);margin-bottom:3px">Scan ABHA QR</div>
-              <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px">Point at the QR on her MCP card or printed ABHA sheet</div>
+              <div style="font-size:16px;font-weight:700;color:var(--text-strong);margin-bottom:16px">Scan ABHA QR</div>
               <div style="aspect-ratio:1;background:#0B0B12;border-radius:18px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;position:relative;overflow:hidden">
                 <div style="position:absolute;inset:34px;border:2px solid rgba(255,255,255,.35);border-radius:14px"></div>
                 <div style="position:absolute;left:34px;right:34px;height:2px;background:var(--ml-seafoam);box-shadow:0 0 12px var(--ml-seafoam);top:50%"></div>

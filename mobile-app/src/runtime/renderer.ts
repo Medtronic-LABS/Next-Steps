@@ -160,6 +160,8 @@ const SVG_ATTR_MAP: Record<string, string> = {
   'font-weight': 'fontWeight',
   'text-anchor': 'textAnchor',
   readonly: 'readOnly',
+  autocomplete: 'autoComplete',
+  inputmode: 'inputMode',
 };
 
 function stripComments(css: string): string {
